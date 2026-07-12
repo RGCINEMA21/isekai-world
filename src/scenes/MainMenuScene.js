@@ -477,45 +477,11 @@ class MainMenuScene extends Phaser.Scene {
     }
 
     showNewGamePopup() {
-        const cx = this.cameras.main.centerX;
-        const cy = this.cameras.main.centerY;
-        const pw = Math.min(440, this.cameras.main.width - 30);
-
-        this.dimOverlay.setAlpha(0.6);
-        const popup = this.add.container(cx, cy).setDepth(200).setAlpha(0);
-
-        const bg = this.add.graphics();
-        bg.fillStyle(0x100020, 0.97);
-        bg.fillRoundedRect(-pw/2, -65, pw, 130, 14);
-        bg.lineStyle(2, 0x6644aa);
-        bg.strokeRoundedRect(-pw/2, -65, pw, 130, 14);
-        popup.add(bg);
-
-        popup.add(this.add.text(0, -20, '🎭 Character Creator akan\ndibuat pada Prompt #3', {
-            fontSize: '18px', fontFamily: 'Arial', color: '#fff', align: 'center'
-        }).setOrigin(0.5));
-
-        const okBg = this.add.graphics();
-        okBg.fillStyle(0x6644aa, 1);
-        okBg.fillRoundedRect(-45, 30, 90, 32, 6);
-        popup.add(okBg);
-
-        popup.add(this.add.text(0, 46, 'OK', {
-            fontSize: '16px', fontFamily: 'Arial', color: '#fff', fontStyle: 'bold'
-        }).setOrigin(0.5));
-
-        const okHit = this.add.rectangle(0, 46, 90, 32, 0, 0)
-            .setInteractive({ useHandCursor: true });
-        popup.add(okHit);
-
-        okHit.on('pointerdown', () => {
-            this.playClick();
-            this.tweens.add({ targets: popup, alpha: 0, duration: 200,
-                onComplete: () => { popup.destroy(); this.dimOverlay.setAlpha(0); }
-            });
+        this.playClick();
+        this.cameras.main.fadeOut(300, 0, 0, 0);
+        this.cameras.main.once('camerafadeoutcomplete', () => {
+            this.scene.start('CharacterCreatorScene');
         });
-
-        this.tweens.add({ targets: popup, alpha: 1, duration: 300 });
     }
 
     showSettingsPopup() {

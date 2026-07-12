@@ -37,7 +37,7 @@ const config = {
     },
 
     // Daftar scene (BootScene -> MainMenuScene -> ...)
-    scene: [BootScene, MainMenuScene]
+    scene: [BootScene, MainMenuScene, CharacterCreatorScene]
 };
 
 // Inisialisasi game
