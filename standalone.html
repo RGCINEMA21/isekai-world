@@ -550,8 +550,17 @@ class MainMenuScene extends Phaser.Scene {
     handleClick(action) {
         if (action === 'newGame') this.showNewGamePopup();
         else if (action === 'continue') this.handleContinue();
+        else if (action === 'continue') this.handleContinue();
         else if (action === 'settings') this.showSettingsPopup();
         else if (action === 'exit') this.showExitPopup();
+    }
+
+    handleContinue() {
+        this.playClick();
+        this.cameras.main.fadeOut(300, 0, 0, 0);
+        this.cameras.main.once('camerafadeoutcomplete', () => {
+            this.scene.start('MainVillageScene');
+        });
     }
 
     handleContinue() {
@@ -2382,33 +2391,19 @@ class MainVillageScene extends Phaser.Scene {
 
 const config = {
     type: Phaser.AUTO,
-    width: Math.max(window.innerWidth, 960),
-    height: Math.max(window.innerHeight, 540),
+    width: 960,
+    height: 540,
     parent: 'game-container',
-    scale: {
-        mode: Phaser.Scale.RESIZE,
-        autoCenter: Phaser.Scale.CENTER_BOTH,
-        width: '100%',
-        height: '100%',
-        min: { width: 480, height: 320 },
-        max: { width: 3840, height: 2160 }
-    },
-    physics: {
-        default: 'arcade',
-        arcade: { gravity: { y: 0 }, debug: false }
-    },
+    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+    physics: { default: 'arcade', arcade: { gravity: { y: 0 }, debug: false } },
     backgroundColor: '#1a1a2e',
     fps: { target: 60, forceSetTimeOut: false },
     scene: [BootScene, MainMenuScene, CharacterCreatorScene, MainVillageScene],
-    antialias: true,
-    pixelArt: false,
+    antialias: false,
+    pixelArt: true,
     roundPixels: true
 };
 const game = new Phaser.Game(config);
-window.addEventListener('resize', () => {
-    game.scale.resize(window.innerWidth, window.innerHeight);
 });
-document.addEventListener('gesturestart', (e) => e.preventDefault());
-document.addEventListener('gesturechange', (e) => e.preventDefault());
 </script>
 </body></html>
