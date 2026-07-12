@@ -28,7 +28,7 @@ const config = {
     },
 
     // Background warna hijau rumput
-    backgroundColor: '#6ab04c',
+    backgroundColor: '#1a1a2e',
 
     // Target FPS
     fps: {
@@ -36,12 +36,11 @@ const config = {
         forceSetTimeOut: false
     },
 
-    // Daftar scene (urutan dimulai dari Scene pertama)
-    scene: [BootScene]
+    // Daftar scene (BootScene -> MainMenuScene -> ...)
+    scene: [BootScene, MainMenuScene]
 };
 
 // Inisialisasi game
 const game = new Phaser.Game(config);
 
-// Log info ke console untuk debugging
 console.log('[Isekai World] Game initialized. Resolution: 1280x720, FPS target: 60');

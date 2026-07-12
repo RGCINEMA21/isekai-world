@@ -1,61 +1,39 @@
 /**
- * BootScene - Scene pertama yang ditampilkan saat game dimulai.
- * Menampilkan judul "ISEKAI WORLD" dan status project.
+ * BootScene - Scene pertama saat game dimulai.
+ * Menampilkan splash screen lalu transisi ke MainMenuScene.
  */
 class BootScene extends Phaser.Scene {
     constructor() {
         super({ key: 'BootScene' });
     }
 
-    preload() {
-        // Belum ada asset yang dimuat di phase ini
-    }
-
     create() {
         const centerX = this.cameras.main.centerX;
         const centerY = this.cameras.main.centerY;
 
-        // Judul utama: ISEKAI WORLD
-        this.titleText = this.add.text(centerX, centerY - 40, 'ISEKAI WORLD', {
-            fontSize: '64px',
+        // Judul splash screen
+        this.add.text(centerX, centerY - 20, 'ISEKAI WORLD', {
+            fontSize: '52px',
             fontFamily: 'Arial, sans-serif',
             color: '#ffffff',
             fontStyle: 'bold',
             stroke: '#000000',
-            strokeThickness: 6
+            strokeThickness: 5
         }).setOrigin(0.5);
 
-        // Subtitle: Project berhasil dibuat
-        this.subtitleText = this.add.text(centerX, centerY + 30, 'Project berhasil dibuat.', {
-            fontSize: '24px',
+        // Loading text
+        this.add.text(centerX, centerY + 40, 'Loading...', {
+            fontSize: '18px',
             fontFamily: 'Arial, sans-serif',
-            color: '#cccccc',
-            stroke: '#000000',
-            strokeThickness: 3
+            color: '#aaaaaa'
         }).setOrigin(0.5);
 
-        // Efek kedap-kedip sederhana pada judul
-        this.tweens.add({
-            targets: this.titleText,
-            alpha: { from: 1, to: 0.6 },
-            duration: 1200,
-            yoyo: true,
-            repeat: -1,
-            ease: 'Sine.easeInOut'
+        // Transisi ke MainMenuScene setelah 1.5 detik
+        this.time.delayedCall(1500, () => {
+            this.cameras.main.fadeOut(500, 0, 0, 0);
+            this.cameras.main.once('camerafadeoutcomplete', () => {
+                this.scene.start('MainMenuScene');
+            });
         });
-
-        // FPS counter (debug info)
-        this.fpsText = this.add.text(10, 10, '', {
-            fontSize: '14px',
-            fontFamily: 'monospace',
-            color: '#00ff00'
-        });
-    }
-
-    update() {
-        // Update FPS display setiap frame
-        if (this.fpsText) {
-            this.fpsText.setText('FPS: ' + this.game.loop.actualFps.toFixed(1));
-        }
     }
 }
