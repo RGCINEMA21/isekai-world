@@ -621,9 +621,17 @@ class MainVillageScene extends Phaser.Scene {
      *  INTERACTION CALLBACK
      * ============================================= */
     onObjectInteract(obj) {
-        // Placeholder: tampilkan notifikasi
+        // Rumah: masuk ke interior
+        if (obj.id === 'rumah') {
+            this.saveGame();
+            this.cameras.main.fadeOut(400, 0, 0, 0);
+            this.cameras.main.once('camerafadeoutcomplete', () => {
+                this.scene.start('HomeScene');
+            });
+            return;
+        }
+        // Placeholder lainnya: tampilkan notifikasi
         const w = this.cameras.main.width;
-        const notif = this.scene.add ? null : null; // safety
         const msg = obj.name + " - " + obj.action;
         const t = this.add.text(w / 2, this.cameras.main.height - (this.isPortrait ? 180 : 60), msg, {
             fontSize: "13px", fontFamily: "Arial", color: "#ffffff",
