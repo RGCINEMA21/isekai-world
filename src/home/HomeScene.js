@@ -201,9 +201,16 @@ class HomeScene extends Phaser.Scene {
 
         // Exit door marker
         this.floorGfx.fillStyle(0x4a3a2a, 0.6);
-        this.floorGfx.fillRect(exit.tileX * T, exit.tileY * T, T, T);
+        this.floorGfx.fillRect(exit.tileX * T - 4, exit.tileY * T - 4, T + 8, T * 2 + 8);
         this.floorGfx.lineStyle(2, 0x3a2a10, 1);
-        this.floorGfx.strokeRect(exit.tileX * T, exit.tileY * T, T, T);
+        this.floorGfx.strokeRect(exit.tileX * T - 4, exit.tileY * T - 4, T + 8, T * 2 + 8);
+        // Arrow indicator
+        this.floorGfx.fillStyle(0xccaa44, 0.8);
+        this.floorGfx.fillTriangle(
+            exit.tileX * T + T/2, exit.tileY * T + T + 6,
+            exit.tileX * T + T/2 - 6, exit.tileY * T + T - 2,
+            exit.tileX * T + T/2 + 6, exit.tileY * T + T - 2
+        );
     }
 
     drawFurniture(tx, ty, tw, th, borderColor, fillColor, label) {
@@ -308,8 +315,8 @@ class HomeScene extends Phaser.Scene {
         const exit = D.objects.exitDoor;
         this.exitZone = {
             x: exit.tileX * T + T / 2,
-            y: exit.tileY * T + T / 2,
-            radius: 32,
+            y: (exit.tileY + 1) * T,
+            radius: 60,
             name: exit.name,
             action: exit.action
         };
@@ -385,7 +392,7 @@ class HomeScene extends Phaser.Scene {
         if (!this.sys.game.device.input.touch) return;
         this.input.on('pointerdown', (p) => this.onPtrDown(p));
         this.input.on('pointermove', (p) => this.onPtrMove(p));
-        this.input.on('pointerup', () => { this.joystick.active = false; this.touchInteract = false; });
+        this.input.on('pointerup', () => { this.joystick.active = false; });
         this.drawTouchZones();
     }
 
@@ -555,8 +562,8 @@ class HomeScene extends Phaser.Scene {
 
         // Interact input
         if (Phaser.Input.Keyboard.JustDown(this.keys.interact) || this.touchInteract) {
+            this.touchInteract = false;
             if (this.currentTarget) {
-                this.touchInteract = false;
                 if (this.currentTarget === this.bedZone) this.doSleep();
                 else if (this.currentTarget === this.exitZone) this.exitHouse();
             }
