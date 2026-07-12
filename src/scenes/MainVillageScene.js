@@ -54,6 +54,11 @@ class MainVillageScene extends Phaser.Scene {
         // === RESIZE LISTENER ===
         this.scale.on('resize', (sz) => this.onResize(sz));
 
+        // === INTERACTION SYSTEM ===
+        this.interactionMgr = new InteractionManager(this);
+        this.interactionMgr.setup("main_village", this.TILE);
+        this.interactionMgr.setInteractCallback((obj) => this.onObjectInteract(obj));
+
         // === AUTO-SAVE ===
         this.setupAutoSave();
 
@@ -599,7 +604,36 @@ class MainVillageScene extends Phaser.Scene {
 
         this.drawPlayer();
         this.renderMap();
+
+        // Update interaction system
+        if (this.interactionMgr) {
+            this.interactionMgr.update(this.playerBody.x, this.playerBody.y, this.cameras.main);
+        }
+
+        // Check interact key (E) or touch button
+        if (this.interactionMgr && (Phaser.Input.Keyboard.JustDown(this.keys.interact) || this.touchInteract)) {
+            const target = this.interactionMgr.onInteract();
+            if (target) this.onObjectInteract(target);
+        }
     }
 
-    shutdown() { this.saveGame(); }
+    /* =============================================
+     *  INTERACTION CALLBACK
+     * ============================================= */
+    onObjectInteract(obj) {
+        // Placeholder: tampilkan notifikasi
+        const w = this.cameras.main.width;
+        const notif = this.scene.add ? null : null; // safety
+        const msg = obj.name + " - " + obj.action;
+        const t = this.add.text(w / 2, this.cameras.main.height - (this.isPortrait ? 180 : 60), msg, {
+            fontSize: "13px", fontFamily: "Arial", color: "#ffffff",
+            fontStyle: "bold", stroke: "#000000", strokeThickness: 3
+        }).setOrigin(0.5).setDepth(250).setScrollFactor(0);
+        this.tweens.add({
+            targets: t, alpha: 0, y: t.y - 20, duration: 500, delay: 1200,
+            onComplete: () => t.destroy()
+        });
+    }
+
+    shutdown() { this.saveGame(); if (this.interactionMgr) this.interactionMgr.destroy(); }
 }
