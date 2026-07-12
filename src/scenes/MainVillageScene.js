@@ -167,7 +167,17 @@ class MainVillageScene extends Phaser.Scene {
      * ============================================= */
     setupTouchControls() {
         // Only enable on touch devices
-        if (!this.sys.game.device.input.touch) return;
+        if (!this.sys.game.device.input.touch) {
+            // Desktop: still draw inventory button hint
+            const w2 = this.cameras.main.width;
+            const dg = this.add.graphics().setDepth(200).setScrollFactor(0);
+            dg.fillStyle(0x6644aa, 0.12);
+            dg.fillCircle(w2 - 40, 40, 20);
+            dg.lineStyle(1, 0x6644aa, 0.25);
+            dg.strokeCircle(w2 - 40, 40, 20);
+            this.add.text(w2 - 40, 40, '🎒', { fontSize: '14px' }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
+            return;
+        }
 
         this.input.on('pointerdown', (ptr) => this.onPointerDown(ptr));
         this.input.on('pointermove', (ptr) => this.onPointerMove(ptr));
@@ -478,34 +488,92 @@ class MainVillageScene extends Phaser.Scene {
         const g = this.playerGfx; g.clear();
         const px = this.playerBody.x, py = this.playerBody.y;
         const f = this.facing, m = this.isMoving;
-        const bob = m ? Math.sin(this.animFrame * Math.PI * 0.5) * 0.5 : 0;
+        const bob = m ? Math.sin(this.animFrame * Math.PI * 0.5) * 1 : 0;
         const y = py + bob;
+        const s = 1.5; // scale multiplier
 
-        g.fillStyle(0x000000, 0.2); g.fillEllipse(px, py+7, 10, 4);
-        const step = m && this.animFrame%2===1 ? 1 : 0;
-        const S=0xffcc99, H=0x442200, Sh=0x2266aa, P=0x334466, B=0x3a2a1a;
+        // Gender-based colors
+        const isMale = !this.saveData || !this.saveData.player || this.saveData.player.gender !== 'female';
+        const skin = 0xffcc99;
+        const hair = isMale ? 0x442200 : 0x883322;
+        const shirt = isMale ? 0x2266bb : 0xcc4477;
+        const pants = isMale ? 0x334466 : 0x554466;
+        const boot = 0x3a2a1a;
+        const eye = isMale ? 0x2244aa : 0x228844;
 
-        g.fillStyle(B,1); g.fillRect(px-3,y+3,2,3+step); g.fillRect(px+1,y+3,2,3-step);
-        g.fillStyle(P,1); g.fillRect(px-3,y-1,2,5); g.fillRect(px+1,y-1,2,5);
-        g.fillStyle(Sh,1); g.fillRect(px-4,y-6,8,6);
-        const arm=m?Math.sin(this.animFrame*Math.PI)*2:0;
-        g.fillStyle(S,1); g.fillRect(px-5,y-4+arm,2,5); g.fillRect(px+3,y-4-arm,2,5);
-        g.fillStyle(S,1); g.fillRect(px-3,y-12,6,7);
-        g.fillStyle(H,1); g.fillRect(px-3,y-13,6,3);
-        if(f==='down'){g.fillRect(px-4,y-12,1,4);g.fillRect(px+3,y-12,1,4);}
-        else if(f==='up'){g.fillRect(px-4,y-13,8,4);}
-        else if(f==='left'){g.fillRect(px-4,y-13,6,3);g.fillRect(px-4,y-11,1,4);}
-        else{g.fillRect(px-2,y-13,6,3);g.fillRect(px+3,y-11,1,4);}
-        if(f!=='up'){
-            g.fillStyle(0xffffff,1);
-            if(f==='down'){g.fillRect(px-2,y-10,2,2);g.fillRect(px+1,y-10,2,2);}
-            else if(f==='left'){g.fillRect(px-3,y-10,2,2);}
-            else{g.fillRect(px+1,y-10,2,2);}
-            g.fillStyle(0x2244aa,1);
-            if(f==='down'){g.fillRect(px-1,y-9,1,1);g.fillRect(px+1,y-9,1,1);}
-            else if(f==='left'){g.fillRect(px-2,y-9,1,1);}
-            else{g.fillRect(px+2,y-9,1,1);}
+        // Shadow
+        g.fillStyle(0x000000, 0.2);
+        g.fillEllipse(px, py + 10*s, 14*s, 5*s);
+
+        const step = m && this.animFrame%2===1 ? 1.5 : 0;
+
+        // Boots
+        g.fillStyle(boot, 1);
+        g.fillRect(px - 4*s, y + 5*s, 3*s, (4+step)*s);
+        g.fillRect(px + 1*s, y + 5*s, 3*s, (4-step)*s);
+
+        // Pants
+        g.fillStyle(pants, 1);
+        g.fillRect(px - 4*s, y - 1*s, 3*s, 7*s);
+        g.fillRect(px + 1*s, y - 1*s, 3*s, 7*s);
+
+        // Shirt
+        g.fillStyle(shirt, 1);
+        g.fillRect(px - 5*s, y - 8*s, 10*s, 8*s);
+
+        // Arms
+        const arm = m ? Math.sin(this.animFrame * Math.PI) * 3 : 0;
+        g.fillStyle(skin, 1);
+        g.fillRect(px - 7*s, y - 6*s + arm, 3*s, 7*s);
+        g.fillRect(px + 4*s, y - 6*s - arm, 3*s, 7*s);
+
+        // Head
+        g.fillStyle(skin, 1);
+        g.fillRect(px - 4*s, y - 18*s, 8*s, 11*s);
+
+        // Hair
+        g.fillStyle(hair, 1);
+        g.fillRect(px - 4*s, y - 19*s, 8*s, 4*s);
+        if (f === 'down') {
+            g.fillRect(px - 5*s, y - 18*s, 2*s, 6*s);
+            g.fillRect(px + 3*s, y - 18*s, 2*s, 6*s);
+        } else if (f === 'up') {
+            g.fillRect(px - 5*s, y - 19*s, 10*s, 6*s);
+        } else if (f === 'left') {
+            g.fillRect(px - 5*s, y - 19*s, 8*s, 4*s);
+            g.fillRect(px - 5*s, y - 16*s, 2*s, 6*s);
+            if (!isMale) { g.fillRect(px - 6*s, y - 14*s, 2*s, 10*s); }
+        } else {
+            g.fillRect(px - 3*s, y - 19*s, 8*s, 4*s);
+            g.fillRect(px + 3*s, y - 16*s, 2*s, 6*s);
+            if (!isMale) { g.fillRect(px + 4*s, y - 14*s, 2*s, 10*s); }
         }
+
+        // Eyes
+        if (f !== 'up') {
+            g.fillStyle(0xffffff, 1);
+            if (f === 'down') {
+                g.fillRect(px - 3*s, y - 14*s, 3*s, 3*s);
+                g.fillRect(px + 1*s, y - 14*s, 3*s, 3*s);
+            } else if (f === 'left') {
+                g.fillRect(px - 4*s, y - 14*s, 3*s, 3*s);
+            } else {
+                g.fillRect(px + 1*s, y - 14*s, 3*s, 3*s);
+            }
+            g.fillStyle(eye, 1);
+            if (f === 'down') {
+                g.fillRect(px - 2*s, y - 13*s, 2*s, 2*s);
+                g.fillRect(px + 1*s, y - 13*s, 2*s, 2*s);
+            } else if (f === 'left') {
+                g.fillRect(px - 3*s, y - 13*s, 2*s, 2*s);
+            } else {
+                g.fillRect(px + 2*s, y - 13*s, 2*s, 2*s);
+            }
+        }
+
+        // Mouth
+        g.fillStyle(0xcc8866, 1);
+        g.fillRect(px - 1*s, y - 10*s, 2*s, 1*s);
     }
 
     /* =============================================
