@@ -105,7 +105,7 @@ class MainVillageScene extends Phaser.Scene {
         // Touch joystick state
         this.joystick = { active: false, startX: 0, startY: 0, dx: 0, dy: 0 };
         this.touchAttack = false;
-        this.touchInteract = false;
+        // touchInteract cleared in update after use
     }
 
     /** Returns normalized movement vector (-1 to 1) from any input source */
@@ -612,6 +612,7 @@ class MainVillageScene extends Phaser.Scene {
 
         // Check interact key (E) or touch button
         if (this.interactionMgr && (Phaser.Input.Keyboard.JustDown(this.keys.interact) || this.touchInteract)) {
+            this.touchInteract = false;
             const target = this.interactionMgr.onInteract();
             if (target) this.onObjectInteract(target);
         }
