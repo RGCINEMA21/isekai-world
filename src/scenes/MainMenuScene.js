@@ -24,7 +24,7 @@ class MainMenuScene extends Phaser.Scene {
 
         // Dim overlay for popups
         this.dimOverlay = this.add.rectangle(w/2, h/2, w, h, 0x000000, 0)
-            .setDepth(100).setInteractive();
+            .setDepth(100);
 
         // Responsive detection
         const isMobile = w < 600;
@@ -492,6 +492,7 @@ class MainMenuScene extends Phaser.Scene {
         const pw = Math.min(480, this.cameras.main.width - 20);
 
         this.dimOverlay.setAlpha(0.6);
+        this.dimOverlay.setInteractive();
         this.settingsPopup = this.add.container(cx, cy).setDepth(200).setAlpha(0);
 
         const bg = this.add.graphics();
@@ -545,7 +546,7 @@ class MainMenuScene extends Phaser.Scene {
     closeSettings() {
         if (!this.settingsPopup) return;
         this.tweens.add({ targets: this.settingsPopup, alpha: 0, duration: 200,
-            onComplete: () => { this.settingsPopup.destroy(); this.settingsPopup = null; this.dimOverlay.setAlpha(0); }
+            onComplete: () => { this.settingsPopup.destroy(); this.settingsPopup = null; this.dimOverlay.setAlpha(0); this.dimOverlay.disableInteractive(); }
         });
     }
 
@@ -557,6 +558,7 @@ class MainMenuScene extends Phaser.Scene {
         const pw = Math.min(440, this.cameras.main.width - 30);
 
         this.dimOverlay.setAlpha(0.6);
+        this.dimOverlay.setInteractive();
         this.exitPopup = this.add.container(cx, cy).setDepth(200).setAlpha(0);
 
         const bg = this.add.graphics();
@@ -590,7 +592,7 @@ class MainMenuScene extends Phaser.Scene {
     closeExit() {
         if (!this.exitPopup) return;
         this.tweens.add({ targets: this.exitPopup, alpha: 0, duration: 200,
-            onComplete: () => { this.exitPopup.destroy(); this.exitPopup = null; this.dimOverlay.setAlpha(0); }
+            onComplete: () => { this.exitPopup.destroy(); this.exitPopup = null; this.dimOverlay.setAlpha(0); this.dimOverlay.disableInteractive(); }
         });
     }
 
