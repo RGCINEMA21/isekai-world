@@ -624,6 +624,42 @@ class MainVillageScene extends Phaser.Scene {
     /* =============================================
      *  INTERACTION CALLBACK
      * ============================================= */
+    createBuildingClickZones() {
+        this.input.on("pointerdown", (pointer) => {
+            const cam = this.cameras.main;
+            const worldX = pointer.x / cam.zoom + cam.scrollX;
+            const worldY = pointer.y / cam.zoom + cam.scrollY;
+            const objects = InteractionData.getObjects("main_village");
+            for (const obj of objects) {
+                const T = this.TILE;
+                const objX = obj.tileX * T + T;
+                const objY = (obj.tileY + 2) * T;
+                const dist = Phaser.Math.Distance.Between(worldX, worldY, objX, objY);
+                if (dist < T * 3) {
+                    const pd = Phaser.Math.Distance.Between(this.playerBody.x, this.playerBody.y, objX, objY);
+                    if (pd < obj.radius + 30) {
+                        this.onObjectInteract(obj);
+                    } else {
+                        this.showFloatingText("Dekati " + obj.name + " dulu!", "#ff8844");
+                    }
+                    return;
+                }
+            }
+        });
+    }
+
+    showFloatingText(msg, color) {
+        const w = this.cameras.main.width;
+        const t = this.add.text(w / 2, this.cameras.main.height * 0.4, msg, {
+            fontSize: "14px", fontFamily: "Arial", color: color || "#ffffff",
+            fontStyle: "bold", stroke: "#000", strokeThickness: 3
+        }).setOrigin(0.5).setDepth(300).setScrollFactor(0);
+        this.tweens.add({
+            targets: t, alpha: 0, y: t.y - 20, duration: 600, delay: 800,
+            onComplete: () => t.destroy()
+        });
+    }
+
     onObjectInteract(obj) {
         // Rumah: masuk ke interior
         if (obj.id === 'rumah') {

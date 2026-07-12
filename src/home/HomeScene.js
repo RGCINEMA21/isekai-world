@@ -324,30 +324,28 @@ class HomeScene extends Phaser.Scene {
     }
 
     createClickableZones() {
-        const T = this.TILE;
-        // Bed clickable
-        const bed = this.bedZone;
-        const bedHit = this.add.rectangle(bed.x, bed.y, T * 3, T * 2, 0x000000, 0)
-            .setInteractive({ useHandCursor: true }).setDepth(50);
-        bedHit.on('pointerdown', () => {
-            const dist = Phaser.Math.Distance.Between(this.playerBody.x, this.playerBody.y, bed.x, bed.y);
-            if (dist < bed.radius + 20) {
-                this.doSleep();
-            } else {
-                this.showFloatingText('Dekati kasur dulu!', '#ff8844');
-            }
-        });
+        this.input.on('pointerdown', (pointer) => {
+            const cam = this.cameras.main;
+            const worldX = pointer.x / cam.zoom + cam.scrollX;
+            const worldY = pointer.y / cam.zoom + cam.scrollY;
+            const T = this.TILE;
 
-        // Exit clickable
-        const ex = this.exitZone;
-        const exHit = this.add.rectangle(ex.x, ex.y, T * 3, T * 3, 0x000000, 0)
-            .setInteractive({ useHandCursor: true }).setDepth(50);
-        exHit.on('pointerdown', () => {
-            const dist = Phaser.Math.Distance.Between(this.playerBody.x, this.playerBody.y, ex.x, ex.y);
-            if (dist < ex.radius + 20) {
-                this.exitHouse();
-            } else {
-                this.showFloatingText('Dekati pintu dulu!', '#ff8844');
+            // Check bed
+            const bed = this.bedZone;
+            if (Phaser.Math.Distance.Between(worldX, worldY, bed.x, bed.y) < T * 3) {
+                const pd = Phaser.Math.Distance.Between(this.playerBody.x, this.playerBody.y, bed.x, bed.y);
+                if (pd < bed.radius + 20) { this.doSleep(); }
+                else { this.showFloatingText('Dekati kasur dulu!', '#ff8844'); }
+                return;
+            }
+
+            // Check exit
+            const ex = this.exitZone;
+            if (Phaser.Math.Distance.Between(worldX, worldY, ex.x, ex.y) < T * 3) {
+                const pd = Phaser.Math.Distance.Between(this.playerBody.x, this.playerBody.y, ex.x, ex.y);
+                if (pd < ex.radius + 20) { this.exitHouse(); }
+                else { this.showFloatingText('Dekati pintu dulu!', '#ff8844'); }
+                return;
             }
         });
     }
