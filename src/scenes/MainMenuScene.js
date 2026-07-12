@@ -64,7 +64,7 @@ class MainMenuScene extends Phaser.Scene {
         // --- BUTTONS ---
         const buttonData = [
             { label: '▶  New Game',   action: 'newGame',   enabled: true },
-            { label: '▶  Continue',   action: 'continue',  enabled: false },
+            { label: '▶  Continue',   action: 'continue',  enabled: localStorage.getItem('isekai_world_save') ? true : false },
             { label: '⚙  Settings',   action: 'settings',  enabled: true },
             { label: '✕  Exit',       action: 'exit',      enabled: true }
         ];
@@ -472,8 +472,17 @@ class MainMenuScene extends Phaser.Scene {
      * ============================================= */
     handleClick(action) {
         if (action === 'newGame') this.showNewGamePopup();
+        else if (action === 'continue') this.handleContinue();
         else if (action === 'settings') this.showSettingsPopup();
         else if (action === 'exit') this.showExitPopup();
+    }
+
+    handleContinue() {
+        this.playClick();
+        this.cameras.main.fadeOut(300, 0, 0, 0);
+        this.cameras.main.once('camerafadeoutcomplete', () => {
+            this.scene.start('MainVillageScene');
+        });
     }
 
     showNewGamePopup() {

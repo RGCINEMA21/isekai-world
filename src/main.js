@@ -45,7 +45,7 @@ const config = {
         forceSetTimeOut: false
     },
 
-    scene: [BootScene, MainMenuScene, CharacterCreatorScene],
+    scene: [BootScene, MainMenuScene, CharacterCreatorScene, MainVillageScene],
 
     // Render anti-alias
     antialias: true,

@@ -521,7 +521,7 @@ class CharacterCreatorScene extends Phaser.Scene {
             this.createActionBtn(this.w / 2, btnY - gap * 2, this.w * 0.6, btnH, '⬅  Kembali', 0x444466, () => {
                 this.playClick(); this.cleanup();
                 this.cameras.main.fadeOut(300, 0, 0, 0);
-                this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('MainMenuScene'));
+                this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('MainVillageScene'));
             });
             this.createActionBtn(this.w / 2, btnY - gap, this.w * 0.6, btnH, '🎲  Acak Nama', 0x556644, () => {
                 this.playClick(); this.randomizeName();
@@ -534,7 +534,7 @@ class CharacterCreatorScene extends Phaser.Scene {
             this.createActionBtn(this.w * 0.08, btnY, this.w * 0.14, btnH, '⬅ Kembali', 0x444466, () => {
                 this.playClick(); this.cleanup();
                 this.cameras.main.fadeOut(300, 0, 0, 0);
-                this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('MainMenuScene'));
+                this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('MainVillageScene'));
             });
             this.createActionBtn(this.w * 0.22, btnY, this.w * 0.16, btnH, '🎲 Acak Nama', 0x556644, () => {
                 this.playClick(); this.randomizeName();
@@ -662,7 +662,7 @@ class CharacterCreatorScene extends Phaser.Scene {
 
         this.time.delayedCall(2200, () => {
             loadBg.clear(); loadFill.clear();
-            popup.add(this.add.text(0, 14, 'Desa Utama akan dibuat pada Prompt #4.', {
+            popup.add(this.add.text(0, 14, 'Memasuki desa...', {
                 fontSize: this.sz(13) + 'px', fontFamily: 'Arial', color: '#aaaacc', fontStyle: 'italic'
             }).setOrigin(0.5));
 
@@ -680,7 +680,7 @@ class CharacterCreatorScene extends Phaser.Scene {
             okHit.on('pointerdown', () => {
                 this.playClick(); this.cleanup();
                 this.cameras.main.fadeOut(300, 0, 0, 0);
-                this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('MainMenuScene'));
+                this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('MainVillageScene'));
             });
         });
 
