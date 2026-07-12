@@ -1,76 +1,64 @@
 /**
- * MainMenuScene - Halaman menu utama game ISEKAI WORLD.
- * Background bertema isekai fantasy (portal, langit magis, floating islands).
- * Layout responsif untuk desktop, tablet, dan HP.
+ * MainMenuScene - Menu utama ISEKAI WORLD.
+ * Background: Isekai fantasy dengan portal dimensional, floating islands,
+ * aurora, dan suasana dramatis mirip contoh.
  */
 class MainMenuScene extends Phaser.Scene {
     constructor() {
         super({ key: 'MainMenuScene' });
-
         this.titleText = null;
         this.subtitleText = null;
-        this.versionText = null;
         this.copyrightText = null;
         this.menuButtons = [];
         this.settingsPopup = null;
         this.exitPopup = null;
         this.dimOverlay = null;
+        this.particles = [];
     }
 
     create() {
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
 
-        // Background isekai fantasy
         this.createIsekaiBackground(w, h);
 
         // Dim overlay for popups
         this.dimOverlay = this.add.rectangle(w/2, h/2, w, h, 0x000000, 0)
-            .setDepth(100)
-            .setInteractive();
+            .setDepth(100).setInteractive();
 
-        // Responsive layout - calculate positions based on screen size
-        const isMobile = w < 600 || h < 500;
-        const titleSize = isMobile ? '48px' : '72px';
-        const subtitleSize = isMobile ? '14px' : '20px';
-        const btnSize = isMobile ? '20px' : '26px';
-        const btnWidth = isMobile ? 220 : 300;
-        const btnHeight = isMobile ? 45 : 58;
+        // Responsive detection
+        const isMobile = w < 600;
+        const titleSize = isMobile ? '42px' : '68px';
+        const subSize = isMobile ? '12px' : '18px';
+        const btnFontSize = isMobile ? '18px' : '22px';
+        const btnW = isMobile ? 200 : 280;
+        const btnH = isMobile ? 42 : 52;
+        const btnSpacing = isMobile ? 50 : 68;
 
-        // Title position - adapt to available space
-        const titleY = h < 500 ? h * 0.12 : h * 0.16;
-        const subtitleY = titleY + (isMobile ? 40 : 60);
-        const btnStartY = h < 500 ? h * 0.35 : h * 0.38;
-        const btnSpacing = isMobile ? 55 : 72;
-        const maxButtons = h < 500 ? 3 : 4;
-
-        // --- JUDUL ---
-        this.titleText = this.add.text(w/2, titleY, 'ISEKAI WORLD', {
+        // --- TITLE ---
+        this.titleText = this.add.text(w/2, h * 0.08, 'ISEKAI WORLD', {
             fontSize: titleSize,
             fontFamily: 'Arial, sans-serif',
-            color: '#fff8e7',
+            color: '#ffffff',
             fontStyle: 'bold',
-            stroke: '#1a1a2e',
-            strokeThickness: 6,
-            shadow: { offsetX: 3, offsetY: 3, color: '#000', blur: 12, fill: true }
+            stroke: '#1a0033',
+            strokeThickness: 6
         }).setOrigin(0.5).setAlpha(0).setDepth(10);
 
         // --- SUBTITLE ---
-        this.subtitleText = this.add.text(w/2, subtitleY, 'Offline Version v0.0.1', {
-            fontSize: subtitleSize,
+        this.subtitleText = this.add.text(w/2, h * 0.08 + (isMobile ? 35 : 50), 'v0.0.1', {
+            fontSize: subSize,
             fontFamily: 'Arial, sans-serif',
-            color: '#ddd8cc',
+            color: '#ccbbee',
             stroke: '#000',
             strokeThickness: 2
         }).setOrigin(0.5).setAlpha(0).setDepth(10);
 
         // --- COPYRIGHT ---
-        this.copyrightText = this.add.text(w/2, h - 18, '© ISEKAI WORLD PROJECT', {
-            fontSize: '12px',
+        this.copyrightText = this.add.text(w/2, h - 16, '© ISEKAI WORLD PROJECT', {
+            fontSize: '11px',
             fontFamily: 'Arial, sans-serif',
-            color: '#888888',
-            stroke: '#000',
-            strokeThickness: 1
+            color: '#666666'
         }).setOrigin(0.5).setAlpha(0).setDepth(10);
 
         // --- BUTTONS ---
@@ -81,223 +69,380 @@ class MainMenuScene extends Phaser.Scene {
             { label: '✕  Exit',       action: 'exit',      enabled: true }
         ];
 
-        const visibleButtons = buttonData.slice(0, maxButtons);
-        const totalBtnHeight = visibleButtons.length * btnSpacing;
-        const actualStartY = btnStartY;
-
-        visibleButtons.forEach((data, i) => {
-            const btnY = actualStartY + i * btnSpacing;
-            const btn = this.createButton(w/2, btnY, data, btnWidth, btnHeight, btnSize, i);
-            this.menuButtons.push(btn);
+        // Position buttons in lower third of screen
+        const btnStartY = h * 0.55;
+        buttonData.forEach((data, i) => {
+            const by = btnStartY + i * btnSpacing;
+            this.menuButtons.push(
+                this.createButton(w/2, by, data, btnW, btnH, btnFontSize, i)
+            );
         });
 
-        // Audio placeholder
         this.initAudio();
-
-        // Animate entrance
-        this.playEntranceAnimation(h);
+        this.playEntrance(h);
     }
 
     /* =============================================
-     *  ISEKAI FANTASY BACKGROUND
+     *  BACKGROUND - Isekai Fantasy Scene
      * ============================================= */
     createIsekaiBackground(w, h) {
         const g = this.add.graphics().setDepth(0);
 
-        // 1. Sky gradient (magic twilight)
-        for (let i = 0; i < h * 0.6; i++) {
-            const t = i / (h * 0.6);
-            const r = Math.floor(Phaser.Math.Linear(80, 180, t));
-            const gr = Math.floor(Phaser.Math.Linear(40, 100, t));
-            const b = Math.floor(Phaser.Math.Linear(140, 220, t));
+        // --- Dark sky gradient (deep blue to purple) ---
+        for (let i = 0; i < h; i++) {
+            const t = i / h;
+            let r, gr, b;
+            if (t < 0.5) {
+                // Upper sky: dark blue -> purple
+                r = Math.floor(Phaser.Math.Linear(10, 60, t * 2));
+                gr = Math.floor(Phaser.Math.Linear(10, 30, t * 2));
+                b = Math.floor(Phaser.Math.Linear(40, 80, t * 2));
+            } else {
+                // Lower: purple -> dark
+                r = Math.floor(Phaser.Math.Linear(60, 20, (t-0.5) * 2));
+                gr = Math.floor(Phaser.Math.Linear(30, 10, (t-0.5) * 2));
+                b = Math.floor(Phaser.Math.Linear(80, 30, (t-0.5) * 2));
+            }
             g.lineStyle(1, Phaser.Display.Color.GetColor(r, gr, b));
             g.lineBetween(0, i, w, i);
         }
 
-        // 2. Stars + magic particles
-        for (let i = 0; i < 80; i++) {
+        // --- Aurora / Magic lights across the sky ---
+        this.drawAurora(g, w, h);
+
+        // --- Stars ---
+        for (let i = 0; i < 120; i++) {
             const sx = Phaser.Math.Between(0, w);
-            const sy = Phaser.Math.Between(0, h * 0.45);
+            const sy = Phaser.Math.Between(0, h * 0.6);
             const size = Phaser.Math.Between(1, 3);
-            const alpha = Phaser.Math.FloatBetween(0.3, 1);
-            // Random star color
-            const colors = [0xffffff, 0xfff5cc, 0xccddff, 0xffccaa];
-            g.fillStyle(colors[Phaser.Math.Between(0, 3)], alpha);
+            const colors = [0xffffff, 0xaaccff, 0xffaadd, 0xddbbff, 0xaaffcc];
+            g.fillStyle(colors[Phaser.Math.Between(0, 4)], Phaser.Math.FloatBetween(0.2, 1));
             g.fillRect(sx, sy, size, size);
         }
 
-        // 3. Floating islands with magic glow
-        const islandPositions = [
-            { x: w * 0.08, y: h * 0.25, s: 0.6 },
-            { x: w * 0.85, y: h * 0.20, s: 0.8 },
-            { x: w * 0.15, y: h * 0.48, s: 0.5 },
-            { x: w * 0.92, y: h * 0.50, s: 0.7 }
-        ];
+        // --- Mountain silhouettes (background) ---
+        this.drawMountains(g, w, h);
 
-        islandPositions.forEach(pos => {
-            this.drawFloatingIsland(g, pos.x, pos.y, pos.s);
-        });
+        // --- Floating Island + Castle (left side) ---
+        this.drawFloatingIsland(g, w * 0.18, h * 0.28, 1.0);
 
-        // 4. Portal (isekai dimensional gate)
-        const portalX = w * 0.5;
-        const portalY = h * 0.55;
-        this.drawPortal(g, portalX, portalY);
+        // --- Small floating island (right) ---
+        this.drawSmallIsland(g, w * 0.82, h * 0.22, 0.6);
 
-        // 5. Ground with magic grass
-        g.fillStyle(0x1a3a1a, 1);
-        g.fillRect(0, h * 0.65, w, h * 0.35);
+        // --- Massive Portal / Dimensional Gate (center) ---
+        this.drawPortal(g, w * 0.5, h * 0.45, w, h);
 
-        // Magic grass patches
-        for (let i = 0; i < 40; i++) {
-            const gx = Phaser.Math.Between(0, w);
-            const gy = Phaser.Math.Between(Math.floor(h * 0.65), h);
-            const alpha = Phaser.Math.FloatBetween(0.2, 0.5);
-            const colors = [0x2d5a27, 0x3a7a30, 0x4a8a40, 0x225522];
-            g.fillStyle(colors[Phaser.Math.Between(0, 3)], alpha);
-            g.fillRect(gx, gy, Phaser.Math.Between(4, 20), 3);
-        }
+        // --- Ground ---
+        this.drawGround(g, w, h);
 
-        // 6. Sparkle particles overlay
-        for (let i = 0; i < 30; i++) {
-            const px = Phaser.Math.Between(0, w);
-            const py = Phaser.Math.Between(0, h);
-            g.fillStyle(0xffffff, Phaser.Math.FloatBetween(0.1, 0.4));
-            g.fillRect(px, py, 2, 2);
-        }
-
-        // 7. Semi-transparent dark overlay for readability
-        g.fillStyle(0x000000, 0.25);
+        // --- Dark overlay for text readability ---
+        g.fillStyle(0x000000, 0.2);
         g.fillRect(0, 0, w, h);
     }
 
+    drawAurora(g, w, h) {
+        // Soft aurora streaks in the sky
+        const auroraColors = [0x4466aa, 0x6644aa, 0x8844bb, 0x4488cc, 0x664499];
+        for (let i = 0; i < 12; i++) {
+            const y = Phaser.Math.Between(Math.floor(h * 0.05), Math.floor(h * 0.35));
+            const startX = Phaser.Math.Between(0, Math.floor(w * 0.3));
+            const endX = Phaser.Math.Between(Math.floor(w * 0.5), w);
+            const color = auroraColors[Phaser.Math.Between(0, auroraColors.length - 1)];
+
+            g.lineStyle(Phaser.Math.Between(1, 3), color, Phaser.Math.FloatBetween(0.05, 0.15));
+            g.beginPath();
+            g.moveTo(startX, y);
+            for (let x = startX; x < endX; x += 20) {
+                const wave = Math.sin((x / 100) + i) * 15;
+                g.lineTo(x, y + wave);
+            }
+            g.strokePath();
+        }
+    }
+
+    drawMountains(g, w, h) {
+        // Background mountains - dark silhouettes
+        g.fillStyle(0x0a0a1a, 1);
+        g.beginPath();
+        g.moveTo(0, h * 0.55);
+
+        // Mountain 1
+        g.lineTo(w * 0.08, h * 0.38);
+        g.lineTo(w * 0.15, h * 0.42);
+        g.lineTo(w * 0.22, h * 0.35);
+        g.lineTo(w * 0.30, h * 0.44);
+
+        // Mountain 2 (tall)
+        g.lineTo(w * 0.38, h * 0.30);
+        g.lineTo(w * 0.45, h * 0.40);
+        g.lineTo(w * 0.50, h * 0.42);
+
+        // Mountain 3
+        g.lineTo(w * 0.55, h * 0.35);
+        g.lineTo(w * 0.62, h * 0.40);
+        g.lineTo(w * 0.70, h * 0.33);
+        g.lineTo(w * 0.78, h * 0.38);
+
+        // Mountain 4
+        g.lineTo(w * 0.85, h * 0.32);
+        g.lineTo(w * 0.95, h * 0.40);
+        g.lineTo(w, h * 0.38);
+        g.lineTo(w, h * 0.55);
+        g.closePath();
+        g.fillPath();
+
+        // Mountain 2nd layer (slightly lighter)
+        g.fillStyle(0x111122, 0.8);
+        g.beginPath();
+        g.moveTo(0, h * 0.55);
+        g.lineTo(w * 0.10, h * 0.45);
+        g.lineTo(w * 0.25, h * 0.48);
+        g.lineTo(w * 0.35, h * 0.42);
+        g.lineTo(w * 0.50, h * 0.50);
+        g.lineTo(w * 0.65, h * 0.43);
+        g.lineTo(w * 0.80, h * 0.48);
+        g.lineTo(w * 0.90, h * 0.42);
+        g.lineTo(w, h * 0.46);
+        g.lineTo(w, h * 0.55);
+        g.closePath();
+        g.fillPath();
+    }
+
     drawFloatingIsland(g, x, y, scale) {
-        // Magic glow
-        g.fillStyle(0x6644aa, 0.15);
-        g.fillCircle(x, y + 15 * scale, 40 * scale);
+        const s = scale;
 
-        // Island body
-        g.fillStyle(0x3a2a1a, 1);
-        g.fillTriangle(
-            x, y - 20 * scale,
-            x - 40 * scale, y + 10 * scale,
-            x + 40 * scale, y + 10 * scale
-        );
+        // Magic glow under island
+        g.fillStyle(0x6633aa, 0.08);
+        g.fillEllipse(x, y + 30 * s, 120 * s, 30 * s);
 
-        // Grass top
-        g.fillStyle(0x2d6a2d, 1);
-        g.fillRect(x - 35 * scale, y - 20 * scale, 70 * scale, 6 * scale);
+        // Floating rocks underneath
+        g.fillStyle(0x1a1020, 1);
+        g.fillTriangle(x, y + 50 * s, x - 30 * s, y + 15 * s, x + 30 * s, y + 15 * s);
+        g.fillStyle(0x2a1a30, 1);
+        g.fillTriangle(x + 10 * s, y + 40 * s, x - 15 * s, y + 20 * s, x + 35 * s, y + 20 * s);
 
-        // Trees
-        this.drawMiniTree(g, x - 20 * scale, y - 25 * scale, scale * 0.5);
-        this.drawMiniTree(g, x + 15 * scale, y - 22 * scale, scale * 0.4);
+        // Island top (grass/earth)
+        g.fillStyle(0x1a3a1a, 1);
+        g.fillRect(x - 55 * s, y - 5 * s, 110 * s, 12 * s);
+        g.fillStyle(0x2d5a2d, 1);
+        g.fillRect(x - 50 * s, y - 8 * s, 100 * s, 8 * s);
+
+        // Castle/Building on island
+        this.drawCastle(g, x, y - 8 * s, s);
+
+        // Trees on island
+        this.drawIslandTree(g, x - 42 * s, y - 12 * s, s * 0.7);
+        this.drawIslandTree(g, x + 38 * s, y - 10 * s, s * 0.5);
+        this.drawIslandTree(g, x + 25 * s, y - 10 * s, s * 0.6);
     }
 
-    drawMiniTree(g, x, y, s) {
-        g.fillStyle(0x5C3317, 1);
-        g.fillRect(x - 2, y - 8 * s, 4, 12 * s);
-        g.fillStyle(0x1a6b1a, 1);
-        g.fillCircle(x, y - 15 * s, 10 * s);
-        g.fillStyle(0x228B22, 0.8);
-        g.fillCircle(x - 5 * s, y - 12 * s, 7 * s);
-        g.fillCircle(x + 5 * s, y - 12 * s, 7 * s);
+    drawCastle(g, x, y, s) {
+        // Main tower
+        g.fillStyle(0x334466, 1);
+        g.fillRect(x - 8 * s, y - 35 * s, 16 * s, 30 * s);
+
+        // Tower top (pointed)
+        g.fillStyle(0x445577, 1);
+        g.fillTriangle(x - 10 * s, y - 35 * s, x + 10 * s, y - 35 * s, x, y - 50 * s);
+
+        // Side walls
+        g.fillStyle(0x2a3a55, 1);
+        g.fillRect(x - 20 * s, y - 20 * s, 12 * s, 15 * s);
+        g.fillRect(x + 8 * s, y - 20 * s, 12 * s, 15 * s);
+
+        // Windows (glowing)
+        g.fillStyle(0xffee88, 0.8);
+        g.fillRect(x - 4 * s, y - 28 * s, 3 * s, 4 * s);
+        g.fillRect(x + 1 * s, y - 28 * s, 3 * s, 4 * s);
+
+        g.fillStyle(0xffee88, 0.6);
+        g.fillRect(x - 17 * s, y - 16 * s, 3 * s, 3 * s);
+        g.fillRect(x + 14 * s, y - 16 * s, 3 * s, 3 * s);
     }
 
-    drawPortal(g, x, y) {
-        // Outer glow
-        g.fillStyle(0x8844ff, 0.1);
-        g.fillCircle(x, y, 70);
+    drawIslandTree(g, x, y, s) {
+        g.fillStyle(0x2a1a10, 1);
+        g.fillRect(x - 2 * s, y - 5 * s, 4 * s, 8 * s);
+        g.fillStyle(0x1a4a1a, 1);
+        g.fillCircle(x, y - 12 * s, 10 * s);
+        g.fillStyle(0x226622, 0.8);
+        g.fillCircle(x - 4 * s, y - 10 * s, 7 * s);
+    }
 
-        // Outer ring
-        g.lineStyle(4, 0x9966ff, 0.6);
-        g.strokeCircle(x, y, 45);
-        g.lineStyle(2, 0xcc88ff, 0.8);
-        g.strokeCircle(x, y, 40);
+    drawSmallIsland(g, x, y, scale) {
+        const s = scale;
+        g.fillStyle(0x6633aa, 0.06);
+        g.fillEllipse(x, y + 15 * s, 60 * s, 15 * s);
 
-        // Inner portal
-        for (let i = 0; i < 15; i++) {
-            const angle = (i / 15) * Math.PI * 2;
-            const radius = Phaser.Math.Between(5, 35);
-            const px = x + Math.cos(angle) * radius;
-            const py = y + Math.sin(angle) * radius;
-            const colors = [0x8844ff, 0xaa66ff, 0xcc88ff, 0xffaaee, 0x9966ff];
-            g.fillStyle(colors[Phaser.Math.Between(0, 4)], Phaser.Math.FloatBetween(0.3, 0.8));
-            g.fillRect(px - 2, py - 2, 4, 4);
+        g.fillStyle(0x1a1020, 1);
+        g.fillTriangle(x, y + 25 * s, x - 20 * s, y + 8 * s, x + 20 * s, y + 8 * s);
+
+        g.fillStyle(0x1a3a1a, 1);
+        g.fillRect(x - 18 * s, y, 36 * s, 6 * s);
+        g.fillStyle(0x2d5a2d, 1);
+        g.fillRect(x - 15 * s, y - 3 * s, 30 * s, 5 * s);
+
+        this.drawIslandTree(g, x, y - 5 * s, s * 0.5);
+    }
+
+    drawPortal(g, cx, cy, w, h) {
+        const portalH = Math.min(h * 0.55, 350);
+        const portalW = portalH * 0.65;
+
+        // --- Outer glow aura ---
+        g.fillStyle(0x3322aa, 0.04);
+        g.fillCircle(cx, cy, portalW * 0.8);
+        g.fillStyle(0x5533cc, 0.06);
+        g.fillCircle(cx, cy, portalW * 0.65);
+
+        // --- Outer energy ring ---
+        g.lineStyle(3, 0x6644dd, 0.4);
+        g.strokeCircle(cx, cy, portalW * 0.55);
+        g.lineStyle(2, 0x8866ee, 0.3);
+        g.strokeCircle(cx, cy, portalW * 0.6);
+
+        // --- Main portal body (tall oval / egg shape) ---
+        // Draw as filled vertical ellipse
+        g.fillStyle(0x110022, 0.95);
+        g.fillEllipse(cx, cy, portalW * 0.5, portalH * 0.7);
+
+        // Inner gradient rings
+        g.fillStyle(0x220044, 0.6);
+        g.fillEllipse(cx, cy, portalW * 0.42, portalH * 0.6);
+        g.fillStyle(0x330066, 0.5);
+        g.fillEllipse(cx, cy, portalW * 0.34, portalH * 0.5);
+        g.fillStyle(0x440088, 0.4);
+        g.fillEllipse(cx, cy, portalW * 0.25, portalH * 0.4);
+        g.fillStyle(0x5500aa, 0.3);
+        g.fillEllipse(cx, cy, portalW * 0.15, portalH * 0.3);
+
+        // --- Swirling energy particles inside ---
+        for (let i = 0; i < 60; i++) {
+            const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+            const dist = Phaser.Math.FloatBetween(0, 1);
+            const rx = portalW * 0.2 * dist;
+            const ry = portalH * 0.3 * dist;
+            const px = cx + Math.cos(angle) * rx;
+            const py = cy + Math.sin(angle) * ry;
+            const colors = [0x7744dd, 0x9966ff, 0xaa88ff, 0xccaaff, 0xff88cc, 0xff66aa];
+            const alpha = Phaser.Math.FloatBetween(0.2, 0.8);
+            const size = Phaser.Math.Between(1, 4);
+            g.fillStyle(colors[Phaser.Math.Between(0, 5)], alpha);
+            g.fillCircle(px, py, size);
         }
 
-        // Center light
-        g.fillStyle(0xccaaff, 0.3);
-        g.fillCircle(x, y, 20);
-        g.fillStyle(0xffffff, 0.15);
-        g.fillCircle(x, y, 10);
+        // --- Bright energy edge ---
+        g.lineStyle(2, 0x9977ff, 0.6);
+        g.strokeEllipse(cx, cy, portalW * 0.52, portalH * 0.72);
+        g.lineStyle(1, 0xbb99ff, 0.4);
+        g.strokeEllipse(cx, cy, portalW * 0.48, portalH * 0.68);
 
-        // Magic particles around portal
+        // --- Light beam from top ---
+        g.fillStyle(0x8866cc, 0.08);
+        g.fillTriangle(cx, cy - portalH * 0.35, cx - 30, 0, cx + 30, 0);
+
+        // --- Energy sparks around portal ---
+        for (let i = 0; i < 20; i++) {
+            const angle = (i / 20) * Math.PI * 2;
+            const dist = portalW * 0.35 + Phaser.Math.FloatBetween(-5, 15);
+            const px = cx + Math.cos(angle) * dist;
+            const py = cy + Math.sin(angle) * dist * 1.3;
+            g.fillStyle(0xaa88ff, Phaser.Math.FloatBetween(0.2, 0.6));
+            g.fillRect(px - 1, py - 1, 3, 3);
+        }
+
+        // --- Floating magic symbols around portal ---
+        const symbols = ['✦', '◆', '⬡'];
         for (let i = 0; i < 8; i++) {
-            const angle = (i / 8) * Math.PI * 2 + 0.3;
-            const dist = 50;
-            const px = x + Math.cos(angle) * dist;
-            const py = y + Math.sin(angle) * dist;
-            g.fillStyle(0xcc88ff, Phaser.Math.FloatBetween(0.2, 0.6));
-            g.fillRect(px - 2, py - 2, 4, 4);
+            const angle = (i / 8) * Math.PI * 2 + 0.4;
+            const dist = portalW * 0.55;
+            const px = cx + Math.cos(angle) * dist;
+            const py = cy + Math.sin(angle) * dist * 1.3;
+            g.fillStyle(0xccaaee, Phaser.Math.FloatBetween(0.15, 0.35));
+            g.fillCircle(px, py, 2);
+        }
+    }
+
+    drawGround(g, w, h) {
+        const groundY = h * 0.72;
+
+        // Main ground
+        g.fillStyle(0x0d1a0d, 1);
+        g.fillRect(0, groundY, w, h - groundY);
+
+        // Ground top edge (grass)
+        g.fillStyle(0x1a3a1a, 1);
+        g.fillRect(0, groundY, w, 6);
+
+        // Grass details
+        for (let i = 0; i < 60; i++) {
+            const gx = Phaser.Math.Between(0, w);
+            const gy = Phaser.Math.Between(Math.floor(groundY), Math.floor(h));
+            const colors = [0x1a3a1a, 0x1d4020, 0x153015, 0x203820];
+            g.fillStyle(colors[Phaser.Math.Between(0, 3)], Phaser.Math.FloatBetween(0.3, 0.7));
+            g.fillRect(gx, gy, Phaser.Math.Between(2, 8), 2);
+        }
+
+        // Magic sparkles on ground
+        for (let i = 0; i < 15; i++) {
+            const gx = Phaser.Math.Between(0, w);
+            const gy = Phaser.Math.Between(Math.floor(groundY), Math.floor(h));
+            g.fillStyle(0x8866cc, Phaser.Math.FloatBetween(0.1, 0.3));
+            g.fillRect(gx, gy, 2, 2);
         }
     }
 
     /* =============================================
-     *  MENU BUTTONS
+     *  BUTTONS
      * ============================================= */
-    createButton(x, y, data, btnWidth, btnHeight, btnSize, index) {
+    createButton(x, y, data, btnW, btnH, fontSize, index) {
         const container = this.add.container(x, y + 300).setDepth(20).setAlpha(0);
 
-        // Button background
         const bg = this.add.graphics();
-        this.drawButton(bg, btnWidth, btnHeight, data.enabled, false);
+        this.drawBtnBg(bg, btnW, btnH, data.enabled, false);
         container.add(bg);
 
-        // Label
         const label = this.add.text(0, 0, data.label, {
-            fontSize: btnSize,
+            fontSize: fontSize,
             fontFamily: 'Arial, sans-serif',
-            color: data.enabled ? '#fff8e7' : '#666666',
+            color: data.enabled ? '#e8e0ff' : '#555555',
             fontStyle: 'bold'
         }).setOrigin(0.5);
         container.add(label);
 
-        // Disabled note for Continue
-        let disabledLabel = null;
-        if (data.action === 'continue' && data.enabled === false) {
-            disabledLabel = this.add.text(0, btnHeight/2 + 8, 'Belum ada Save Game.', {
-                fontSize: '11px',
-                fontFamily: 'Arial, sans-serif',
-                color: '#888',
-                fontStyle: 'italic'
+        if (!data.enabled) {
+            const note = this.add.text(0, btnH/2 + 8, 'Belum ada Save Game.', {
+                fontSize: '10px', fontFamily: 'Arial, sans-serif',
+                color: '#777', fontStyle: 'italic'
             }).setOrigin(0.5);
-            container.add(disabledLabel);
+            container.add(note);
         }
 
         if (data.enabled) {
-            const hitArea = this.add.rectangle(0, 0, btnWidth, btnHeight, 0x000000, 0)
+            const hit = this.add.rectangle(0, 0, btnW, btnH, 0, 0)
                 .setInteractive({ useHandCursor: true });
-            container.add(hitArea);
+            container.add(hit);
 
-            hitArea.on('pointerover', () => {
-                this.tweens.add({ targets: container, scaleX: 1.06, scaleY: 1.06, duration: 120, ease: 'Power2' });
+            hit.on('pointerover', () => {
+                this.tweens.add({ targets: container, scaleX: 1.06, scaleY: 1.06, duration: 100 });
                 bg.clear();
-                this.drawButton(bg, btnWidth, btnHeight, true, true);
-                label.setColor('#ffdd77');
+                this.drawBtnBg(bg, btnW, btnH, true, true);
+                label.setColor('#ffdd88');
             });
 
-            hitArea.on('pointerout', () => {
-                this.tweens.add({ targets: container, scaleX: 1, scaleY: 1, duration: 120, ease: 'Power2' });
+            hit.on('pointerout', () => {
+                this.tweens.add({ targets: container, scaleX: 1, scaleY: 1, duration: 100 });
                 bg.clear();
-                this.drawButton(bg, btnWidth, btnHeight, true, false);
-                label.setColor('#fff8e7');
+                this.drawBtnBg(bg, btnW, btnH, true, false);
+                label.setColor('#e8e0ff');
             });
 
-            hitArea.on('pointerdown', () => {
+            hit.on('pointerdown', () => {
                 this.playClick();
                 this.tweens.add({
                     targets: container, scaleX: 0.95, scaleY: 0.95,
-                    duration: 60, yoyo: true, ease: 'Power2',
-                    onComplete: () => { this.handleClick(data.action); }
+                    duration: 50, yoyo: true,
+                    onComplete: () => this.handleClick(data.action)
                 });
             });
         }
@@ -305,74 +450,72 @@ class MainMenuScene extends Phaser.Scene {
         return container;
     }
 
-    drawButton(g, w, h, enabled, hovered) {
-        const r = Math.min(12, w * 0.04);
-        const bgColor = enabled ? (hovered ? 0x4a2a5a : 0x2a1a3a) : 0x222222;
-        const borderColor = enabled ? (hovered ? 0xcc88ff : 0x8844cc) : 0x444444;
-        const alpha = enabled ? 0.92 : 0.6;
+    drawBtnBg(g, w, h, enabled, hovered) {
+        const r = 10;
+        const bg = enabled ? (hovered ? 0x3a2a5a : 0x1a1030) : 0x1a1a1a;
+        const border = enabled ? (hovered ? 0xaa88ee : 0x5544aa) : 0x333333;
+        const a = enabled ? 0.9 : 0.5;
 
-        g.fillStyle(borderColor, alpha);
-        g.fillRoundedRect(-w/2 - 2, -h/2 - 2, w + 4, h + 4, r + 1);
-        g.fillStyle(bgColor, alpha);
+        g.fillStyle(border, a);
+        g.fillRoundedRect(-w/2-2, -h/2-2, w+4, h+4, r+2);
+        g.fillStyle(bg, a);
         g.fillRoundedRect(-w/2, -h/2, w, h, r);
-        g.fillStyle(0xffffff, enabled ? 0.06 : 0.02);
-        g.fillRoundedRect(-w/2 + 2, -h/2 + 2, w - 4, h/2 - 2, Math.max(r-1, 3));
+
+        if (enabled) {
+            g.fillStyle(0xffffff, 0.04);
+            g.fillRoundedRect(-w/2+2, -h/2+2, w-4, h/2, r-1);
+        }
     }
 
     /* =============================================
-     *  BUTTON ACTIONS
+     *  ACTIONS
      * ============================================= */
     handleClick(action) {
-        switch (action) {
-            case 'newGame': this.showNewGamePopup(); break;
-            case 'settings': this.showSettingsPopup(); break;
-            case 'exit': this.showExitPopup(); break;
-        }
+        if (action === 'newGame') this.showNewGamePopup();
+        else if (action === 'settings') this.showSettingsPopup();
+        else if (action === 'exit') this.showExitPopup();
     }
 
     showNewGamePopup() {
         const cx = this.cameras.main.centerX;
         const cy = this.cameras.main.centerY;
-        const w = this.cameras.main.width;
+        const pw = Math.min(440, this.cameras.main.width - 30);
 
         this.dimOverlay.setAlpha(0.6);
-        const popupW = Math.min(440, w - 40);
-
         const popup = this.add.container(cx, cy).setDepth(200).setAlpha(0);
 
         const bg = this.add.graphics();
-        bg.fillStyle(0x1a0a2e, 0.97);
-        bg.fillRoundedRect(-popupW/2, -70, popupW, 140, 16);
-        bg.lineStyle(2, 0x8844cc);
-        bg.strokeRoundedRect(-popupW/2, -70, popupW, 140, 16);
+        bg.fillStyle(0x100020, 0.97);
+        bg.fillRoundedRect(-pw/2, -65, pw, 130, 14);
+        bg.lineStyle(2, 0x6644aa);
+        bg.strokeRoundedRect(-pw/2, -65, pw, 130, 14);
         popup.add(bg);
 
-        const msg = this.add.text(0, -15, '🎭 Character Creator akan\ndibuat pada Prompt #3', {
-            fontSize: '20px', fontFamily: 'Arial, sans-serif',
-            color: '#fff', align: 'center'
-        }).setOrigin(0.5);
-        popup.add(msg);
+        popup.add(this.add.text(0, -20, '🎭 Character Creator akan\ndibuat pada Prompt #3', {
+            fontSize: '18px', fontFamily: 'Arial', color: '#fff', align: 'center'
+        }).setOrigin(0.5));
 
-        const btnOk = this.add.rectangle(0, 45, 100, 35, 0x8844cc, 1)
+        const okBg = this.add.graphics();
+        okBg.fillStyle(0x6644aa, 1);
+        okBg.fillRoundedRect(-45, 30, 90, 32, 6);
+        popup.add(okBg);
+
+        popup.add(this.add.text(0, 46, 'OK', {
+            fontSize: '16px', fontFamily: 'Arial', color: '#fff', fontStyle: 'bold'
+        }).setOrigin(0.5));
+
+        const okHit = this.add.rectangle(0, 46, 90, 32, 0, 0)
             .setInteractive({ useHandCursor: true });
-        popup.add(btnOk);
-        const txtOk = this.add.text(0, 45, 'OK', {
-            fontSize: '18px', fontFamily: 'Arial, sans-serif',
-            color: '#fff', fontStyle: 'bold'
-        }).setOrigin(0.5);
-        popup.add(txtOk);
+        popup.add(okHit);
 
-        btnOk.on('pointerover', () => { btnOk.setFillStyle(0xaa66ee); });
-        btnOk.on('pointerout', () => { btnOk.setFillStyle(0x8844cc); });
-        btnOk.on('pointerdown', () => {
+        okHit.on('pointerdown', () => {
             this.playClick();
-            this.tweens.add({
-                targets: popup, alpha: 0, duration: 200,
+            this.tweens.add({ targets: popup, alpha: 0, duration: 200,
                 onComplete: () => { popup.destroy(); this.dimOverlay.setAlpha(0); }
             });
         });
 
-        this.tweens.add({ targets: popup, alpha: 1, duration: 300, ease: 'Power2' });
+        this.tweens.add({ targets: popup, alpha: 1, duration: 300 });
     }
 
     showSettingsPopup() {
@@ -380,92 +523,63 @@ class MainMenuScene extends Phaser.Scene {
 
         const cx = this.cameras.main.centerX;
         const cy = this.cameras.main.centerY;
-        const w = this.cameras.main.width;
-        const isMobile = w < 600;
+        const pw = Math.min(480, this.cameras.main.width - 20);
 
         this.dimOverlay.setAlpha(0.6);
-        const popupW = Math.min(500, w - 30);
-        const popupH = isMobile ? 370 : 400;
-
         this.settingsPopup = this.add.container(cx, cy).setDepth(200).setAlpha(0);
 
         const bg = this.add.graphics();
-        bg.fillStyle(0x1a0a2e, 0.97);
-        bg.fillRoundedRect(-popupW/2, -popupH/2, popupW, popupH, 16);
-        bg.lineStyle(2, 0x8844cc);
-        bg.strokeRoundedRect(-popupW/2, -popupH/2, popupW, popupH, 16);
+        bg.fillStyle(0x100020, 0.97);
+        bg.fillRoundedRect(-pw/2, -200, pw, 400, 14);
+        bg.lineStyle(2, 0x6644aa);
+        bg.strokeRoundedRect(-pw/2, -200, pw, 400, 14);
         this.settingsPopup.add(bg);
 
-        const title = this.add.text(0, -popupH/2 + 30, '⚙  Settings', {
-            fontSize: '26px', fontFamily: 'Arial, sans-serif',
-            color: '#fff', fontStyle: 'bold'
-        }).setOrigin(0.5);
-        this.settingsPopup.add(title);
+        this.settingsPopup.add(this.add.text(0, -170, '⚙  Settings', {
+            fontSize: '24px', fontFamily: 'Arial', color: '#fff', fontStyle: 'bold'
+        }).setOrigin(0.5));
 
         const items = [
-            { label: '🔊  Audio',      value: 'ON' },
-            { label: '🎵  Music',      value: 'ON' },
-            { label: '🔈  SFX',        value: 'ON' },
-            { label: '🖥  Fullscreen',  value: 'OFF' },
-            { label: '🌐  Bahasa',     value: 'Indonesia' }
+            { l: '🔊  Audio', v: 'ON' }, { l: '🎵  Music', v: 'ON' },
+            { l: '🔈  SFX', v: 'ON' }, { l: '🖥  Fullscreen', v: 'OFF' },
+            { l: '🌐  Bahasa', v: 'Indonesia' }
         ];
 
-        const itemStartY = -popupH/2 + 70;
         items.forEach((item, i) => {
-            const yPos = itemStartY + i * 55;
-            const label = this.add.text(-popupW/2 + 20, yPos, item.label, {
-                fontSize: '18px', fontFamily: 'Arial, sans-serif',
-                color: '#ccc'
-            }).setOrigin(0, 0.5);
-            this.settingsPopup.add(label);
-
-            const val = this.add.text(popupW/2 - 20, yPos, item.value, {
-                fontSize: '16px', fontFamily: 'Arial, sans-serif',
-                color: '#88cc66', fontStyle: 'bold'
-            }).setOrigin(1, 0.5);
-            this.settingsPopup.add(val);
+            const yy = -120 + i * 55;
+            this.settingsPopup.add(this.add.text(-pw/2 + 20, yy, item.l, {
+                fontSize: '18px', fontFamily: 'Arial', color: '#ccc'
+            }).setOrigin(0, 0.5));
+            this.settingsPopup.add(this.add.text(pw/2 - 20, yy, item.v, {
+                fontSize: '16px', fontFamily: 'Arial', color: '#88cc66', fontStyle: 'bold'
+            }).setOrigin(1, 0.5));
 
             if (i < items.length - 1) {
-                bg.lineStyle(1, 0x333333);
-                bg.lineBetween(-popupW/2 + 20, yPos + 22, popupW/2 - 20, yPos + 22);
+                bg.lineStyle(1, 0x333);
+                bg.lineBetween(-pw/2+20, yy+22, pw/2-20, yy+22);
             }
         });
 
-        // Close
-        const closeBtn = this.add.graphics();
-        closeBtn.fillStyle(0x8844cc, 1);
-        closeBtn.fillRoundedRect(-60, popupH/2 - 50, 120, 38, 8);
-        this.settingsPopup.add(closeBtn);
+        const clBg = this.add.graphics();
+        clBg.fillStyle(0x6644aa, 1);
+        clBg.fillRoundedRect(-50, 152, 100, 34, 6);
+        this.settingsPopup.add(clBg);
+        this.settingsPopup.add(this.add.text(0, 169, '✕  Close', {
+            fontSize: '15px', fontFamily: 'Arial', color: '#fff', fontStyle: 'bold'
+        }).setOrigin(0.5));
 
-        const closeLabel = this.add.text(0, popupH/2 - 31, '✕  Close', {
-            fontSize: '16px', fontFamily: 'Arial, sans-serif',
-            color: '#fff', fontStyle: 'bold'
-        }).setOrigin(0.5);
-        this.settingsPopup.add(closeLabel);
-
-        const closeHit = this.add.rectangle(0, popupH/2 - 31, 120, 38, 0, 0)
+        const clHit = this.add.rectangle(0, 169, 100, 34, 0, 0)
             .setInteractive({ useHandCursor: true });
-        this.settingsPopup.add(closeHit);
+        this.settingsPopup.add(clHit);
+        clHit.on('pointerdown', () => { this.playClick(); this.closeSettings(); });
 
-        closeHit.on('pointerover', () => { closeBtn.clear(); closeBtn.fillStyle(0xaa66ee, 1); closeBtn.fillRoundedRect(-60, popupH/2 - 50, 120, 38, 8); });
-        closeHit.on('pointerout', () => { closeBtn.clear(); closeBtn.fillStyle(0x8844cc, 1); closeBtn.fillRoundedRect(-60, popupH/2 - 50, 120, 38, 8); });
-        closeHit.on('pointerdown', () => {
-            this.playClick();
-            this.closeSettingsPopup();
-        });
-
-        this.tweens.add({ targets: this.settingsPopup, alpha: 1, duration: 300, ease: 'Power2' });
+        this.tweens.add({ targets: this.settingsPopup, alpha: 1, duration: 300 });
     }
 
-    closeSettingsPopup() {
+    closeSettings() {
         if (!this.settingsPopup) return;
-        this.tweens.add({
-            targets: this.settingsPopup, alpha: 0, duration: 200,
-            onComplete: () => {
-                this.settingsPopup.destroy();
-                this.settingsPopup = null;
-                this.dimOverlay.setAlpha(0);
-            }
+        this.tweens.add({ targets: this.settingsPopup, alpha: 0, duration: 200,
+            onComplete: () => { this.settingsPopup.destroy(); this.settingsPopup = null; this.dimOverlay.setAlpha(0); }
         });
     }
 
@@ -474,90 +588,62 @@ class MainMenuScene extends Phaser.Scene {
 
         const cx = this.cameras.main.centerX;
         const cy = this.cameras.main.centerY;
-        const w = this.cameras.main.width;
+        const pw = Math.min(440, this.cameras.main.width - 30);
 
         this.dimOverlay.setAlpha(0.6);
-        const popupW = Math.min(440, w - 30);
-
         this.exitPopup = this.add.container(cx, cy).setDepth(200).setAlpha(0);
 
         const bg = this.add.graphics();
-        bg.fillStyle(0x1a0a2e, 0.97);
-        bg.fillRoundedRect(-popupW/2, -90, popupW, 180, 16);
-        bg.lineStyle(2, 0x8844cc);
-        bg.strokeRoundedRect(-popupW/2, -90, popupW, 180, 16);
+        bg.fillStyle(0x100020, 0.97);
+        bg.fillRoundedRect(-pw/2, -85, pw, 170, 14);
+        bg.lineStyle(2, 0x6644aa);
+        bg.strokeRoundedRect(-pw/2, -85, pw, 170, 14);
         this.exitPopup.add(bg);
 
-        const emoji = this.add.text(0, -55, '🙏', { fontSize: '36px' }).setOrigin(0.5);
-        this.exitPopup.add(emoji);
+        this.exitPopup.add(this.add.text(0, -50, '🙏', { fontSize: '32px' }).setOrigin(0.5));
+        this.exitPopup.add(this.add.text(0, -5, 'Terima kasih telah mencoba\nISEKAI WORLD.', {
+            fontSize: '17px', fontFamily: 'Arial', color: '#fff', align: 'center'
+        }).setOrigin(0.5));
 
-        const msg = this.add.text(0, -5, 'Terima kasih telah mencoba\nISEKAI WORLD.', {
-            fontSize: '18px', fontFamily: 'Arial, sans-serif',
-            color: '#fff', align: 'center'
-        }).setOrigin(0.5);
-        this.exitPopup.add(msg);
+        const clBg = this.add.graphics();
+        clBg.fillStyle(0x6644aa, 1);
+        clBg.fillRoundedRect(-40, 40, 80, 30, 6);
+        this.exitPopup.add(clBg);
+        this.exitPopup.add(this.add.text(0, 55, 'OK', {
+            fontSize: '15px', fontFamily: 'Arial', color: '#fff', fontStyle: 'bold'
+        }).setOrigin(0.5));
 
-        const closeBtn = this.add.graphics();
-        closeBtn.fillStyle(0x8844cc, 1);
-        closeBtn.fillRoundedRect(-55, 45, 110, 35, 8);
-        this.exitPopup.add(closeBtn);
-
-        const closeLabel = this.add.text(0, 63, 'OK', {
-            fontSize: '16px', fontFamily: 'Arial, sans-serif',
-            color: '#fff', fontStyle: 'bold'
-        }).setOrigin(0.5);
-        this.exitPopup.add(closeLabel);
-
-        const closeHit = this.add.rectangle(0, 63, 110, 35, 0, 0)
+        const clHit = this.add.rectangle(0, 55, 80, 30, 0, 0)
             .setInteractive({ useHandCursor: true });
-        this.exitPopup.add(closeHit);
+        this.exitPopup.add(clHit);
+        clHit.on('pointerdown', () => { this.playClick(); this.closeExit(); });
 
-        closeHit.on('pointerover', () => { closeBtn.clear(); closeBtn.fillStyle(0xaa66ee, 1); closeBtn.fillRoundedRect(-55, 45, 110, 35, 8); });
-        closeHit.on('pointerout', () => { closeBtn.clear(); closeBtn.fillStyle(0x8844cc, 1); closeBtn.fillRoundedRect(-55, 45, 110, 35, 8); });
-        closeHit.on('pointerdown', () => {
-            this.playClick();
-            this.closeExitPopup();
-        });
-
-        this.tweens.add({ targets: this.exitPopup, alpha: 1, duration: 300, ease: 'Power2' });
+        this.tweens.add({ targets: this.exitPopup, alpha: 1, duration: 300 });
     }
 
-    closeExitPopup() {
+    closeExit() {
         if (!this.exitPopup) return;
-        this.tweens.add({
-            targets: this.exitPopup, alpha: 0, duration: 200,
-            onComplete: () => {
-                this.exitPopup.destroy();
-                this.exitPopup = null;
-                this.dimOverlay.setAlpha(0);
-            }
+        this.tweens.add({ targets: this.exitPopup, alpha: 0, duration: 200,
+            onComplete: () => { this.exitPopup.destroy(); this.exitPopup = null; this.dimOverlay.setAlpha(0); }
         });
     }
 
     /* =============================================
-     *  ENTRANCE ANIMATION
+     *  ANIMATION
      * ============================================= */
-    playEntranceAnimation(h) {
-        const slideDistance = h < 500 ? 250 : 300;
-
+    playEntrance(h) {
+        const slide = h < 500 ? 220 : 280;
         this.tweens.add({
-            targets: this.titleText, alpha: 1, duration: 1000, ease: 'Power2',
+            targets: this.titleText, alpha: 1, duration: 800, ease: 'Power2',
             onComplete: () => {
-                this.tweens.add({
-                    targets: this.subtitleText, alpha: 1, duration: 500, ease: 'Power2'
-                });
-
+                this.tweens.add({ targets: this.subtitleText, alpha: 1, duration: 400, ease: 'Power2' });
                 this.menuButtons.forEach((btn, i) => {
                     this.tweens.add({
-                        targets: btn, alpha: 1, y: btn.y - slideDistance,
-                        duration: 500, delay: i * 150, ease: 'Back.easeOut'
+                        targets: btn, alpha: 1, y: btn.y - slide,
+                        duration: 450, delay: i * 120, ease: 'Back.easeOut'
                     });
                 });
-
-                this.tweens.add({
-                    targets: this.copyrightText, alpha: 1, duration: 800,
-                    delay: 1000, ease: 'Power2'
-                });
+                this.tweens.add({ targets: this.copyrightText, alpha: 1, duration: 600, delay: 800, ease: 'Power2' });
             }
         });
     }
@@ -565,31 +651,29 @@ class MainMenuScene extends Phaser.Scene {
     /* =============================================
      *  AUDIO
      * ============================================= */
-    initAudio() {
-        this.audioCtx = null;
-    }
+    initAudio() { this.audioCtx = null; }
 
-    getAudioContext() {
-        if (!this.audioCtx) {
-            this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
+    getAudioCtx() {
+        if (!this.audioCtx) this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         return this.audioCtx;
     }
 
     playClick() {
         try {
-            const ctx = this.getAudioContext();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(600, ctx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.06);
-            gain.gain.setValueAtTime(0.1, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
-            osc.start(ctx.currentTime);
-            osc.stop(ctx.currentTime + 0.08);
+            const ctx = this.getAudioCtx();
+            const o = ctx.createOscillator();
+            const gn = ctx.createGain();
+            o.connect(gn); gn.connect(ctx.destination);
+            o.type = 'sine';
+            o.frequency.setValueAtTime(500, ctx.currentTime);
+            o.frequency.exponentialRampToValueAtTime(250, ctx.currentTime + 0.05);
+            gn.gain.setValueAtTime(0.08, ctx.currentTime);
+            gn.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06);
+            o.start(ctx.currentTime); o.stop(ctx.currentTime + 0.06);
         } catch(e) {}
+    }
+
+    update() {
+        // Future: animated portal particles, floating elements, etc.
     }
 }
