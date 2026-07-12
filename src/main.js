@@ -1,15 +1,15 @@
 /**
  * ISEKAI WORLD - Main Configuration
- * Responsive: menyesuaikan ukuran layar perangkat.
+ * Responsive: auto-detect portrait/landscape, adjusts viewport & UI.
  */
 
 const config = {
     type: Phaser.AUTO,
-    width: 960,
-    height: 540,
+    width: window.innerWidth,
+    height: window.innerHeight,
     parent: 'game-container',
     scale: {
-        mode: Phaser.Scale.FIT,
+        mode: Phaser.Scale.RESIZE,
         autoCenter: Phaser.Scale.CENTER_BOTH
     },
     physics: {
@@ -25,4 +25,10 @@ const config = {
 };
 
 const game = new Phaser.Game(config);
-console.log('[Isekai World] Game initialized.');
+
+// Resize handler
+window.addEventListener('resize', () => {
+    game.scale.resize(window.innerWidth, window.innerHeight);
+});
+
+console.log('[Isekai World] Game initialized. Responsive enabled.');
