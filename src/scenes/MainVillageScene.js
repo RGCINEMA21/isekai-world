@@ -59,6 +59,9 @@ class MainVillageScene extends Phaser.Scene {
         this.interactionMgr.setup("main_village", this.TILE);
         this.interactionMgr.setInteractCallback((obj) => this.onObjectInteract(obj));
 
+        // === CLICKABLE BUILDINGS ===
+        this.createBuildingClickZones();
+
         // === AUTO-SAVE ===
         this.setupAutoSave();
 

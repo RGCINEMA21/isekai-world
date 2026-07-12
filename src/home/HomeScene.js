@@ -298,6 +298,7 @@ class HomeScene extends Phaser.Scene {
      *  INTERACTABLES (bed + exit)
      * ============================================= */
     setupInteractables() {
+        this.createClickableZones();
         const D = HomeData;
         const T = this.TILE;
 
@@ -320,6 +321,49 @@ class HomeScene extends Phaser.Scene {
             name: exit.name,
             action: exit.action
         };
+    }
+
+    createClickableZones() {
+        const T = this.TILE;
+        // Bed clickable
+        const bed = this.bedZone;
+        const bedHit = this.add.rectangle(bed.x, bed.y, T * 3, T * 2, 0x000000, 0)
+            .setInteractive({ useHandCursor: true }).setDepth(50);
+        bedHit.on('pointerdown', () => {
+            const dist = Phaser.Math.Distance.Between(this.playerBody.x, this.playerBody.y, bed.x, bed.y);
+            if (dist < bed.radius + 20) {
+                this.doSleep();
+            } else {
+                this.showFloatingText('Dekati kasur dulu!', '#ff8844');
+            }
+        });
+
+        // Exit clickable
+        const ex = this.exitZone;
+        const exHit = this.add.rectangle(ex.x, ex.y, T * 3, T * 3, 0x000000, 0)
+            .setInteractive({ useHandCursor: true }).setDepth(50);
+        exHit.on('pointerdown', () => {
+            const dist = Phaser.Math.Distance.Between(this.playerBody.x, this.playerBody.y, ex.x, ex.y);
+            if (dist < ex.radius + 20) {
+                this.exitHouse();
+            } else {
+                this.showFloatingText('Dekati pintu dulu!', '#ff8844');
+            }
+        });
+    }
+
+    showFloatingText(msg, color) {
+        const w = this.cameras.main.width;
+        const h = this.cameras.main.height;
+        const t = this.add.text(w / 2, h * 0.35, msg, {
+            fontSize: Math.max(11, Math.min(14, w * 0.015)) + 'px',
+            fontFamily: 'Arial', color: color || '#ffffff',
+            fontStyle: 'bold', stroke: '#000', strokeThickness: 3
+        }).setOrigin(0.5).setDepth(300).setScrollFactor(0);
+        this.tweens.add({
+            targets: t, alpha: 0, y: t.y - 15, duration: 600, delay: 800,
+            onComplete: () => t.destroy()
+        });
     }
 
     findNearestInteractable(px, py) {
