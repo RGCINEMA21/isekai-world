@@ -59,6 +59,17 @@ class MainVillageScene extends Phaser.Scene {
         this.interactionMgr.setup("main_village", this.TILE);
         this.interactionMgr.setInteractCallback((obj) => this.onObjectInteract(obj));
 
+        // === INVENTORY ===
+        this.inventory = InventorySave.load(20);
+        this.invUI = new InventoryUI(this, this.inventory);
+        this.invOpen = false;
+        if (this.inventory.usedSlots() === 0) {
+            this.inventory.addItem('kayu', 10);
+            this.inventory.addItem('pedang', 1);
+            this.inventory.addItem('potion_h', 3);
+            InventorySave.save(this.inventory);
+        }
+
         // === CLICKABLE BUILDINGS ===
         this.createBuildingClickZones();
 
@@ -190,6 +201,13 @@ class MainVillageScene extends Phaser.Scene {
         g.lineStyle(2, 0xff4444, 0.3);
         g.strokeCircle(aX, aY, 35);
 
+                // Inventory button (top right)
+        const ivBtX = w - 45, ivBtY = 45;
+        g.fillStyle(0x6644aa, 0.15);
+        g.fillCircle(ivBtX, ivBtY, 22);
+        g.lineStyle(2, 0x6644aa, 0.3);
+        g.strokeCircle(ivBtX, ivBtY, 22);
+
         // Interact button (above attack)
         const iX = w - 150, iY = h - 80;
         g.fillStyle(0x44aaff, 0.15);
@@ -201,6 +219,7 @@ class MainVillageScene extends Phaser.Scene {
         const fs = Math.max(9, Math.min(12, w * 0.013)) + 'px';
         this.add.text(jX, jY, '🕹', { fontSize: '20px' }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
         this.add.text(aX, aY, '⚔', { fontSize: '18px' }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
+        this.add.text(ivBtX, ivBtY, '🎒', { fontSize: '16px' }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
         this.add.text(iX, iY, 'E', { fontSize: fs, fontFamily: 'Arial', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
 
         this.touchZones.push(g, 
@@ -210,7 +229,7 @@ class MainVillageScene extends Phaser.Scene {
         );
 
         // Store positions for hit detection
-        this.touchPos = { joystick: { x: jX, y: jY }, attack: { x: aX, y: aY }, interact: { x: iX, y: iY } };
+        this.touchPos = { joystick: { x: jX, y: jY }, attack: { x: aX, y: aY }, interact: { x: iX, y: iY }, inventory: { x: ivBtX, y: ivBtY } };
     }
 
     clearTouchZones() {
@@ -244,6 +263,12 @@ class MainVillageScene extends Phaser.Scene {
         // Check interact zone
         const id = Phaser.Math.Distance.Between(ptr.x, ptr.y, tp.interact.x, tp.interact.y);
         if (id < 35) this.touchInteract = true;
+
+        // Check inventory button
+        if (tp.inventory) {
+            const ivd = Phaser.Math.Distance.Between(ptr.x, ptr.y, tp.inventory.x, tp.inventory.y);
+            if (ivd < 28) this.touchInventory = true;
+        }
     }
 
     onPointerMove(ptr) {
@@ -259,6 +284,7 @@ class MainVillageScene extends Phaser.Scene {
         this.joystick.dy = 0;
         this.touchAttack = false;
         this.touchInteract = false;
+        this.touchInventory = false;
     }
 
     /* =============================================
@@ -558,6 +584,7 @@ class MainVillageScene extends Phaser.Scene {
     saveGame() {
         if (!this.saveData || !this.playerBody) return;
         this.saveData.progress.playerX = this.playerBody.x;
+        if (this.inventory) InventorySave.save(this.inventory);
         this.saveData.progress.playerY = this.playerBody.y;
         try { localStorage.setItem('isekai_world_save', JSON.stringify(this.saveData)); } catch(e) {}
     }
@@ -618,6 +645,22 @@ class MainVillageScene extends Phaser.Scene {
             this.touchInteract = false;
             const target = this.interactionMgr.onInteract();
             if (target) this.onObjectInteract(target);
+        }
+
+        // Inventory toggle
+        if (Phaser.Input.Keyboard.JustDown(this.keys.inventory) || this.touchInventory) {
+            this.touchInventory = false;
+            this.toggleInventory();
+        }
+    }
+
+    toggleInventory() {
+        if (this.invUI.isOpen) {
+            this.invUI.close();
+            this.invOpen = false;
+        } else {
+            this.invUI.open(this.saveData);
+            this.invOpen = true;
         }
     }
 
