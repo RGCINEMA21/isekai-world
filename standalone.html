@@ -2300,11 +2300,11 @@ const HomeData = {
     }
 };
 
-
 /**
- * HomeScene - Interior Rumah pemain.
- * Scene kecil dengan kasur, meja, karpet, pintu keluar.
- * Mendukung: masuk/keluar, tidur (pulihkan HP+Energy), responsive.
+ * HomeScene - Interior Rumah (Static, No Movement).
+ * Klik kasur → tidur → pulihkan HP/Energy → balik ke desa.
+ * Klik pintu → langsung balik ke desa.
+ * Responsive portrait & landscape.
  */
 class HomeScene extends Phaser.Scene {
     constructor() {
@@ -2312,437 +2312,282 @@ class HomeScene extends Phaser.Scene {
     }
 
     create() {
-        const D = HomeData;
-        this.TILE = D.tileSize;
-        this.MAP_W = D.mapW;
-        this.MAP_H = D.mapH;
-        this.PX_W = this.MAP_W * this.TILE;
-        this.PX_H = this.MAP_H * this.TILE;
-
-        // Load save
         this.saveData = this.loadSave();
-
-        // Build interior
-        this.buildInterior();
-
-        // World bounds
-        this.physics.world.setBounds(0, 0, this.PX_W, this.PX_H);
-
-        // Player
-        this.createPlayer();
-
-        // Interaction objects
-        this.interactables = [];
-        this.setupInteractables();
-
-        // Camera
-        this.cameras.main.setBounds(0, 0, this.PX_W, this.PX_H);
-        this.cameras.main.startFollow(this.playerBody, true, 0.12, 0.12);
-        const cw = this.cameras.main.width;
-        const ch = this.cameras.main.height;
-        this.cameras.main.setZoom(Math.min(cw / 200, ch / 160));
-
-        // Input
-        this.cursors = this.input.keyboard.createCursorKeys();
-        this.keys = this.input.keyboard.addKeys({
-            up: 'W', down: 'S', left: 'A', right: 'D',
-            interact: 'E'
-        });
-
-        // Touch state
-        this.joystick = { active: false, startX: 0, startY: 0, dx: 0, dy: 0 };
-        this.touchInteract = false;
-        this.touchInventory = false;
-        this.isPortrait = ch > cw;
-        this.setupTouch();
-
-        // Current interaction target
-        this.currentTarget = null;
-        this.popupContainer = null;
-
-        // Sleeping flag
         this.isSleeping = false;
 
-        // Fade in
+        const w = this.cameras.main.width;
+        const h = this.cameras.main.height;
+
+        this.drawInterior(w, h);
+        this.createInteractiveZones(w, h);
+        this.createUI(w, h);
+
         this.cameras.main.fadeIn(500, 0, 0, 0);
     }
 
     /* =============================================
-     *  INTERIOR MAP
+     *  DRAW INTERIOR (Responsive to screen size)
      * ============================================= */
-    buildInterior() {
-        const D = HomeData;
-        const T = this.TILE;
-        const W = this.MAP_W;
-        const H = this.MAP_H;
+    drawInterior(w, h) {
+        const g = this.add.graphics();
 
-        // Floor
-        this.floorGfx = this.add.graphics().setDepth(0);
-        // Walls
-        this.wallGfx = this.add.graphics().setDepth(1);
-        // Furniture
-        this.furnitureGfx = this.add.graphics().setDepth(2);
+        // Floor - wooden planks
+        g.fillStyle(0x8b7355, 1);
+        g.fillRect(0, 0, w, h);
 
-        // Collision map
-        this.collisionGrid = [];
-        for (let y = 0; y < H; y++) {
-            this.collisionGrid[y] = [];
-            for (let x = 0; x < W; x++) {
-                this.collisionGrid[y][x] = 0; // 0 = walkable
-            }
+        // Wood grain pattern
+        for (let y = 0; y < h; y += 12) {
+            g.lineStyle(1, 0x7a6345, 0.3);
+            g.lineBetween(0, y, w, y);
+        }
+        for (let x = 0; x < w; x += 20) {
+            g.lineStyle(1, 0x6b5535, 0.15);
+            g.lineBetween(x, 0, x, h);
         }
 
-        // --- Floor (wood planks) ---
-        this.floorGfx.fillStyle(0x8b7355, 1);
-        this.floorGfx.fillRect(0, 0, W * T, H * T);
-        // Wood grain lines
-        for (let y = 0; y < H; y++) {
-            this.floorGfx.lineStyle(1, 0x7a6345, 0.3);
-            this.floorGfx.lineBetween(0, y * T, W * T, y * T);
-            for (let x = 0; x < W; x++) {
-                if ((x + y) % 3 === 0) {
-                    this.floorGfx.lineStyle(1, 0x6b5535, 0.15);
-                    this.floorGfx.lineBetween(x * T + 4, y * T, x * T + 4, y * T + T);
-                }
-            }
+        // Back wall
+        const wallH = h * 0.18;
+        g.fillStyle(0x6b4b2a, 1);
+        g.fillRect(0, 0, w, wallH);
+
+        // Wall wood texture
+        for (let x = 0; x < w; x += 30) {
+            g.lineStyle(1, 0x5a3a1a, 0.4);
+            g.lineBetween(x, 0, x, wallH);
         }
 
-        // --- Walls (top & sides) ---
-        // Top wall
-        for (let x = 0; x < W; x++) {
-            this.wallGfx.fillStyle(0x6b4b2a, 1);
-            this.wallGfx.fillRect(x * T, 0, T, T * 2);
-            this.wallGfx.lineStyle(1, 0x5a3a1a, 0.5);
-            this.wallGfx.strokeRect(x * T, 0, T, T * 2);
-            this.setCollision(x, 0, 1);
-            this.setCollision(x, 1, 1);
-        }
-        // Left wall
-        for (let y = 0; y < H; y++) {
-            this.wallGfx.fillStyle(0x6b4b2a, 1);
-            this.wallGfx.fillRect(0, y * T, T, T);
-            this.wallGfx.lineStyle(1, 0x5a3a1a, 0.5);
-            this.wallGfx.strokeRect(0, y * T, T, T);
-            this.setCollision(0, y, 1);
-        }
-        // Right wall
-        for (let y = 0; y < H; y++) {
-            this.wallGfx.fillStyle(0x6b4b2a, 1);
-            this.wallGfx.fillRect((W - 1) * T, y * T, T, T);
-            this.wallGfx.lineStyle(1, 0x5a3a1a, 0.5);
-            this.wallGfx.strokeRect((W - 1) * T, y * T, T, T);
-            this.setCollision(W - 1, y, 1);
-        }
-        // Bottom wall (with door opening)
-        for (let x = 0; x < W; x++) {
-            if (x >= 9 && x <= 11) continue; // door opening
-            this.wallGfx.fillStyle(0x6b4b2a, 1);
-            this.wallGfx.fillRect(x * T, (H - 1) * T, T, T);
-            this.wallGfx.lineStyle(1, 0x5a3a1a, 0.5);
-            this.wallGfx.strokeRect(x * T, (H - 1) * T, T, T);
-            this.setCollision(x, H - 1, 1);
-        }
+        // Wall-floor border
+        g.lineStyle(3, 0x5a3a1a, 0.8);
+        g.lineBetween(0, wallH, w, wallH);
 
-        // --- Window on top wall ---
-        this.wallGfx.fillStyle(0x88bbee, 0.6);
-        this.wallGfx.fillRect(4 * T, 0, T * 2, T);
-        this.wallGfx.lineStyle(2, 0x5a3a1a, 1);
-        this.wallGfx.strokeRect(4 * T, 0, T * 2, T);
-        this.wallGfx.lineBetween(5 * T, 0, 5 * T, T);
+        // Window (center-ish)
+        const winW = w * 0.12;
+        const winH = wallH * 0.7;
+        const winX = w * 0.5 - winW / 2;
+        const winY = wallH * 0.15;
+        g.fillStyle(0x88bbee, 0.7);
+        g.fillRect(winX, winY, winW, winH);
+        // Window frame
+        g.lineStyle(3, 0x5a3a1a, 1);
+        g.strokeRect(winX, winY, winW, winH);
+        g.lineBetween(winX + winW / 2, winY, winX + winW / 2, winY + winH);
+        g.lineBetween(winX, winY + winH / 2, winX + winW, winY + winH / 2);
+        // Sky through window
+        g.fillStyle(0xaaddff, 0.4);
+        g.fillRect(winX + 2, winY + 2, winW / 2 - 3, winH / 2 - 3);
 
-        this.wallGfx.fillStyle(0x88bbee, 0.6);
-        this.wallGfx.fillRect(14 * T, 0, T * 2, T);
-        this.wallGfx.lineStyle(2, 0x5a3a1a, 1);
-        this.wallGfx.strokeRect(14 * T, 0, T * 2, T);
-        this.wallGfx.lineBetween(15 * T, 0, 15 * T, T);
+        // === BED (left side) ===
+        const bedX = w * 0.08;
+        const bedY = wallH + h * 0.05;
+        const bedW = w * 0.3;
+        const bedH = h * 0.35;
 
-        // --- Furniture ---
-        const bed = D.objects.bed;
-        const table = D.objects.table;
-        const chair = D.objects.chair;
-        const carpet = D.objects.carpet;
-        const wardrobe = D.objects.wardrobe;
-        const exit = D.objects.exitDoor;
+        // Bed frame
+        g.fillStyle(0x5a3a1a, 1);
+        g.fillRoundedRect(bedX, bedY, bedW, bedH, 6);
 
-        // Bed
-        this.drawFurniture(bed.tileX, bed.tileY, 3, 2, 0x886644, 0xcc8866, 'Kasur');
-        this.setCollision(bed.tileX, bed.tileY, 1);
-        this.setCollision(bed.tileX + 1, bed.tileY, 1);
-        this.setCollision(bed.tileX + 2, bed.tileY, 1);
-        this.setCollision(bed.tileX, bed.tileY + 1, 1);
-        this.setCollision(bed.tileX + 1, bed.tileY + 1, 1);
-        this.setCollision(bed.tileX + 2, bed.tileY + 1, 1);
+        // Mattress
+        g.fillStyle(0xeeeedd, 0.95);
+        g.fillRoundedRect(bedX + 6, bedY + 6, bedW - 12, bedH - 12, 4);
 
-        // Table
-        this.drawFurniture(table.tileX, table.tileY, 2, 2, 0x6b4b2a, 0x8b6b4a, 'Meja');
-        this.setCollision(table.tileX, table.tileY, 1);
-        this.setCollision(table.tileX + 1, table.tileY, 1);
-        this.setCollision(table.tileX, table.tileY + 1, 1);
-        this.setCollision(table.tileX + 1, table.tileY + 1, 1);
+        // Blanket (blue)
+        g.fillStyle(0x4477aa, 0.8);
+        g.fillRoundedRect(bedX + 6, bedY + bedH * 0.4, bedW - 12, bedH * 0.55, 4);
 
-        // Chair
-        this.drawFurniture(chair.tileX, chair.tileY, 1, 1, 0x5a3a1a, 0x6b4b2a, 'Kursi');
-        this.setCollision(chair.tileX, chair.tileY, 1);
+        // Pillow
+        g.fillStyle(0xffffff, 0.9);
+        g.fillRoundedRect(bedX + 10, bedY + 10, bedW * 0.35, bedH * 0.25, 6);
 
-        // Carpet (decorative, walkable)
-        this.floorGfx.fillStyle(0x884444, 0.5);
-        this.floorGfx.fillRoundedRect(
-            carpet.tileX * T - 4, carpet.tileY * T - 4,
-            T * 3 + 8, T * 2 + 8, 4
-        );
-        this.floorGfx.lineStyle(1, 0xaa6644, 0.5);
-        this.floorGfx.strokeRoundedRect(
-            carpet.tileX * T - 4, carpet.tileY * T - 4,
-            T * 3 + 8, T * 2 + 8, 4
-        );
+        // Bed label
+        this.add.text(bedX + bedW / 2, bedY + bedH + 14, '🛏 Kasur', {
+            fontSize: Math.max(12, Math.min(16, w * 0.018)) + 'px',
+            fontFamily: 'Arial', color: '#ffd700', fontStyle: 'bold',
+            stroke: '#2c1810', strokeThickness: 2
+        }).setOrigin(0.5);
 
-        // Wardrobe
-        this.drawFurniture(wardrobe.tileX, wardrobe.tileY, 2, 2, 0x5a3a1a, 0x6b4b2a, 'Lemari');
-        this.setCollision(wardrobe.tileX, wardrobe.tileY, 1);
-        this.setCollision(wardrobe.tileX + 1, wardrobe.tileY, 1);
-        this.setCollision(wardrobe.tileX, wardrobe.tileY + 1, 1);
-        this.setCollision(wardrobe.tileX + 1, wardrobe.tileY + 1, 1);
+        // === TABLE (center-right) ===
+        const tblX = w * 0.48;
+        const tblY = wallH + h * 0.08;
+        const tblW = w * 0.2;
+        const tblH = h * 0.08;
 
-        // Exit door marker
-        this.floorGfx.fillStyle(0x4a3a2a, 0.6);
-        this.floorGfx.fillRect(exit.tileX * T, exit.tileY * T, T, T);
-        this.floorGfx.lineStyle(2, 0x3a2a10, 1);
-        this.floorGfx.strokeRect(exit.tileX * T, exit.tileY * T, T, T);
-    }
+        g.fillStyle(0x6b4b2a, 1);
+        g.fillRect(tblX, tblY, tblW, tblH);
+        g.lineStyle(2, 0x5a3a1a, 0.6);
+        g.strokeRect(tblX, tblY, tblW, tblH);
+        // Table legs
+        g.fillStyle(0x5a3a1a, 1);
+        g.fillRect(tblX + 4, tblY + tblH, 6, h * 0.12);
+        g.fillRect(tblX + tblW - 10, tblY + tblH, 6, h * 0.12);
 
-    drawFurniture(tx, ty, tw, th, borderColor, fillColor, label) {
-        const T = this.TILE;
-        this.furnitureGfx.fillStyle(fillColor, 1);
-        this.furnitureGfx.fillRect(tx * T, ty * T, tw * T, th * T);
-        this.furnitureGfx.lineStyle(1.5, borderColor, 1);
-        this.furnitureGfx.strokeRect(tx * T, ty * T, tw * T, th * T);
+        // Candle on table
+        g.fillStyle(0xffeecc, 1);
+        g.fillRect(tblX + tblW / 2 - 3, tblY - 12, 6, 12);
+        g.fillStyle(0xffaa33, 0.8);
+        g.fillCircle(tblX + tblW / 2, tblY - 16, 5);
 
-        // Label
-        this.add.text(tx * T + (tw * T) / 2, ty * T + (th * T) / 2, label, {
-            fontSize: '7px', fontFamily: 'Arial', color: '#ffffff',
-            stroke: '#000', strokeThickness: 1
-        }).setOrigin(0.5).setDepth(3);
-    }
+        // === CHAIR ===
+        const chairX = tblX + tblW * 0.35;
+        const chairY = tblY + tblH + h * 0.12;
+        g.fillStyle(0x6b4b2a, 1);
+        g.fillRect(chairX, chairY, w * 0.06, h * 0.05);
+        g.fillRect(chairX, chairY - h * 0.08, w * 0.06, h * 0.08);
 
-    setCollision(x, y, v) {
-        if (x >= 0 && x < this.MAP_W && y >= 0 && y < this.MAP_H)
-            this.collisionGrid[y][x] = v;
-    }
-    getCollision(x, y) {
-        return (x >= 0 && x < this.MAP_W && y >= 0 && y < this.MAP_H) ? this.collisionGrid[y][x] : 1;
+        // === WARDROBE (right side) ===
+        const warX = w * 0.78;
+        const warY = wallH + h * 0.02;
+        const warW = w * 0.14;
+        const warH = h * 0.3;
+
+        g.fillStyle(0x5a3a1a, 1);
+        g.fillRoundedRect(warX, warY, warW, warH, 4);
+        g.lineStyle(2, 0x4a2a0a, 0.6);
+        g.strokeRoundedRect(warX, warY, warW, warH, 4);
+        // Door split
+        g.lineStyle(2, 0x4a2a0a, 0.5);
+        g.lineBetween(warX + warW / 2, warY, warX + warW / 2, warY + warH);
+        // Handles
+        g.fillStyle(0xc9a84c, 1);
+        g.fillCircle(warX + warW / 2 - 6, warY + warH / 2, 3);
+        g.fillCircle(warX + warW / 2 + 6, warY + warH / 2, 3);
+
+        // === CARPET ===
+        const carpX = w * 0.35;
+        const carpY = h * 0.58;
+        const carpW = w * 0.3;
+        const carpH = h * 0.2;
+        g.fillStyle(0x8b2252, 0.6);
+        g.fillRoundedRect(carpX, carpY, carpW, carpH, 8);
+        g.lineStyle(2, 0xc9a84c, 0.4);
+        g.strokeRoundedRect(carpX + 6, carpY + 6, carpW - 12, carpH - 12, 6);
+
+        // === EXIT DOOR (bottom center) ===
+        const doorX = w * 0.42;
+        const doorY = h - h * 0.25;
+        const doorW = w * 0.16;
+        const doorH = h * 0.25;
+
+        g.fillStyle(0x5a3a1a, 1);
+        g.fillRoundedRect(doorX, doorY, doorW, doorH, 4);
+        // Door panel
+        g.fillStyle(0x6b4b2a, 0.8);
+        g.fillRoundedRect(doorX + 6, doorY + 6, doorW - 12, doorH - 18, 3);
+        // Handle
+        g.fillStyle(0xc9a84c, 1);
+        g.fillCircle(doorX + doorW - 14, doorY + doorH / 2, 4);
+
+        // Door label
+        this.add.text(doorX + doorW / 2, doorY + doorH + 12, '🚪 Pintu Keluar', {
+            fontSize: Math.max(12, Math.min(16, w * 0.018)) + 'px',
+            fontFamily: 'Arial', color: '#ffd700', fontStyle: 'bold',
+            stroke: '#2c1810', strokeThickness: 2
+        }).setOrigin(0.5);
+
+        // Warm lighting effect (subtle gradient overlay)
+        const light = this.add.graphics();
+        light.fillStyle(0xffaa44, 0.06);
+        light.fillCircle(w * 0.5, h * 0.3, w * 0.4);
     }
 
     /* =============================================
-     *  PLAYER
+     *  INTERACTIVE ZONES (Clickable)
      * ============================================= */
-    createPlayer() {
-        const D = HomeData;
-        const T = this.TILE;
-        let sx = D.spawnInside.tileX * T;
-        let sy = D.spawnInside.tileY * T;
+    createInteractiveZones(w, h) {
+        const wallH = h * 0.18;
 
-        this.playerBody = this.physics.add.sprite(sx, sy, null);
-        this.playerBody.setVisible(false);
-        this.playerBody.setSize(8, 8);
-        this.playerBody.setOffset(-4, -4);
-        this.playerBody.setCollideWorldBounds(true);
-        this.playerBody.setMaxVelocity(80, 80);
-        this.playerBody.setDamping(true);
-        this.playerBody.setDrag(0.85);
+        // Bed zone (clickable)
+        const bedX = w * 0.08;
+        const bedY = wallH + h * 0.05;
+        const bedW = w * 0.3;
+        const bedH = h * 0.35;
 
-        this.playerGfx = this.add.graphics().setDepth(10);
-        this.facing = 'up';
-        this.isMoving = false;
-        this.animFrame = 0;
-        this.animTimer = 0;
+        this.bedZone = this.add.rectangle(
+            bedX + bedW / 2, bedY + bedH / 2, bedW, bedH, 0x000000, 0
+        ).setInteractive({ useHandCursor: true });
+
+        this.bedZone.on('pointerover', () => this.showBedHint(w, h));
+        this.bedZone.on('pointerout', () => this.hideBedHint());
+        this.bedZone.on('pointerdown', () => this.doSleep());
+
+        // Door zone (clickable)
+        const doorX = w * 0.42;
+        const doorY = h - h * 0.25;
+        const doorW = w * 0.16;
+        const doorH = h * 0.25;
+
+        this.doorZone = this.add.rectangle(
+            doorX + doorW / 2, doorY + doorH / 2, doorW, doorH, 0x000000, 0
+        ).setInteractive({ useHandCursor: true });
+
+        this.doorZone.on('pointerover', () => this.showDoorHint(w, h));
+        this.doorZone.on('pointerout', () => this.hideDoorHint());
+        this.doorZone.on('pointerdown', () => this.exitHouse());
+
+        // Hint text containers
+        this.bedHint = null;
+        this.doorHint = null;
     }
 
-    drawPlayer() {
-        const g = this.playerGfx; g.clear();
-        const px = this.playerBody.x, py = this.playerBody.y;
-        const f = this.facing, m = this.isMoving;
-        const bob = m ? Math.sin(this.animFrame * Math.PI * 0.5) * 0.5 : 0;
-        const y = py + bob;
+    showBedHint(w, h) {
+        this.hideBedHint();
+        const wallH = h * 0.18;
+        const bedY = wallH + h * 0.05;
+        this.bedHint = this.add.text(w * 0.23, bedY - 16, '🛏 Tidur', {
+            fontSize: Math.max(13, Math.min(18, w * 0.02)) + 'px',
+            fontFamily: 'Arial', color: '#ffdd88', fontStyle: 'bold',
+            stroke: '#2c1810', strokeThickness: 3
+        }).setOrigin(0.5).setDepth(50);
 
-        g.fillStyle(0x000000, 0.15); g.fillEllipse(px, py + 7, 10, 4);
-        const step = m && this.animFrame%2===1 ? 1 : 0;
-        const S=0xffcc99,H=0x442200,Sh=0x2266aa,P=0x334466,B=0x3a2a1a;
-
-        g.fillStyle(B,1); g.fillRect(px-3,y+3,2,3+step); g.fillRect(px+1,y+3,2,3-step);
-        g.fillStyle(P,1); g.fillRect(px-3,y-1,2,5); g.fillRect(px+1,y-1,2,5);
-        g.fillStyle(Sh,1); g.fillRect(px-4,y-6,8,6);
-        const arm=m?Math.sin(this.animFrame*Math.PI)*2:0;
-        g.fillStyle(S,1); g.fillRect(px-5,y-4+arm,2,5); g.fillRect(px+3,y-4-arm,2,5);
-        g.fillStyle(S,1); g.fillRect(px-3,y-12,6,7);
-        g.fillStyle(H,1); g.fillRect(px-3,y-13,6,3);
-        if(f==='down'){g.fillRect(px-4,y-12,1,4);g.fillRect(px+3,y-12,1,4);}
-        else if(f==='up'){g.fillRect(px-4,y-13,8,4);}
-        else if(f==='left'){g.fillRect(px-4,y-13,6,3);g.fillRect(px-4,y-11,1,4);}
-        else{g.fillRect(px-2,y-13,6,3);g.fillRect(px+3,y-11,1,4);}
-        if(f!=='up'){
-            g.fillStyle(0xffffff,1);
-            if(f==='down'){g.fillRect(px-2,y-10,2,2);g.fillRect(px+1,y-10,2,2);}
-            else if(f==='left'){g.fillRect(px-3,y-10,2,2);}
-            else{g.fillRect(px+1,y-10,2,2);}
-            g.fillStyle(0x2244aa,1);
-            if(f==='down'){g.fillRect(px-1,y-9,1,1);g.fillRect(px+1,y-9,1,1);}
-            else if(f==='left'){g.fillRect(px-2,y-9,1,1);}
-            else{g.fillRect(px+2,y-9,1,1);}
-        }
+        this.tweens.add({ targets: this.bedHint, y: this.bedHint.y - 5, duration: 600, yoyo: true, repeat: -1 });
     }
+
+    hideBedHint() { if (this.bedHint) { this.bedHint.destroy(); this.bedHint = null; } }
+
+    showDoorHint(w, h) {
+        this.hideDoorHint();
+        const doorY = h - h * 0.25;
+        this.doorHint = this.add.text(w * 0.5, doorY - 14, '🚪 Keluar', {
+            fontSize: Math.max(13, Math.min(18, w * 0.02)) + 'px',
+            fontFamily: 'Arial', color: '#ffdd88', fontStyle: 'bold',
+            stroke: '#2c1810', strokeThickness: 3
+        }).setOrigin(0.5).setDepth(50);
+
+        this.tweens.add({ targets: this.doorHint, y: this.doorHint.y - 5, duration: 600, yoyo: true, repeat: -1 });
+    }
+
+    hideDoorHint() { if (this.doorHint) { this.doorHint.destroy(); this.doorHint = null; } }
 
     /* =============================================
-     *  INTERACTABLES (bed + exit)
-     * ============================================= */
-    setupInteractables() {
-        const D = HomeData;
-        const T = this.TILE;
-
-        // Bed
-        const bed = D.objects.bed;
-        this.bedZone = {
-            x: (bed.tileX + 1) * T,
-            y: (bed.tileY + 2) * T + 8,
-            radius: 40,
-            name: bed.name,
-            action: bed.action
-        };
-
-        // Exit door
-        const exit = D.objects.exitDoor;
-        this.exitZone = {
-            x: exit.tileX * T + T / 2,
-            y: exit.tileY * T + T / 2,
-            radius: 32,
-            name: exit.name,
-            action: exit.action
-        };
-    }
-
-    findNearestInteractable(px, py) {
-        let best = null, bestDist = Infinity;
-        for (const zone of [this.bedZone, this.exitZone]) {
-            const dx = zone.x - px, dy = zone.y - py;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist <= zone.radius && dist < bestDist) {
-                best = zone;
-                bestDist = dist;
-            }
-        }
-        return best;
-    }
-
-    /* =============================================
-     *  POPUP UI
-     * ============================================= */
-    showPopup(zone) {
-        if (this.popupContainer) this.popupContainer.destroy();
-        const pw = this.isPortrait ? 160 : 180;
-        const ph = 44;
-
-        this.popupContainer = this.add.container(0, 0).setDepth(200).setScrollFactor(0);
-
-        const bg = this.add.graphics();
-        bg.fillStyle(0x2c1810, 0.92);
-        bg.fillRoundedRect(-pw/2, -ph/2, pw, ph, 8);
-        bg.lineStyle(1.5, 0xc9a84c, 0.8);
-        bg.strokeRoundedRect(-pw/2, -ph/2, pw, ph, 8);
-        this.popupContainer.add(bg);
-
-        this.popupContainer.add(this.add.text(0, -10, zone.name, {
-            fontSize: '12px', fontFamily: 'Arial', color: '#ffdd88', fontStyle: 'bold'
-        }).setOrigin(0.5));
-
-        const keyHint = this.sys.game.device.input.touch ? '👆 Tekan' : '[E]';
-        this.popupContainer.add(this.add.text(0, 8, keyHint + ' ' + zone.action, {
-            fontSize: '11px', fontFamily: 'Arial', color: '#aaaacc'
-        }).setOrigin(0.5));
-
-        this.popupContainer.setAlpha(0);
-        this.tweens.add({ targets: this.popupContainer, alpha: 1, duration: 150 });
-    }
-
-    hidePopup() {
-        if (this.popupContainer) {
-            this.popupContainer.destroy();
-            this.popupContainer = null;
-        }
-    }
-
-    updatePopupPos(zone) {
-        if (!this.popupContainer) return;
-        const cam = this.cameras.main;
-        const sx = (zone.x - cam.scrollX) * cam.zoom;
-        const sy = (zone.y - cam.scrollY) * cam.zoom;
-        const w = cam.width, h = cam.height;
-        const px = Math.max(90, Math.min(w - 90, sx));
-        let py = sy - 25 * cam.zoom;
-        if (py < 30) py = sy + 25 * cam.zoom;
-        py = Math.max(30, Math.min(h - 30, py));
-        this.popupContainer.setPosition(px, py);
-    }
-
-    /* =============================================
-     *  TOUCH CONTROLS
-     * ============================================= */
-    setupTouch() {
-        if (!this.sys.game.device.input.touch) return;
-        this.input.on('pointerdown', (p) => this.onPtrDown(p));
-        this.input.on('pointermove', (p) => this.onPtrMove(p));
-        this.input.on('pointerup', () => { this.joystick.active = false; this.touchInteract = false; });
-        this.drawTouchZones();
-    }
-
-    drawTouchZones() {
-        if (!this.sys.game.device.input.touch) return;
-        const w = this.cameras.main.width, h = this.cameras.main.height;
-        const g = this.add.graphics().setDepth(200).setScrollFactor(0);
-        // Joystick
-        g.fillStyle(0xffffff, 0.06); g.fillCircle(80, h - 90, 45);
-        g.lineStyle(1, 0xffffff, 0.12); g.strokeCircle(80, h - 90, 45);
-        // Interact
-        g.fillStyle(0x44aaff, 0.12); g.fillCircle(w - 70, h - 90, 30);
-        g.lineStyle(2, 0x44aaff, 0.25); g.strokeCircle(w - 70, h - 90, 30);
-
-        this.touchPositions = { joystick: { x: 80, y: h - 90 }, interact: { x: w - 70, y: h - 90 } };
-
-        this.add.text(80, h - 90, '🕹', { fontSize: '18px' }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
-        this.add.text(w - 70, h - 90, 'E', { fontSize: '13px', fontFamily: 'Arial', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
-    }
-
-    onPtrDown(ptr) {
-        if (!this.touchPositions) return;
-        const tp = this.touchPositions;
-        if (Phaser.Math.Distance.Between(ptr.x, ptr.y, tp.joystick.x, tp.joystick.y) < 55) {
-            this.joystick.active = true;
-            this.joystick.startX = ptr.x; this.joystick.startY = ptr.y;
-        }
-        if (Phaser.Math.Distance.Between(ptr.x, ptr.y, tp.interact.x, tp.interact.y) < 35) {
-            this.touchInteract = true;
-        }
-    }
-    onPtrMove(ptr) {
-        if (this.joystick.active) {
-            this.joystick.dx = ptr.x - this.joystick.startX;
-            this.joystick.dy = ptr.y - this.joystick.startY;
-        }
-    }
-
-    /* =============================================
-     *  SLEEP SYSTEM
+     *  SLEEP
      * ============================================= */
     doSleep() {
         if (this.isSleeping) return;
         this.isSleeping = true;
-        this.hidePopup();
-        this.playerBody.setVelocity(0, 0);
 
-        const D = HomeData.sleep;
+        const w = this.cameras.main.width;
+        const h = this.cameras.main.height;
+        this.hideBedHint();
+        this.hideDoorHint();
 
-        // Fade out
-        this.cameras.main.fadeOut(D.fadeOutTime, 0, 0, 0);
+        // Disable interactions
+        this.bedZone.disableInteractive();
+        this.doorZone.disableInteractive();
 
-        this.time.delayedCall(D.fadeOutTime + D.waitTime, () => {
+        // Dim overlay
+        const dim = this.add.rectangle(w / 2, h / 2, w, h, 0x000000, 0).setDepth(100);
+        this.tweens.add({ targets: dim, alpha: 0.85, duration: 800 });
+
+        // "Tidur..." text
+        const sleepText = this.add.text(w / 2, h * 0.4, '💤 Tidur...', {
+            fontSize: Math.max(18, Math.min(28, w * 0.03)) + 'px',
+            fontFamily: 'Georgia, serif', color: '#ffd700', fontStyle: 'bold',
+            stroke: '#2c1810', strokeThickness: 3
+        }).setOrigin(0.5).setDepth(110).setAlpha(0);
+
+        this.tweens.add({ targets: sleepText, alpha: 1, duration: 600, delay: 400 });
+
+        // After sleep animation
+        this.time.delayedCall(2500, () => {
             // Restore HP & Energy
             if (this.saveData && this.saveData.stats) {
                 this.saveData.stats.hp = this.saveData.stats.maxHp;
@@ -2750,28 +2595,17 @@ class HomeScene extends Phaser.Scene {
             }
             this.saveGame();
 
-            // Fade in
-            this.cameras.main.fadeIn(D.fadeInTime, 0, 0, 0);
+            // Show recovery message
+            sleepText.setText('✨ HP dan Energy telah dipulihkan!');
 
-            this.time.delayedCall(D.fadeInTime + 200, () => {
-                this.showNotification('HP dan Energy telah dipulihkan.');
-                this.isSleeping = false;
+            // Fade back in
+            this.tweens.add({ targets: dim, alpha: 0, duration: 800, delay: 500 });
+
+            this.time.delayedCall(2000, () => {
+                dim.destroy();
+                sleepText.destroy();
+                this.exitHouse();
             });
-        });
-    }
-
-    showNotification(text) {
-        const w = this.cameras.main.width;
-        const h = this.cameras.main.height;
-        const t = this.add.text(w / 2, h * 0.35, text, {
-            fontSize: Math.max(11, Math.min(14, w * 0.015)) + 'px',
-            fontFamily: 'Arial', color: '#44cc44', fontStyle: 'bold',
-            stroke: '#000', strokeThickness: 3
-        }).setOrigin(0.5).setDepth(300).setScrollFactor(0);
-
-        this.tweens.add({
-            targets: t, alpha: 0, y: t.y - 15, duration: 600, delay: 1500,
-            onComplete: () => t.destroy()
         });
     }
 
@@ -2787,84 +2621,56 @@ class HomeScene extends Phaser.Scene {
     }
 
     /* =============================================
+     *  UI - Title Bar
+     * ============================================= */
+    createUI(w, h) {
+        // Title bar
+        const barH = Math.max(36, h * 0.06);
+        const g = this.add.graphics().setDepth(60);
+        g.fillStyle(0x2c1810, 0.85);
+        g.fillRoundedRect(w / 2 - 100, 8, 200, barH, 8);
+        g.lineStyle(2, 0xc9a84c, 0.6);
+        g.strokeRoundedRect(w / 2 - 100, 8, 200, barH, 8);
+
+        this.add.text(w / 2, 8 + barH / 2, '🏠 Rumah', {
+            fontSize: Math.max(14, Math.min(20, w * 0.022)) + 'px',
+            fontFamily: 'Georgia, serif', color: '#ffd700', fontStyle: 'bold',
+            stroke: '#2c1810', strokeThickness: 2
+        }).setOrigin(0.5).setDepth(61);
+
+        // Player stats bar at bottom
+        if (this.saveData) {
+            const s = this.saveData.stats || {};
+            const barY = h - Math.max(32, h * 0.05) - 8;
+            const statsBg = this.add.graphics().setDepth(60);
+            statsBg.fillStyle(0x2c1810, 0.8);
+            statsBg.fillRoundedRect(8, barY, w - 16, Math.max(28, h * 0.04), 6);
+            statsBg.lineStyle(1, 0xc9a84c, 0.4);
+            statsBg.strokeRoundedRect(8, barY, w - 16, Math.max(28, h * 0.04), 6);
+
+            const fs = Math.max(11, Math.min(14, w * 0.015)) + 'px';
+            const statsText = `❤️ HP: ${s.hp||100}/${s.maxHp||100}   ⚡ Energy: ${s.energy||100}/${s.maxEnergy||100}`;
+            this.add.text(w / 2, barY + Math.max(14, h * 0.02), statsText, {
+                fontSize: fs, fontFamily: 'Arial', color: '#d4c4a0', fontStyle: 'bold'
+            }).setOrigin(0.5).setDepth(61);
+        }
+    }
+
+    /* =============================================
      *  SAVE/LOAD
      * ============================================= */
     saveGame() {
         if (!this.saveData) return;
-        try { localStorage.setItem('isekai_world_save', JSON.stringify(this.saveData)); } catch(e) {}
+        try {
+            localStorage.setItem('isekai_world_save', JSON.stringify(this.saveData));
+        } catch (e) {}
     }
+
     loadSave() {
-        try { const r = localStorage.getItem('isekai_world_save'); return r ? JSON.parse(r) : null; } catch(e) { return null; }
-    }
-
-    /* =============================================
-     *  UPDATE
-     * ============================================= */
-    update(time, delta) {
-        if (this.isSleeping) return;
-
-        // Movement
-        let mx = 0, my = 0;
-        if (this.cursors.left.isDown || this.keys.left.isDown) mx = -1;
-        else if (this.cursors.right.isDown || this.keys.right.isDown) mx = 1;
-        if (this.cursors.up.isDown || this.keys.up.isDown) my = -1;
-        else if (this.cursors.down.isDown || this.keys.down.isDown) my = 1;
-
-        // Touch joystick
-        if (this.joystick.active) {
-            const d = Math.sqrt(this.joystick.dx**2 + this.joystick.dy**2);
-            if (d > 10) {
-                mx = Math.max(-1, Math.min(1, this.joystick.dx / 50));
-                my = Math.max(-1, Math.min(1, this.joystick.dy / 50));
-            }
-        }
-
-        if (mx !== 0 && my !== 0) { const len = Math.sqrt(mx*mx + my*my); mx /= len; my /= len; }
-
-        const spd = 80;
-        let vx = mx * spd, vy = my * spd;
-
-        // Collision
-        const T = this.TILE;
-        const txN = Math.floor((this.playerBody.x + vx * delta/1000) / T);
-        const tyN = Math.floor((this.playerBody.y + vy * delta/1000) / T);
-        const txC = Math.floor(this.playerBody.x / T);
-        const tyC = Math.floor(this.playerBody.y / T);
-        if (this.getCollision(txN, tyC)) vx = 0;
-        if (this.getCollision(txC, tyN)) vy = 0;
-
-        this.playerBody.setVelocity(vx, vy);
-        this.isMoving = (vx !== 0 || vy !== 0);
-
-        if (Math.abs(mx) > 0.1 || Math.abs(my) > 0.1) {
-            if (Math.abs(mx) > Math.abs(my)) this.facing = mx < 0 ? 'left' : 'right';
-            else this.facing = my < 0 ? 'up' : 'down';
-        }
-
-        if (this.isMoving) {
-            this.animTimer += delta;
-            if (this.animTimer >= 150) { this.animTimer = 0; this.animFrame = (this.animFrame+1)%4; }
-        } else { this.animFrame = 0; }
-
-        this.drawPlayer();
-
-        // Interaction check
-        const near = this.findNearestInteractable(this.playerBody.x, this.playerBody.y);
-        if (near) {
-            if (near !== this.currentTarget) { this.currentTarget = near; this.showPopup(near); }
-            this.updatePopupPos(near);
-        } else {
-            if (this.currentTarget) { this.currentTarget = null; this.hidePopup(); }
-        }
-
-        // Interact input
-        if (Phaser.Input.Keyboard.JustDown(this.keys.interact) || this.touchInteract) {
-            if (this.currentTarget) {
-                this.touchInteract = false;
-                if (this.currentTarget === this.bedZone) this.doSleep();
-                else if (this.currentTarget === this.exitZone) this.exitHouse();
-            }
-        }
+        try {
+            const r = localStorage.getItem('isekai_world_save');
+            return r ? JSON.parse(r) : null;
+        } catch (e) { return null; }
     }
 
     shutdown() { this.saveGame(); }
