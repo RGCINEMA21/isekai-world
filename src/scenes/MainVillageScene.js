@@ -281,7 +281,9 @@ class MainVillageScene extends Phaser.Scene {
                 break;
 
             case 'gudang':
-                this.showNotification('📦 Gudang akan dibuka pada Prompt berikutnya.');
+                this.saveGame();
+                this.cameras.main.fadeOut(400, 0, 0, 0);
+                this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('WarehouseScene'));
                 break;
             case 'pertanian':
                 this.showNotification('🌾 Pertanian akan dibuka pada Prompt berikutnya.');
