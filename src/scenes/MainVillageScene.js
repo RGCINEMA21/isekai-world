@@ -90,6 +90,9 @@ class MainVillageScene extends Phaser.Scene {
 
         // Fade in
         this.cameras.main.fadeIn(500, 0, 0, 0);
+
+        // Resize listener
+        this.scale.on("resize", (sz) => this.onResize(sz));
     }
 
     /* =============================================
@@ -450,6 +453,23 @@ class MainVillageScene extends Phaser.Scene {
         }).setOrigin(0.5).setDepth(100).setScrollFactor(0);
         this.uiContainer.add(hint);
         this.tweens.add({ targets: hint, alpha: 0, duration: 1000, delay: 3000 });
+
+        // Inventory button (always visible)
+        const ibX = w - 36, ibY = isP ? h - 50 : 36;
+        const ibBg = this.add.graphics();
+        ibBg.fillStyle(0x6644aa, 0.2);
+        ibBg.fillCircle(ibX, ibY, 22);
+        ibBg.lineStyle(2, 0x6644aa, 0.35);
+        ibBg.strokeCircle(ibX, ibY, 22);
+        this.uiContainer.add(ibBg);
+
+        const ibIcon = this.add.text(ibX, ibY, '🎒', { fontSize: '18px' }).setOrigin(0.5);
+        this.uiContainer.add(ibIcon);
+
+        const ibHit = this.add.rectangle(ibX, ibY, 48, 48, 0x000000, 0)
+            .setInteractive({ useHandCursor: true }).setDepth(101).setScrollFactor(0);
+        ibHit.on('pointerdown', () => this.toggleInventory());
+        this.uiContainer.add(ibHit);
     }
 
     /* =============================================
