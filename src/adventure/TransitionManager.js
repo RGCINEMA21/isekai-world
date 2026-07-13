@@ -23,13 +23,11 @@ class TransitionManager {
         if (this.isTransitioning) return;
         this.isTransitioning = true;
         
-        // Execute callback if provided
         if (callback) callback();
         
-        // Fade out
         this.scene.cameras.main.fadeOut(this.transitionDuration, 0, 0, 0);
         this.scene.cameras.main.once('camerafadeoutcomplete', () => {
-            // Start new scene
+            this.isTransitioning = false;
             this.scene.scene.start(targetScene, data);
         });
     }
@@ -39,10 +37,13 @@ class TransitionManager {
      * @param {Function} callback - Optional callback after fade in
      */
     fadeIn(callback) {
+        this.isTransitioning = false;
         this.scene.cameras.main.fadeIn(this.transitionDuration, 0, 0, 0);
-        this.scene.cameras.main.once('camerafadeincomplete', () => {
-            if (callback) callback();
-        });
+        if (callback) {
+            this.scene.cameras.main.once('camerafadeincomplete', () => {
+                callback();
+            });
+        }
     }
     
     /**
@@ -55,6 +56,7 @@ class TransitionManager {
         
         this.scene.cameras.main.fadeOut(this.transitionDuration, 0, 0, 0);
         this.scene.cameras.main.once('camerafadeoutcomplete', () => {
+            this.isTransitioning = false;
             this.scene.scene.restart(data);
         });
     }
@@ -68,7 +70,7 @@ class TransitionManager {
     }
     
     /**
-     * Reset transition state (call after transition completes).
+     * Reset transition state.
      */
     reset() {
         this.isTransitioning = false;

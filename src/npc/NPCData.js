@@ -3,7 +3,7 @@
  * Setiap NPC berdiri di dekat bangunannya.
  */
 const NPCData = {
-    npcs: [
+    list: [
         { id: 'ibu_asrama',    name: 'Ibu Asrama',     building: 'rumah',       tileX: 30, tileY: 37, shirtColor: 0xcc6688, hairColor: 0x663322, role: 'Ibu' },
         { id: 'penjaga_gudang', name: 'Penjaga Gudang', building: 'gudang',      tileX: 48, tileY: 37, shirtColor: 0x668844, hairColor: 0x333322, role: 'Penjaga' },
         { id: 'petani',        name: 'Petani',          building: 'pertanian',   tileX: 48, tileY: 47, shirtColor: 0x88aa44, hairColor: 0x554422, role: 'Petani' },
@@ -19,7 +19,7 @@ const NPCData = {
         { id: 'ketua_guild',   name: 'Ketua Guild',     building: 'guild',       tileX: 44, tileY: 50, shirtColor: 0x2244aa, hairColor: 0x222222, role: 'Ketua Guild' }
     ],
 
-    get(npcId) { return this.npcs.find(n => n.id === npcId); },
-    getByBuilding(buildingId) { return this.npcs.find(n => n.building === buildingId); },
-    getAll() { return this.npcs; }
+    get(npcId) { return this.list.find(n => n.id === npcId); },
+    getByBuilding(buildingId) { return this.list.find(n => n.building === buildingId); },
+    getAll() { return this.list; }
 };

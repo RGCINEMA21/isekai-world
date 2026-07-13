@@ -10,13 +10,6 @@ class AdventureScene extends Phaser.Scene {
     
     /**
      * Initialize scene with data from previous scene.
-     * @param {Object} data - Scene data
-     * @param {string} data.areaId - Area identifier
-     * @param {string} data.areaName - Area display name
-     * @param {number} data.startX - Player start X position
-     * @param {number} data.startY - Player start Y position
-     * @param {number} data.mapWidth - Map width in tiles
-     * @param {number} data.mapHeight - Map height in tiles
      */
     init(data) {
         this.areaId = data.areaId || 'forest';
@@ -31,7 +24,7 @@ class AdventureScene extends Phaser.Scene {
         // Load save data
         this.saveData = this.loadSave();
         
-        // Create managers
+        // Create manager first
         this.manager = new AdventureManager({
             areaId: this.areaId,
             areaName: this.areaName,
@@ -41,39 +34,43 @@ class AdventureScene extends Phaser.Scene {
             player: this.saveData?.player || {}
         });
         
-        this.camera = new AdventureCamera(this, this.manager);
-        this.ui = new AdventureUI(this, this.manager);
-        this.transition = new TransitionManager(this);
-        
         // Initialize player position
-        const startX = this.startX * this.manager.tileSize;
-        const startY = this.startY * this.manager.tileSize;
-        this.manager.initPlayer(startX, startY);
+        this.manager.initPlayer(this.startX * this.manager.tileSize, this.startY * this.manager.tileSize);
         
-        // Generate map
+        // Generate map (draw the world)
         this.generateMap();
         
-        // Create player graphics
+        // Create player graphics (drawn on top of map)
         this.playerGfx = this.add.graphics().setDepth(10);
         
-        // Initialize camera
-        this.camera.init();
+        // Setup camera AFTER map and player are created
+        this.cam = new AdventureCamera(this, this.manager);
+        this.cam.init();
         
-        // Initialize UI
-        this.ui.init();
-        
-        // Input setup
+        // Setup input
         this.setupInput();
         
-        // Fade in
-        this.transition.fadeIn();
+        // UI
+        this.ui = new AdventureUI(this, this.manager);
+        this.ui.init();
+        
+        // Transition
+        this.transition = new TransitionManager(this);
+        
+        // Auto-save timer
+        this.lastSaveTime = 0;
         
         // Resize handler
         this.scale.on('resize', (sz) => this.onResize(sz));
+        
+        // Fade in with slight delay to ensure rendering
+        this.time.delayedCall(50, () => {
+            this.cameras.main.fadeIn(400, 0, 0, 0);
+        });
     }
     
     /**
-     * Generate the adventure map.
+     * Generate the adventure map using graphics.
      */
     generateMap() {
         const width = this.manager.mapWidth;
@@ -82,33 +79,49 @@ class AdventureScene extends Phaser.Scene {
         
         this.mapGfx = this.add.graphics().setDepth(0);
         
-        // Simple procedural generation
+        // Use a seeded random for consistent tree placement
+        let seed = this.areaId.length * 1337;
+        const seededRandom = () => {
+            seed = (seed * 9301 + 49297) % 233280;
+            return seed / 233280;
+        };
+        
         for (let y = 0; y < height; y++) {
             for (let x = 0; x < width; x++) {
                 const px = x * tileSize;
                 const py = y * tileSize;
                 
-                // Base ground
-                this.mapGfx.fillStyle(0x4a8a3a, 1);
+                // Base ground color based on area type
+                let baseColor = 0x4a8a3a;
+                if (this.areaId === 'tambang') baseColor = 0x8a7a5a;
+                else if (this.areaId === 'memancing') baseColor = 0x3a8a6a;
+                
+                this.mapGfx.fillStyle(baseColor, 1);
                 this.mapGfx.fillRect(px, py, tileSize, tileSize);
                 
-                // Add some variation
+                // Variation
                 const noise = Math.sin(x * 0.5) * Math.cos(y * 0.5);
                 if (noise > 0.3) {
-                    // Tall grass
                     this.mapGfx.fillStyle(0x3a7a2a, 1);
                     this.mapGfx.fillRect(px, py, tileSize, tileSize);
                     this.mapGfx.fillStyle(0x559944, 0.6);
                     this.mapGfx.fillRect(px + 3, py + 5, 2, 8);
                     this.mapGfx.fillRect(px + 9, py + 3, 2, 10);
                 } else if (noise < -0.3) {
-                    // Path
                     this.mapGfx.fillStyle(0x8b7355, 1);
                     this.mapGfx.fillRect(px, py, tileSize, tileSize);
                 }
                 
-                // Random trees (sparse)
-                if (Math.random() < 0.02 && x > 2 && x < width - 2 && y > 2 && y < height - 2) {
+                // Border walls (prevent going out of map)
+                if (x === 0 || y === 0 || x === width - 1 || y === height - 1) {
+                    this.mapGfx.fillStyle(0x5a3a1a, 1);
+                    this.mapGfx.fillRect(px, py, tileSize, tileSize);
+                    this.mapGfx.fillStyle(0x3a2a0a, 0.5);
+                    this.mapGfx.fillRect(px, py, tileSize, tileSize);
+                }
+                
+                // Trees (seeded random)
+                if (seededRandom() < 0.02 && x > 3 && x < width - 3 && y > 3 && y < height - 3) {
                     this.mapGfx.fillStyle(0x5a3a1a, 1);
                     this.mapGfx.fillRect(px + 6, py + 10, 4, 6);
                     this.mapGfx.fillStyle(0x2d7a1e, 1);
@@ -119,16 +132,15 @@ class AdventureScene extends Phaser.Scene {
             }
         }
         
-        // Draw spawn point marker
+        // Spawn marker
         this.mapGfx.fillStyle(0xffaa44, 0.5);
         this.mapGfx.fillCircle(this.startX * tileSize + 8, this.startY * tileSize + 8, 12);
     }
     
     /**
-     * Setup input handlers.
+     * Setup keyboard input.
      */
     setupInput() {
-        // Keyboard input
         this.cursors = this.input.keyboard.createCursorKeys();
         this.keys = this.input.keyboard.addKeys({
             up: 'W',
@@ -136,127 +148,113 @@ class AdventureScene extends Phaser.Scene {
             left: 'A',
             right: 'D'
         });
-        
-        // Touch/joystick placeholder
-        this.touchInput = { x: 0, y: 0 };
     }
     
     /**
      * Get movement velocity from input.
-     * @returns {Object} Velocity vector {x, y}
      */
     getMovementVelocity() {
-        let vx = 0;
-        let vy = 0;
-        
-        // Keyboard input
-        if (this.cursors.left.isDown || this.keys.left.isDown) vx -= 1;
-        if (this.cursors.right.isDown || this.keys.right.isDown) vx += 1;
-        if (this.cursors.up.isDown || this.keys.up.isDown) vy -= 1;
-        if (this.cursors.down.isDown || this.keys.down.isDown) vy += 1;
-        
-        // Touch input (placeholder for virtual joystick)
-        if (this.touchInput.x !== 0 || this.touchInput.y !== 0) {
-            vx += this.touchInput.x;
-            vy += this.touchInput.y;
-        }
-        
-        // Normalize
-        const len = Math.sqrt(vx * vx + vy * vy);
-        if (len > 0) {
-            vx = vx / len;
-            vy = vy / len;
-        }
-        
-        return { x: vx * this.manager.moveSpeed, y: vy * this.manager.moveSpeed };
+        let vx = 0, vy = 0;
+        if (this.cursors.left.isDown || this.keys.left.isDown) vx = -1;
+        else if (this.cursors.right.isDown || this.keys.right.isDown) vx = 1;
+        if (this.cursors.up.isDown || this.keys.up.isDown) vy = -1;
+        else if (this.cursors.down.isDown || this.keys.down.isDown) vy = 1;
+        return { x: vx, y: vy };
     }
     
     /**
-     * Draw the player character.
+     * Draw the player character using placeholder graphics.
      */
     drawPlayer() {
-        const g = this.playerGfx;
-        g.clear();
+        if (!this.playerGfx) return;
+        this.playerGfx.clear();
         
-        const px = this.manager.playerX;
-        const py = this.manager.playerY;
+        const x = Math.round(this.manager.playerX);
+        const y = Math.round(this.manager.playerY);
         const facing = this.manager.facing;
         const moving = this.manager.isMoving;
         const frame = this.manager.animFrame;
         
+        // Get gender colors from save data
+        const gender = this.saveData?.player?.gender || 'male';
+        
         // Character colors
         const skin = 0xffcc99;
-        const hair = 0x442200;
-        const shirt = 0x2266aa;
-        const pants = 0x334466;
+        let hair, shirt;
+        if (gender === 'female') {
+            hair = 0xcc6633;
+            shirt = 0xcc4488;
+        } else {
+            hair = 0x443322;
+            shirt = 0x4466aa;
+        }
+        const pants = 0x444466;
         const boot = 0x3a2a1a;
         
-        // Shadow
-        g.fillStyle(0x000000, 0.2);
-        g.fillEllipse(px, py + 7, 10, 4);
+        const s = 1;
+        const step = moving ? Math.sin(frame * Math.PI) * 2 : 0;
         
-        // Walk bob animation
-        const bob = moving ? Math.sin(frame * Math.PI * 0.5) * 0.5 : 0;
-        const y = py + bob;
+        // Shadow
+        this.playerGfx.fillStyle(0x000000, 0.2);
+        this.playerGfx.fillEllipse(x, y + 12, 14, 5);
         
         // Boots
-        const step = moving && frame % 2 === 1 ? 1 : 0;
-        g.fillStyle(boot, 1);
-        g.fillRect(px - 3, y + 3, 2, 3 + (facing !== 'up' ? step : 0));
-        g.fillRect(px + 1, y + 3, 2, 3 + (facing !== 'up' ? -step : 0));
+        this.playerGfx.fillStyle(boot, 1);
+        this.playerGfx.fillRect(x - 3, y + 3 + (moving && facing !== 'up' ? step : 0), 2, 3);
+        this.playerGfx.fillRect(x + 1, y + 3 + (moving && facing !== 'up' ? -step : 0), 2, 3);
         
         // Pants
-        g.fillStyle(pants, 1);
-        g.fillRect(px - 3, y - 1, 2, 5);
-        g.fillRect(px + 1, y - 1, 2, 5);
+        this.playerGfx.fillStyle(pants, 1);
+        this.playerGfx.fillRect(x - 3, y - 1, 2, 5);
+        this.playerGfx.fillRect(x + 1, y - 1, 2, 5);
         
         // Shirt
-        g.fillStyle(shirt, 1);
-        g.fillRect(px - 4, y - 6, 8, 6);
+        this.playerGfx.fillStyle(shirt, 1);
+        this.playerGfx.fillRect(x - 4, y - 6, 8, 6);
         
         // Arms
         const armSwing = moving ? Math.sin(frame * Math.PI) * 2 : 0;
-        g.fillStyle(skin, 1);
-        g.fillRect(px - 5, y - 4 + armSwing, 2, 5);
-        g.fillRect(px + 3, y - 4 - armSwing, 2, 5);
+        this.playerGfx.fillStyle(skin, 1);
+        this.playerGfx.fillRect(x - 5, y - 4 + armSwing, 2, 5);
+        this.playerGfx.fillRect(x + 3, y - 4 - armSwing, 2, 5);
         
         // Head
-        g.fillStyle(skin, 1);
-        g.fillRect(px - 3, y - 12, 6, 7);
+        this.playerGfx.fillStyle(skin, 1);
+        this.playerGfx.fillRect(x - 3, y - 12, 6, 7);
         
         // Hair
-        g.fillStyle(hair, 1);
-        g.fillRect(px - 3, y - 13, 6, 3);
+        this.playerGfx.fillStyle(hair, 1);
+        this.playerGfx.fillRect(x - 3, y - 13, 6, 3);
         if (facing === 'down') {
-            g.fillRect(px - 4, y - 12, 1, 4);
-            g.fillRect(px + 3, y - 12, 1, 4);
+            this.playerGfx.fillRect(x - 4, y - 12, 1, 4);
+            this.playerGfx.fillRect(x + 3, y - 12, 1, 4);
         } else if (facing === 'up') {
-            g.fillRect(px - 4, y - 13, 8, 4);
+            this.playerGfx.fillRect(x - 4, y - 13, 8, 4);
         } else if (facing === 'left') {
-            g.fillRect(px - 4, y - 13, 6, 3);
-            g.fillRect(px - 4, y - 11, 1, 4);
+            this.playerGfx.fillRect(x - 4, y - 13, 6, 3);
+            this.playerGfx.fillRect(x - 4, y - 11, 1, 4);
         } else {
-            g.fillRect(px - 2, y - 13, 6, 3);
-            g.fillRect(px + 3, y - 11, 1, 4);
+            this.playerGfx.fillRect(x - 2, y - 13, 6, 3);
+            this.playerGfx.fillRect(x + 3, y - 11, 1, 4);
         }
         
         // Eyes
         if (facing !== 'up') {
-            g.fillStyle(0xffffff, 1);
+            this.playerGfx.fillStyle(0xffffff, 1);
             if (facing === 'down') {
-                g.fillRect(px - 2, y - 10, 2, 2);
-                g.fillRect(px + 1, y - 10, 2, 2);
-                g.fillStyle(0x2244aa, 1);
-                g.fillRect(px - 1, y - 9, 1, 1);
-                g.fillRect(px + 1, y - 9, 1, 1);
+                this.playerGfx.fillRect(x - 2, y - 10, 2, 2);
+                this.playerGfx.fillRect(x + 1, y - 10, 2, 2);
+                this.playerGfx.fillStyle(0x2244aa, 1);
+                this.playerGfx.fillRect(x - 1, y - 9, 1, 1);
+                this.playerGfx.fillRect(x + 1, y - 9, 1, 1);
             } else if (facing === 'left') {
-                g.fillRect(px - 3, y - 10, 2, 2);
-                g.fillStyle(0x2244aa, 1);
-                g.fillRect(px - 2, y - 9, 1, 1);
+                this.playerGfx.fillRect(x - 3, y - 10, 2, 2);
+                this.playerGfx.fillStyle(0x2244aa, 1);
+                this.playerGfx.fillRect(x - 2, y - 9, 1, 1);
             } else {
-                g.fillRect(px + 1, y - 10, 2, 2);
-                g.fillStyle(0x2244aa, 1);
-                g.fillRect(px + 2, y - 9, 1, 1);
+                this.playerGfx.fillRect(x + 1, y - 10, 2, 2);
+                this.playerGfx.fillStyle(0x2244aa, 1);
+                this.playerGfx.fillRect(x + 2, y - 9, 1, 1);
             }
         }
     }
@@ -281,40 +279,31 @@ class AdventureScene extends Phaser.Scene {
      * Exit adventure mode and return to village.
      */
     exitAdventure() {
-        // Save current state
         this.saveGame();
-        
-        // Transition back to village
-        this.transition.fadeToScene('MainVillageScene', {}, () => {
-            this.ui.destroy();
+        this.ui.destroy();
+        this.cameras.main.fadeOut(400, 0, 0, 0);
+        this.cameras.main.once('camerafadeoutcomplete', () => {
+            this.scene.start('MainVillageScene');
         });
     }
     
     /**
-     * Save game data.
+     * Save game data to localStorage.
      */
     saveGame() {
         if (!this.saveData) return;
-        
-        // Update save data with current state
-        const playerStats = {
-            hp: this.saveData.stats?.hp || 100,
-            maxHp: this.saveData.stats?.maxHp || 100,
-            energy: this.saveData.stats?.energy || 100,
-            maxEnergy: this.saveData.stats?.maxEnergy || 100,
-            exp: this.saveData.stats?.exp || 0,
-            gold: this.saveData.currency?.gold || 0,
-            diamond: this.saveData.currency?.diamond || 0,
-            playerX: this.manager.playerX,
-            playerY: this.manager.playerY
-        };
-        
-        AdventureSave.saveToMainSave(this.saveData, playerStats);
+        this.saveData.progress = this.saveData.progress || {};
+        this.saveData.progress.playerX = this.manager.playerX;
+        this.saveData.progress.playerY = this.manager.playerY;
+        try {
+            localStorage.setItem('isekai_world_save', JSON.stringify(this.saveData));
+        } catch (e) {
+            console.error('[AdventureScene] Save failed:', e);
+        }
     }
     
     /**
-     * Load save data.
-     * @returns {Object} Save data
+     * Load save data from localStorage.
      */
     loadSave() {
         try {
@@ -327,22 +316,16 @@ class AdventureScene extends Phaser.Scene {
     
     /**
      * Handle screen resize.
-     * @param {Object} size - New size {width, height}
      */
     onResize(size) {
-        this.camera.onResize(size.width, size.height);
-        this.ui.createHUD();
+        if (this.cam) this.cam.onResize(size.width, size.height);
+        if (this.ui) this.ui.createHUD();
     }
     
     /**
-     * Update game logic.
-     * @param {number} time - Current time
-     * @param {number} delta - Time delta
+     * Update game logic every frame.
      */
     update(time, delta) {
-        // Check for transition
-        if (this.transition.isCurrentlyTransitioning()) return;
-        
         // Get movement input
         const velocity = this.getMovementVelocity();
         
@@ -350,13 +333,12 @@ class AdventureScene extends Phaser.Scene {
         this.manager.updateMovement(velocity, delta);
         
         // Update camera
-        this.camera.update(delta);
+        this.cam.update(delta);
         
         // Draw player
         this.drawPlayer();
         
         // Auto-save every 30 seconds
-        if (!this.lastSaveTime) this.lastSaveTime = 0;
         if (time - this.lastSaveTime > 30000) {
             this.saveGame();
             this.lastSaveTime = time;
@@ -369,6 +351,6 @@ class AdventureScene extends Phaser.Scene {
     shutdown() {
         this.saveGame();
         if (this.ui) this.ui.destroy();
-        if (this.invUI) this.invUI.destroy();
+        if (this.invUI) { this.invUI.destroy(); this.invUI = null; }
     }
 }

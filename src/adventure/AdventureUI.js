@@ -4,11 +4,6 @@
  * Responsive: Mobile Portrait & Desktop Landscape.
  */
 class AdventureUI {
-    /**
-     * Create a new AdventureUI.
-     * @param {Phaser.Scene} scene - The scene this UI belongs to
-     * @param {AdventureManager} manager - The adventure manager
-     */
     constructor(scene, manager) {
         this.scene = scene;
         this.manager = manager;
@@ -17,25 +12,18 @@ class AdventureUI {
         this.isPortrait = false;
     }
     
-    /**
-     * Initialize the UI.
-     */
     init() {
         const w = this.scene.cameras.main.width;
         const h = this.scene.cameras.main.height;
         this.isPortrait = h > w;
-        
         this.createHUD();
     }
     
-    /**
-     * Create the main HUD.
-     */
     createHUD() {
         const w = this.scene.cameras.main.width;
         const h = this.scene.cameras.main.height;
+        this.isPortrait = h > w;
         
-        // Destroy existing container
         if (this.container) this.container.destroy();
         
         this.container = this.scene.add.container(0, 0).setDepth(100).setScrollFactor(0);
@@ -82,6 +70,16 @@ class AdventureUI {
         addStat('Gold:', String(currency.gold || 0).replace(/\B(?=(\d{3})+(?!\d))/g, ','), '#ffaa44');
         addStat('Diamond:', String(currency.diamond || 0), '#44ddff');
         
+        // Area name
+        const areaBg = this.scene.add.graphics();
+        areaBg.fillStyle(0x2c1810, 0.8);
+        areaBg.fillRoundedRect(w / 2 - 80, 4, 160, 24, 6);
+        this.container.add(areaBg);
+        
+        this.container.add(this.scene.add.text(w / 2, 16, this.manager.areaName, {
+            fontSize: '12px', fontFamily: 'Arial', color: '#ffd700', fontStyle: 'bold'
+        }).setOrigin(0.5));
+        
         // Inventory button
         this.createInventoryButton(w, h);
         
@@ -89,11 +87,6 @@ class AdventureUI {
         this.createExitButton(w, h);
     }
     
-    /**
-     * Create the inventory button.
-     * @param {number} w - Screen width
-     * @param {number} h - Screen height
-     */
     createInventoryButton(w, h) {
         const ibX = w - 36;
         const ibY = this.isPortrait ? h - 50 : 36;
@@ -114,11 +107,6 @@ class AdventureUI {
         this.container.add(ibHit);
     }
     
-    /**
-     * Create the exit button.
-     * @param {number} w - Screen width
-     * @param {number} h - Screen height
-     */
     createExitButton(w, h) {
         const ebX = w - 36;
         const ebY = this.isPortrait ? h - 100 : 80;
@@ -139,85 +127,59 @@ class AdventureUI {
         this.container.add(ebHit);
     }
     
-    /**
-     * Show exit confirmation popup.
-     */
     showExitConfirm() {
         if (this.confirmPopup) return;
         
         const w = this.scene.cameras.main.width;
         const h = this.scene.cameras.main.height;
         
-        // Dim overlay
-        const dim = this.scene.add.rectangle(w / 2, h / 2, w, h, 0x000000, 0.5).setDepth(200);
+        this.confirmPopup = this.scene.add.container(w / 2, h / 2).setDepth(200).setScrollFactor(0);
         
-        // Popup container
-        this.confirmPopup = this.scene.add.container(w / 2, h / 2).setDepth(201);
+        const bg = this.scene.add.graphics();
+        bg.fillStyle(0x2c1810, 0.95);
+        bg.fillRoundedRect(-130, -55, 260, 110, 12);
+        bg.lineStyle(2, 0xc9a84c, 0.8);
+        bg.strokeRoundedRect(-130, -55, 260, 110, 12);
+        this.confirmPopup.add(bg);
         
-        // Popup background
-        const popupBg = this.scene.add.graphics();
-        popupBg.fillStyle(0x2c1810, 0.95);
-        popupBg.fillRoundedRect(-150, -80, 300, 160, 12);
-        popupBg.lineStyle(3, 0xc9a84c, 0.9);
-        popupBg.strokeRoundedRect(-150, -80, 300, 160, 12);
-        this.confirmPopup.add(popupBg);
-        
-        // Title
-        const titleFs = Math.max(14, Math.min(18, w * 0.018)) + 'px';
-        this.confirmPopup.add(this.scene.add.text(0, -55, '🚪 Kembali ke Desa?', {
-            fontSize: titleFs, fontFamily: 'Georgia, serif', color: '#ffd700', fontStyle: 'bold'
-        }).setOrigin(0.5));
-        
-        // Message
-        const msgFs = Math.max(11, Math.min(14, w * 0.014)) + 'px';
-        this.confirmPopup.add(this.scene.add.text(0, -25, 'Yakin ingin kembali ke Main Village?', {
-            fontSize: msgFs, fontFamily: 'Arial', color: '#d4c4a0'
+        this.confirmPopup.add(this.scene.add.text(0, -30, '🚪 Kembali ke Desa?', {
+            fontSize: '15px', fontFamily: 'Arial', color: '#ffd700', fontStyle: 'bold'
         }).setOrigin(0.5));
         
         // Yes button
         const yesBg = this.scene.add.graphics();
-        yesBg.fillStyle(0x228844, 1);
-        yesBg.fillRoundedRect(-120, 10, 100, 35, 8);
+        yesBg.fillStyle(0x228833, 1);
+        yesBg.fillRoundedRect(-130, 0, 110, 35, 8);
         this.confirmPopup.add(yesBg);
         
-        const yesText = this.scene.add.text(-70, 27, '✓ Ya', {
+        this.confirmPopup.add(this.scene.add.text(-75, 17, '✓ Ya', {
             fontSize: '14px', fontFamily: 'Arial', color: '#ffffff', fontStyle: 'bold'
-        }).setOrigin(0.5);
-        this.confirmPopup.add(yesText);
+        }).setOrigin(0.5));
         
-        const yesHit = this.scene.add.rectangle(-70, 27, 100, 35, 0x000000, 0)
+        const yesHit = this.scene.add.rectangle(-75, 17, 110, 35, 0x000000, 0)
             .setInteractive({ useHandCursor: true });
-        yesHit.on('pointerdown', () => {
-            this.scene.exitAdventure();
-        });
+        yesHit.on('pointerdown', () => this.scene.exitAdventure());
         this.confirmPopup.add(yesHit);
         
         // No button
         const noBg = this.scene.add.graphics();
         noBg.fillStyle(0x882222, 1);
-        noBg.fillRoundedRect(20, 10, 100, 35, 8);
+        noBg.fillRoundedRect(20, 0, 110, 35, 8);
         this.confirmPopup.add(noBg);
         
-        const noText = this.scene.add.text(70, 27, '✕ Tidak', {
+        this.confirmPopup.add(this.scene.add.text(75, 17, '✕ Tidak', {
             fontSize: '14px', fontFamily: 'Arial', color: '#ffffff', fontStyle: 'bold'
-        }).setOrigin(0.5);
-        this.confirmPopup.add(noText);
+        }).setOrigin(0.5));
         
-        const noHit = this.scene.add.rectangle(70, 27, 100, 35, 0x000000, 0)
+        const noHit = this.scene.add.rectangle(75, 17, 110, 35, 0x000000, 0)
             .setInteractive({ useHandCursor: true });
-        noHit.on('pointerdown', () => {
-            this.hideExitConfirm();
-        });
+        noHit.on('pointerdown', () => this.hideExitConfirm());
         this.confirmPopup.add(noHit);
         
-        // Fade in
         this.confirmPopup.setAlpha(0);
         this.scene.tweens.add({ targets: this.confirmPopup, alpha: 1, duration: 200 });
     }
     
-    /**
-     * Hide exit confirmation popup.
-     */
     hideExitConfirm() {
         if (this.confirmPopup) {
             this.scene.tweens.add({
@@ -232,9 +194,6 @@ class AdventureUI {
         }
     }
     
-    /**
-     * Destroy the UI.
-     */
     destroy() {
         if (this.container) {
             this.container.destroy();
