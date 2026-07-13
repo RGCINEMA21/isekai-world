@@ -275,6 +275,25 @@ class MainVillageScene extends Phaser.Scene {
                 this.saveData.progress = this.saveData.progress || {};
                 this.saveData.progress.playerX = 32 * T;
                 this.saveData.progress.playerY = 37 * T;
+    /* =============================================
+     *  ADVENTURE MODE
+     * ============================================= */
+    enterAdventureMode(areaId, areaName, startX, startY, mapWidth, mapHeight) {
+        this.saveGame();
+        this.cameras.main.fadeOut(400, 0, 0, 0);
+        this.cameras.main.once('camerafadeoutcomplete', () => {
+            this.scene.start('AdventureScene', {
+                areaId: areaId,
+                areaName: areaName,
+                startX: startX,
+                startY: startY,
+                mapWidth: mapWidth,
+                mapHeight: mapHeight
+            });
+        });
+    }
+    
+    
                 this.saveGame();
                 this.cameras.main.fadeOut(400, 0, 0, 0);
                 this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('HomeScene'));
@@ -292,19 +311,19 @@ class MainVillageScene extends Phaser.Scene {
                 this.showNotification('🍳 Dapur akan dibuka pada Prompt berikutnya.');
                 break;
             case 'portal':
-                this.showNotification('⚔ Portal Monster akan dibuka pada Prompt berikutnya.');
+                this.enterAdventureMode('portal', '⚔ Portal Monster', 30, 30, 60, 60);
                 break;
             case 'peternakan':
                 this.showNotification('🐄 Peternakan akan dibuka pada Prompt berikutnya.');
                 break;
             case 'tambang':
-                this.showNotification('⛏ Tambang akan dibuka pada Prompt berikutnya.');
+                this.enterAdventureMode('tambang', '⛏ Tambang', 30, 30, 60, 60);
                 break;
             case 'memancing':
-                this.showNotification('🎣 Memancing akan dibuka pada Prompt berikutnya.');
+                this.enterAdventureMode('memancing', '🎣 Area Memancing', 30, 30, 60, 60);
                 break;
             case 'hutan':
-                this.showNotification('🌲 Hutan akan dibuka pada Prompt berikutnya.');
+                this.enterAdventureMode('hutan', '🌲 Hutan', 30, 30, 80, 80);
                 break;
             case 'blacksmith':
                 this.showNotification('⚒ Blacksmith akan dibuka pada Prompt berikutnya.');
