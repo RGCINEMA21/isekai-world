@@ -381,7 +381,9 @@ class MainVillageScene extends Phaser.Scene {
                 break;
 
             case 'portal':
-                this.enterAdventureMode('portal', '⚔ Portal Monster', 30, 30, 60, 60);
+                this.saveGame();
+                this.cameras.main.fadeOut(400, 0, 0, 0);
+                this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('PortalScene'));
                 break;
 
             case 'tambang':
