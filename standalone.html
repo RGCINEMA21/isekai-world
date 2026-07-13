@@ -600,9 +600,9 @@ class MainMenuScene extends Phaser.Scene {
         this.settingsPopup = this.add.container(cx, cy).setDepth(200).setAlpha(0);
 
         const bg = this.add.graphics();
-        bg.fillStyle(0x100020, 0.97);
+        bg.fillStyle(0x2c1810, 0.95);
         bg.fillRoundedRect(-pw/2, -200, pw, 400, 14);
-        bg.lineStyle(2, 0x6644aa);
+        bg.lineStyle(2, 0xc9a84c);
         bg.strokeRoundedRect(-pw/2, -200, pw, 400, 14);
         this.settingsPopup.add(bg);
 
@@ -626,13 +626,13 @@ class MainMenuScene extends Phaser.Scene {
             }).setOrigin(1, 0.5));
 
             if (i < items.length - 1) {
-                bg.lineStyle(1, 0x333);
+                bg.lineStyle(1, 0x8b6914, 0.3);
                 bg.lineBetween(-pw/2+20, yy+22, pw/2-20, yy+22);
             }
         });
 
         const clBg = this.add.graphics();
-        clBg.fillStyle(0x6644aa, 1);
+        clBg.fillStyle(0x8b3a0a, 0.9);
         clBg.fillRoundedRect(-50, 152, 100, 34, 6);
         this.settingsPopup.add(clBg);
         this.settingsPopup.add(this.add.text(0, 169, '✕  Close', {
@@ -666,9 +666,9 @@ class MainMenuScene extends Phaser.Scene {
         this.exitPopup = this.add.container(cx, cy).setDepth(200).setAlpha(0);
 
         const bg = this.add.graphics();
-        bg.fillStyle(0x100020, 0.97);
+        bg.fillStyle(0x2c1810, 0.95);
         bg.fillRoundedRect(-pw/2, -85, pw, 170, 14);
-        bg.lineStyle(2, 0x6644aa);
+        bg.lineStyle(2, 0xc9a84c);
         bg.strokeRoundedRect(-pw/2, -85, pw, 170, 14);
         this.exitPopup.add(bg);
 
@@ -678,7 +678,7 @@ class MainMenuScene extends Phaser.Scene {
         }).setOrigin(0.5));
 
         const clBg = this.add.graphics();
-        clBg.fillStyle(0x6644aa, 1);
+        clBg.fillStyle(0x8b3a0a, 0.9);
         clBg.fillRoundedRect(-40, 40, 80, 30, 6);
         this.exitPopup.add(clBg);
         this.exitPopup.add(this.add.text(0, 55, 'OK', {
@@ -1061,7 +1061,7 @@ class CharacterCreatorScene extends Phaser.Scene {
         this.inputBg = this.add.graphics().setDepth(10);
         this.inputBg.fillStyle(0x1a0a33, 0.9);
         this.inputBg.fillRoundedRect(inputX - 110, inputY - 12, 220, 32, 8);
-        this.inputBg.lineStyle(2, 0x6644aa, 1);
+        this.inputBg.lineStyle(2, 0xc9a84c, 1);
         this.inputBg.strokeRoundedRect(inputX - 110, inputY - 12, 220, 32, 8);
 
         // Blinking cursor text
@@ -1265,17 +1265,17 @@ class CharacterCreatorScene extends Phaser.Scene {
     drawGenderBtn(g, x, y, w, h, active, hover = false) {
         g.clear();
         if (active) {
-            g.fillStyle(0x6644aa, 1);
+            g.fillStyle(0xc9a84c, 1);
             g.fillRoundedRect(x - w / 2, y - h / 2, w, h, 8);
             g.lineStyle(2, 0x8866dd, 1);
             g.strokeRoundedRect(x - w / 2, y - h / 2, w, h, 8);
         } else if (hover) {
             g.fillStyle(0x333355, 0.8);
             g.fillRoundedRect(x - w / 2, y - h / 2, w, h, 8);
-            g.lineStyle(1, 0x6644aa, 0.6);
+            g.lineStyle(1, 0xc9a84c, 0.6);
             g.strokeRoundedRect(x - w / 2, y - h / 2, w, h, 8);
         } else {
-            g.fillStyle(0x222244, 0.8);
+            g.fillStyle(0x4a3520, 0.8);
             g.fillRoundedRect(x - w / 2, y - h / 2, w, h, 8);
             g.lineStyle(1, 0x444466, 0.5);
             g.strokeRoundedRect(x - w / 2, y - h / 2, w, h, 8);
@@ -1295,7 +1295,7 @@ class CharacterCreatorScene extends Phaser.Scene {
         this.summaryPanel = this.add.graphics().setDepth(5);
         this.summaryPanel.fillStyle(0x0a0a1a, 0.85);
         this.summaryPanel.fillRoundedRect(panelX - panelW / 2, panelY, panelW, panelH, 12);
-        this.summaryPanel.lineStyle(2, 0x6644aa, 0.7);
+        this.summaryPanel.lineStyle(2, 0xc9a84c, 0.7);
         this.summaryPanel.strokeRoundedRect(panelX - panelW / 2, panelY, panelW, panelH, 12);
 
         // Panel title
@@ -1307,7 +1307,7 @@ class CharacterCreatorScene extends Phaser.Scene {
         }).setOrigin(0.5).setDepth(10);
 
         // Divider
-        this.summaryPanel.lineStyle(1, 0x6644aa, 0.4);
+        this.summaryPanel.lineStyle(1, 0xc9a84c, 0.4);
         this.summaryPanel.lineBetween(panelX - panelW / 2 + 20, panelY + 48, panelX + panelW / 2 - 20, panelY + 48);
 
         // Summary items
@@ -1334,7 +1334,7 @@ class CharacterCreatorScene extends Phaser.Scene {
             this.add.text(panelX - panelW / 2 + 24, iy, item.label, {
                 fontSize: '13px',
                 fontFamily: 'Arial, sans-serif',
-                color: '#8888aa'
+                color: '#aa8844'
             }).setDepth(10);
 
             // Value
@@ -1555,9 +1555,9 @@ class CharacterCreatorScene extends Phaser.Scene {
         const popup = this.add.container(w / 2, h / 2).setDepth(301).setAlpha(0);
 
         const bg = this.add.graphics();
-        bg.fillStyle(0x0a1a0a, 0.97);
+        bg.fillStyle(0x2c1810, 0.95);
         bg.fillRoundedRect(-220, -100, 440, 200, 14);
-        bg.lineStyle(2, 0x44aa44, 1);
+        bg.lineStyle(2, 0xc9a84c, 1);
         bg.strokeRoundedRect(-220, -100, 440, 200, 14);
         popup.add(bg);
 
@@ -1576,7 +1576,7 @@ class CharacterCreatorScene extends Phaser.Scene {
 
         // Loading bar
         const loadBarBg = this.add.graphics();
-        loadBarBg.fillStyle(0x222244, 1);
+        loadBarBg.fillStyle(0x4a3520, 1);
         loadBarBg.fillRoundedRect(-100, 10, 200, 12, 6);
         popup.add(loadBarBg);
 
@@ -2046,9 +2046,9 @@ class InteractionUI {
 
         // Background panel
         const bg = this.scene.add.graphics();
-        bg.fillStyle(0x0a0a20, 0.92);
+        bg.fillStyle(0x2c1810, 0.92);
         bg.fillRoundedRect(-pw / 2, -ph / 2, pw, ph, 8);
-        bg.lineStyle(1.5, 0x6644aa, 0.8);
+        bg.lineStyle(1.5, 0xc9a84c, 0.8);
         bg.strokeRoundedRect(-pw / 2, -ph / 2, pw, ph, 8);
         this.container.add(bg);
 
@@ -2643,9 +2643,9 @@ class HomeScene extends Phaser.Scene {
         this.popupContainer = this.add.container(0, 0).setDepth(200).setScrollFactor(0);
 
         const bg = this.add.graphics();
-        bg.fillStyle(0x0a0a20, 0.92);
+        bg.fillStyle(0x2c1810, 0.92);
         bg.fillRoundedRect(-pw/2, -ph/2, pw, ph, 8);
-        bg.lineStyle(1.5, 0x6644aa, 0.8);
+        bg.lineStyle(1.5, 0xc9a84c, 0.8);
         bg.strokeRoundedRect(-pw/2, -ph/2, pw, ph, 8);
         this.popupContainer.add(bg);
 
@@ -3206,7 +3206,7 @@ class InventoryUI {
 
         // Dim overlay
         const dim = this.scene.add.graphics();
-        dim.fillStyle(0x000000, 0.6);
+        dim.fillStyle(0x000000, 0.35);
         dim.fillRect(0, 0, w, h);
         this.container.add(dim);
 
@@ -3217,9 +3217,9 @@ class InventoryUI {
         const py = h / 2;
 
         const bg = this.scene.add.graphics();
-        bg.fillStyle(0x0a0a20, 0.96);
+        bg.fillStyle(0x2c1810, 0.92);
         bg.fillRoundedRect(px - pw/2, py - ph/2, pw, ph, 12);
-        bg.lineStyle(2, 0x6644aa, 0.8);
+        bg.lineStyle(2, 0xc9a84c, 0.8);
         bg.strokeRoundedRect(px - pw/2, py - ph/2, pw, ph, 12);
         this.container.add(bg);
 
@@ -3241,7 +3241,7 @@ class InventoryUI {
 
         // Separator
         const sep = this.scene.add.graphics();
-        sep.lineStyle(1, 0x6644aa, 0.4);
+        sep.lineStyle(1, 0xc9a84c, 0.4);
         sep.lineBetween(px - pw/2 + 16, infoY + 22, px + pw/2 - 16, infoY + 22);
         this.container.add(sep);
 
@@ -3269,9 +3269,9 @@ class InventoryUI {
 
                 // Slot background
                 const slotBg = this.scene.add.graphics();
-                slotBg.fillStyle(0x1a1a3a, 0.9);
+                slotBg.fillStyle(0x4a3520, 0.85);
                 slotBg.fillRoundedRect(sx, sy, slotSize, slotSize, 6);
-                slotBg.lineStyle(1, 0x333366, 0.6);
+                slotBg.lineStyle(1, 0x8b6914, 0.6);
                 slotBg.strokeRoundedRect(sx, sy, slotSize, slotSize, 6);
                 this.container.add(slotBg);
                 this.slotGraphics.push({ g: slotBg, x: sx, y: sy, size: slotSize, idx: idx });
@@ -3310,7 +3310,7 @@ class InventoryUI {
         // Close button
         const closeFs = Math.max(12, Math.min(16, w * 0.016)) + 'px';
         const closeBg = this.scene.add.graphics();
-        closeBg.fillStyle(0x6644aa, 1);
+        closeBg.fillStyle(0x8b3a0a, 0.9);
         closeBg.fillRoundedRect(px - 45, py + ph/2 - 40, 90, 30, 8);
         this.container.add(closeBg);
 
@@ -3347,7 +3347,7 @@ class InventoryUI {
 
         this.infoPanel = this.scene.add.container(ix, iy).setDepth(510).setScrollFactor(0);
         const bg = this.scene.add.graphics();
-        bg.fillStyle(0x0a0a20, 0.95);
+        bg.fillStyle(0x2c1810, 0.92);
         bg.fillRoundedRect(0, 0, pw, ph, 8);
         bg.lineStyle(1, 0x6644aa, 0.7);
         bg.strokeRoundedRect(0, 0, pw, ph, 8);
@@ -3358,7 +3358,7 @@ class InventoryUI {
             fontSize: fs, fontFamily: 'Arial', color: '#ffdd88', fontStyle: 'bold'
         }));
         this.infoPanel.add(this.scene.add.text(10, 26, item.category + '  |  ×' + slot.item.quantity, {
-            fontSize: Math.max(8, Math.min(10, w * 0.01)) + 'px', fontFamily: 'Arial', color: '#8888aa'
+            fontSize: Math.max(8, Math.min(10, w * 0.01)) + 'px', fontFamily: 'Arial', color: '#aa8844'
         }));
         this.infoPanel.add(this.scene.add.text(10, 42, item.desc, {
             fontSize: Math.max(8, Math.min(10, w * 0.01)) + 'px', fontFamily: 'Arial', color: '#cccccc',
@@ -3382,7 +3382,7 @@ class InventoryUI {
         const sg = this.slotGraphics[idx];
         if (sg) {
             const flash = this.scene.add.graphics();
-            flash.fillStyle(0x6644aa, 0.3);
+            flash.fillStyle(0xc9a84c, 0.3);
             flash.fillRoundedRect(sg.x, sg.y, sg.size, sg.size, 6);
             this.container.add(flash);
             this.scene.tweens.add({
@@ -4204,7 +4204,7 @@ class MainVillageScene extends Phaser.Scene {
 
         // Background panel
         const bg = this.add.graphics();
-        bg.fillStyle(0x000000, 0.6);
+        bg.fillStyle(0x2c1810, 0.85);
         bg.fillRoundedRect(8, 8, 220, 140, 8);
         this.uiContainer.add(bg);
 
@@ -4215,10 +4215,10 @@ class MainVillageScene extends Phaser.Scene {
 
         const addText = (label, value, color) => {
             this.uiContainer.add(this.add.text(x, y, label, {
-                fontSize: fontSize + 'px', fontFamily: 'Arial', color: '#8888aa'
+                fontSize: fontSize + 'px', fontFamily: 'Arial', color: '#aa8844'
             }));
             this.uiContainer.add(this.add.text(x + 100, y, String(value), {
-                fontSize: fontSize + 'px', fontFamily: 'Arial', color: color || '#ffffff', fontStyle: 'bold'
+                fontSize: fontSize + 'px', fontFamily: 'Arial', color: color || '#f0e0c0', fontStyle: 'bold'
             }));
             y += lineH;
         };

@@ -414,29 +414,33 @@ class MainVillageScene extends Phaser.Scene {
         const p = d.player || {}, s = d.stats || {}, c = d.currency || {};
 
         if (isP) {
-            bg.fillStyle(0x000000, 0.7);
+            bg.fillStyle(0x2c1810, 0.88);
             bg.fillRoundedRect(4, 4, w - 8, 80, 6);
+            bg.lineStyle(2, 0xc9a84c, 0.6)
+            bg.strokeRoundedRect(4, 4, w - 8, 80, 6)
             this.uiContainer.add(bg);
             const fs = Math.max(9, Math.min(12, w * 0.02)) + 'px';
             const lh = 15;
             let y1 = 12;
             const add = (l, v, col) => {
-                this.uiContainer.add(this.add.text(12, y1, l, { fontSize: fs, fontFamily: 'Arial', color: '#8888aa' }));
-                this.uiContainer.add(this.add.text(80, y1, String(v), { fontSize: fs, fontFamily: 'Arial', color: col || '#fff', fontStyle: 'bold' }));
+                this.uiContainer.add(this.add.text(12, y1, l, { fontSize: fs, fontFamily: 'Arial', color: '#aa8844' }));
+                this.uiContainer.add(this.add.text(80, y1, String(v), { fontSize: fs, fontFamily: 'Arial', color: col || '#f0e0c0', fontStyle: 'bold' }));
                 y1 += lh;
             };
             add('Nama:', p.name||'???', '#ffdd88');
             add('Lv:', s.level||1, '#44ccff');
             add('HP:', (s.hp||100)+'/'+(s.maxHp||100), '#44cc44');
         } else {
-            bg.fillStyle(0x000000, 0.65);
-            bg.fillRoundedRect(6, 6, 180, 110, 8);
+            bg.fillStyle(0x2c1810, 0.85);
+            bg.fillRoundedRect(6, 6, 200, 115, 8);
+            bg.lineStyle(2, 0xc9a84c, 0.5)
+            bg.strokeRoundedRect(6, 6, 200, 115, 8)
             this.uiContainer.add(bg);
             const fs = Math.max(10, Math.min(12, w * 0.012)) + 'px';
             let y = 14;
             const add = (l, v, col) => {
-                this.uiContainer.add(this.add.text(14, y, l, { fontSize: fs, fontFamily: 'Arial', color: '#8888aa' }));
-                this.uiContainer.add(this.add.text(80, y, String(v), { fontSize: fs, fontFamily: 'Arial', color: col || '#fff', fontStyle: 'bold' }));
+                this.uiContainer.add(this.add.text(14, y, l, { fontSize: fs, fontFamily: 'Arial', color: '#aa8844' }));
+                this.uiContainer.add(this.add.text(80, y, String(v), { fontSize: fs, fontFamily: 'Arial', color: col || '#f0e0c0', fontStyle: 'bold' }));
                 y += 15;
             };
             add('Nama:', p.name||'???', '#ffdd88');
@@ -449,7 +453,7 @@ class MainVillageScene extends Phaser.Scene {
         // Village mode hint
         const hint = this.add.text(w / 2, h - 20, '👆 Geser untuk pan · Scroll untuk zoom · Klik bangunan/NPC', {
             fontSize: Math.max(9, Math.min(11, w * 0.011)) + 'px',
-            fontFamily: 'Arial', color: '#666688', fontStyle: 'italic'
+            fontFamily: 'Arial', color: '#887755', fontStyle: 'italic'
         }).setOrigin(0.5).setDepth(100).setScrollFactor(0);
         this.uiContainer.add(hint);
         this.tweens.add({ targets: hint, alpha: 0, duration: 1000, delay: 3000 });
@@ -457,9 +461,9 @@ class MainVillageScene extends Phaser.Scene {
         // Inventory button (always visible)
         const ibX = w - 36, ibY = isP ? h - 50 : 36;
         const ibBg = this.add.graphics();
-        ibBg.fillStyle(0x6644aa, 0.2);
+        ibBg.fillStyle(0x6b3a0a, 0.7);
         ibBg.fillCircle(ibX, ibY, 22);
-        ibBg.lineStyle(2, 0x6644aa, 0.35);
+        ibBg.lineStyle(2, 0xc9a84c, 0.7);
         ibBg.strokeCircle(ibX, ibY, 22);
         this.uiContainer.add(ibBg);
 

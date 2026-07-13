@@ -23,7 +23,7 @@ class MainMenuScene extends Phaser.Scene {
         this.createIsekaiBackground(w, h);
 
         // Dim overlay for popups
-        this.dimOverlay = this.add.rectangle(w/2, h/2, w, h, 0x000000, 0)
+        this.dimOverlay = this.add.rectangle(w/2, h/2, w, h, 0x1a0a00, 0)
             .setDepth(100);
 
         // Responsive detection
@@ -505,9 +505,9 @@ class MainMenuScene extends Phaser.Scene {
         this.settingsPopup = this.add.container(cx, cy).setDepth(200).setAlpha(0);
 
         const bg = this.add.graphics();
-        bg.fillStyle(0x100020, 0.97);
+        bg.fillStyle(0x2c1810, 0.95);
         bg.fillRoundedRect(-pw/2, -200, pw, 400, 14);
-        bg.lineStyle(2, 0x6644aa);
+        bg.lineStyle(2, 0xc9a84c);
         bg.strokeRoundedRect(-pw/2, -200, pw, 400, 14);
         this.settingsPopup.add(bg);
 
@@ -531,13 +531,13 @@ class MainMenuScene extends Phaser.Scene {
             }).setOrigin(1, 0.5));
 
             if (i < items.length - 1) {
-                bg.lineStyle(1, 0x333);
+                bg.lineStyle(1, 0x8b6914, 0.3);
                 bg.lineBetween(-pw/2+20, yy+22, pw/2-20, yy+22);
             }
         });
 
         const clBg = this.add.graphics();
-        clBg.fillStyle(0x6644aa, 1);
+        clBg.fillStyle(0x8b3a0a, 0.9);
         clBg.fillRoundedRect(-50, 152, 100, 34, 6);
         this.settingsPopup.add(clBg);
         this.settingsPopup.add(this.add.text(0, 169, '✕  Close', {
@@ -571,9 +571,9 @@ class MainMenuScene extends Phaser.Scene {
         this.exitPopup = this.add.container(cx, cy).setDepth(200).setAlpha(0);
 
         const bg = this.add.graphics();
-        bg.fillStyle(0x100020, 0.97);
+        bg.fillStyle(0x2c1810, 0.95);
         bg.fillRoundedRect(-pw/2, -85, pw, 170, 14);
-        bg.lineStyle(2, 0x6644aa);
+        bg.lineStyle(2, 0xc9a84c);
         bg.strokeRoundedRect(-pw/2, -85, pw, 170, 14);
         this.exitPopup.add(bg);
 
@@ -583,7 +583,7 @@ class MainMenuScene extends Phaser.Scene {
         }).setOrigin(0.5));
 
         const clBg = this.add.graphics();
-        clBg.fillStyle(0x6644aa, 1);
+        clBg.fillStyle(0x8b3a0a, 0.9);
         clBg.fillRoundedRect(-40, 40, 80, 30, 6);
         this.exitPopup.add(clBg);
         this.exitPopup.add(this.add.text(0, 55, 'OK', {

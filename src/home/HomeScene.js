@@ -388,7 +388,7 @@ class HomeScene extends Phaser.Scene {
         this.popupContainer = this.add.container(0, 0).setDepth(200).setScrollFactor(0);
 
         const bg = this.add.graphics();
-        bg.fillStyle(0x0a0a20, 0.92);
+        bg.fillStyle(0x2c1810, 0.92);
         bg.fillRoundedRect(-pw/2, -ph/2, pw, ph, 8);
         bg.lineStyle(1.5, 0x6644aa, 0.8);
         bg.strokeRoundedRect(-pw/2, -ph/2, pw, ph, 8);

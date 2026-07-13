@@ -289,7 +289,7 @@ class CharacterCreatorScene extends Phaser.Scene {
         this.inputBg = this.add.graphics().setDepth(10);
         this.inputBg.fillStyle(0x1a0a33, 0.9);
         this.inputBg.fillRoundedRect(x - inputW / 2, y - 12, inputW, 32, 8);
-        this.inputBg.lineStyle(2, 0x6644aa, 1);
+        this.inputBg.lineStyle(2, 0xc9a84c, 1);
         this.inputBg.strokeRoundedRect(x - inputW / 2, y - 12, inputW, 32, 8);
 
         // Name display
@@ -423,7 +423,7 @@ class CharacterCreatorScene extends Phaser.Scene {
 
     drawGenderBtn(g, x, y, w, h, active) {
         g.clear();
-        g.fillStyle(active ? 0x6644aa : 0x222244, active ? 1 : 0.8);
+        g.fillStyle(active ? 0xc9a84c : 0x4a3520, active ? 1 : 0.8);
         g.fillRoundedRect(x - w / 2, y - h / 2, w, h, 8);
         g.lineStyle(active ? 2 : 1, active ? 0x8866dd : 0x444466, active ? 1 : 0.5);
         g.strokeRoundedRect(x - w / 2, y - h / 2, w, h, 8);
@@ -625,14 +625,14 @@ class CharacterCreatorScene extends Phaser.Scene {
     showSuccessMessage() {
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
-        const dim = this.add.rectangle(w / 2, h / 2, w, h, 0x000000, 0).setDepth(300);
+        const dim = this.add.rectangle(w / 2, h / 2, w, h, 0x1a0a00, 0).setDepth(300);
         this.tweens.add({ targets: dim, alpha: 0.7, duration: 300 });
 
         const popup = this.add.container(w / 2, h / 2).setDepth(301).setAlpha(0);
         const bg = this.add.graphics();
-        bg.fillStyle(0x0a1a0a, 0.97);
+        bg.fillStyle(0x2c1810, 0.95);
         bg.fillRoundedRect(-200, -90, 400, 180, 14);
-        bg.lineStyle(2, 0x44aa44, 1);
+        bg.lineStyle(2, 0xc9a84c, 1);
         bg.strokeRoundedRect(-200, -90, 400, 180, 14);
         popup.add(bg);
 
@@ -643,7 +643,7 @@ class CharacterCreatorScene extends Phaser.Scene {
 
         // Loading bar
         const loadBg = this.add.graphics();
-        loadBg.fillStyle(0x222244, 1);
+        loadBg.fillStyle(0x4a3520, 1);
         loadBg.fillRoundedRect(-90, 10, 180, 10, 5);
         popup.add(loadBg);
         const loadFill = this.add.graphics();
@@ -655,7 +655,7 @@ class CharacterCreatorScene extends Phaser.Scene {
             callback: () => {
                 progress = Math.min(100, progress + 1.5);
                 loadFill.clear();
-                loadFill.fillStyle(0x44aa44, 1);
+                loadFill.fillStyle(0xc9a84c, 1);
                 loadFill.fillRoundedRect(-90, 10, 180 * (progress / 100), 10, 5);
             }
         });
@@ -667,7 +667,7 @@ class CharacterCreatorScene extends Phaser.Scene {
             }).setOrigin(0.5));
 
             const okBg = this.add.graphics();
-            okBg.fillStyle(0x44aa44, 1);
+            okBg.fillStyle(0x8b3a0a, 0.9);
             okBg.fillRoundedRect(-40, 48, 80, 30, 8);
             popup.add(okBg);
             popup.add(this.add.text(0, 63, 'OK', {

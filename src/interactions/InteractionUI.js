@@ -47,12 +47,12 @@ class InteractionUI {
 
         // Background
         const bg = this.scene.add.graphics();
-        bg.fillStyle(0x0a0a20, 0.93);
+        bg.fillStyle(0x2c1810, 0.92);
         bg.fillRoundedRect(-pw / 2, -ph / 2, pw, ph, 10);
-        bg.lineStyle(2, 0x6644aa, 0.9);
+        bg.lineStyle(2, 0xc9a84c, 0.9);
         bg.strokeRoundedRect(-pw / 2, -ph / 2, pw, ph, 10);
         // Glow
-        bg.fillStyle(0x6644aa, 0.08);
+        bg.fillStyle(0xc9a84c, 0.08);
         bg.fillRoundedRect(-pw / 2 - 2, -ph / 2 - 2, pw + 4, ph + 4, 12);
         this.container.add(bg);
 
@@ -70,7 +70,7 @@ class InteractionUI {
         this.container.add(this.scene.add.text(0, -ph / 2 + 32, keyHint + ' ' + obj.action, {
             fontSize: this.fontSize,
             fontFamily: 'Arial, sans-serif',
-            color: '#ccccdd'
+            color: '#d4c4a0'
         }).setOrigin(0.5));
 
         // Pulse animation
