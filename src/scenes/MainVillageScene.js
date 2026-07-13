@@ -1,7 +1,8 @@
 /**
- * MainVillageScene - Desa Utama ISEKAI WORLD.
- * Responsive: auto portrait/landscape, modular input, dynamic UI.
- * Map: 80x80 tiles (16px) = 1280x1280 world.
+ * MainVillageScene - Village Mode (FINAL).
+ * Kamera bergerak, tidak ada karakter.
+ * Klik bangunan/NPC → interaksi instan.
+ * Drag untuk geser, scroll/pinch untuk zoom.
  */
 class MainVillageScene extends Phaser.Scene {
     constructor() {
@@ -9,79 +10,90 @@ class MainVillageScene extends Phaser.Scene {
     }
 
     create() {
-        // === MAP CONSTANTS ===
-        this.T = { GRASS:0, PATH:1, WATER:2, TREE:3, ROCK:4, WALL:5, ROOF:6, DOOR:7, FENCE:8, FLOWERS:9, DARK:10, BRIDGE:11, TALL:12, SAND:13, SIGN:14 };
+        // Map constants
+        this.TILES = { GRASS:0, PATH:1, WATER:2, TREE:3, ROCK:4, WALL:5, ROOF:6, DOOR:7, FENCE:8, FLOWERS:9, DARK:10, BRIDGE:11, TALL:12, SAND:13, SIGN:14 };
         this.TILE = 16;
         this.MAP_W = 80;
         this.MAP_H = 80;
         this.PX_W = this.MAP_W * this.TILE;
         this.PX_H = this.MAP_H * this.TILE;
 
-        // === SAVE DATA ===
+        // Load save
         this.saveData = this.loadSave();
 
-        // === GENERATE MAP ===
+        // Generate map
         this.grid = [];
         this.buildingList = [];
-        this.blockedSet = new Set([2, 3, 4, 5, 6, 8, 14]);
         this.generateMap();
 
-        // === RENDER MAP ===
+        // Render map
         this.mapGfx = this.add.graphics().setDepth(0);
 
-        // === PLAYER ===
-        this.createPlayer();
+        // Buildings (clickable)
+        this.buildingZones = [];
+        this.createBuildingZones();
 
-        // === WORLD BOUNDS ===
-        this.physics.world.setBounds(0, 0, this.PX_W, this.PX_H);
+        // NPCs
+        this.npcs = [];
+        this.createNPCs();
 
-        // === CAMERA ===
-        this.isPortrait = false;
+        // Camera setup (Village Mode)
         this.setupCamera();
 
-        // === INPUT SYSTEM (modular) ===
-        this.inputState = { x: 0, y: 0, attack: false, interact: false, inventory: false };
-        this.setupInput();
+        // Drag to pan
+        this.isDragging = false;
+        this.dragStartX = 0;
+        this.dragStartY = 0;
+        this.camStartX = 0;
+        this.camStartY = 0;
 
-        // === TOUCH CONTROLS (placeholder) ===
-        this.touchZones = [];
-        this.setupTouchControls();
+        this.input.on('pointerdown', (p) => this.onDragStart(p));
+        this.input.on('pointermove', (p) => this.onDragMove(p));
+        this.input.on('pointerup', () => this.onDragEnd());
 
-        // === UI HUD ===
-        this.uiContainer = null;
+        // Zoom (scroll wheel)
+        this.input.on('wheel', (pointer, gameObjects, dx, dy) => {
+            const newZoom = Phaser.Math.Clamp(this.cameras.main.zoom - dy * 0.001, 0.5, 3);
+            this.cameras.main.zoom = newZoom;
+        });
+
+        // Pinch zoom (mobile)
+        this.lastPinchDist = 0;
+        this.input.on('pointermove', (p) => {
+            if (this.input.pointer1.isDown && this.input.pointer2.isDown) {
+                const d = Phaser.Math.Distance.Between(
+                    this.input.pointer1.x, this.input.pointer1.y,
+                    this.input.pointer2.x, this.input.pointer2.y
+                );
+                if (this.lastPinchDist > 0) {
+                    const diff = d - this.lastPinchDist;
+                    const newZoom = Phaser.Math.Clamp(this.cameras.main.zoom + diff * 0.005, 0.5, 3);
+                    this.cameras.main.zoom = newZoom;
+                }
+                this.lastPinchDist = d;
+            }
+        });
+        this.input.on('pointerup', () => { this.lastPinchDist = 0; });
+
+        // UI
         this.createUI();
 
-        // === RESIZE LISTENER ===
-        this.scale.on('resize', (sz) => this.onResize(sz));
-
-        // === INTERACTION SYSTEM ===
-        this.interactionMgr = new InteractionManager(this);
-        this.interactionMgr.setup("main_village", this.TILE);
-        this.interactionMgr.setInteractCallback((obj) => this.onObjectInteract(obj));
-
-        // === INVENTORY ===
+        // Inventory
         this.inventory = InventorySave.load(20);
         this.invUI = new InventoryUI(this, this.inventory);
-        this.invOpen = false;
-        if (this.inventory.usedSlots() === 0) {
-            this.inventory.addItem('kayu', 10);
-            this.inventory.addItem('pedang', 1);
-            this.inventory.addItem('potion_h', 3);
-            InventorySave.save(this.inventory);
-        }
+        this.touchInventory = false;
 
-        // === CLICKABLE BUILDINGS ===
-        this.createBuildingClickZones();
+        // Keyboard: I/B for inventory
+        this.keys = this.input.keyboard.addKeys({ inventory: 'I' });
+        this.input.keyboard.on('keydown-B', () => this.toggleInventory());
+        this.input.keyboard.on('keydown-I', () => this.toggleInventory());
 
-        // === AUTO-SAVE ===
-        this.setupAutoSave();
-
-        // === FADE IN ===
+        // Fade in
         this.cameras.main.fadeIn(500, 0, 0, 0);
     }
 
     /* =============================================
-     *  CAMERA SETUP
+     *  CAMERA (Village Mode)
      * ============================================= */
     setupCamera() {
         const w = this.cameras.main.width;
@@ -89,219 +101,45 @@ class MainVillageScene extends Phaser.Scene {
         this.isPortrait = h > w;
 
         this.cameras.main.setBounds(0, 0, this.PX_W, this.PX_H);
-        this.cameras.main.startFollow(this.playerBody, true, 0.1, 0.1);
 
-        // Zoom: portrait = tighter (see less), landscape = wider (see more)
+        // Start centered on village
+        this.cameras.main.scrollX = this.PX_W / 2 - w / 2;
+        this.cameras.main.scrollY = this.PX_H / 2 - h / 2;
+
+        // Initial zoom
         if (this.isPortrait) {
-            this.cameras.main.setZoom(Math.min(w / 320, h / 500));
+            this.cameras.main.setZoom(Math.min(w / 400, h / 600));
         } else {
-            this.cameras.main.setZoom(Math.min(w / 500, h / 350));
+            this.cameras.main.setZoom(Math.min(w / 600, h / 400));
         }
     }
 
-    onResize(sz) {
-        this.setupCamera();
-        if (this.uiContainer) this.createUI();
-        this.updateTouchZones();
+    onDragStart(ptr) {
+        this.isDragging = true;
+        this.dragStartX = ptr.x;
+        this.dragStartY = ptr.y;
+        this.camStartX = this.cameras.main.scrollX;
+        this.camStartY = this.cameras.main.scrollY;
     }
 
-    /* =============================================
-     *  INPUT SYSTEM (modular - keyboard, touch, future joystick)
-     * ============================================= */
-    setupInput() {
-        // Keyboard
-        this.cursors = this.input.keyboard.createCursorKeys();
-        this.keys = this.input.keyboard.addKeys({
-            up: 'W', down: 'S', left: 'A', right: 'D',
-            attack: 'SPACE', interact: 'E', inventory: 'I'
-        });
-
-        // Touch joystick state
-        this.joystick = { active: false, startX: 0, startY: 0, dx: 0, dy: 0 };
-        this.touchAttack = false;
-        // touchInteract cleared in update after use
+    onDragMove(ptr) {
+        if (!this.isDragging) return;
+        const zoom = this.cameras.main.zoom;
+        const dx = (this.dragStartX - ptr.x) / zoom;
+        const dy = (this.dragStartY - ptr.y) / zoom;
+        this.cameras.main.scrollX = Phaser.Math.Clamp(this.camStartX + dx, 0, this.PX_W - this.cameras.main.width / zoom);
+        this.cameras.main.scrollY = Phaser.Math.Clamp(this.camStartY + dy, 0, this.PX_H - this.cameras.main.height / zoom);
     }
 
-    /** Returns normalized movement vector (-1 to 1) from any input source */
-    getMovementInput() {
-        let mx = 0, my = 0;
-
-        // Keyboard
-        if (this.cursors.left.isDown || this.keys.left.isDown) mx = -1;
-        else if (this.cursors.right.isDown || this.keys.right.isDown) mx = 1;
-        if (this.cursors.up.isDown || this.keys.up.isDown) my = -1;
-        else if (this.cursors.down.isDown || this.keys.down.isDown) my = 1;
-
-        // Virtual joystick (touch)
-        if (this.joystick.active) {
-            const dist = Math.sqrt(this.joystick.dx * this.joystick.dx + this.joystick.dy * this.joystick.dy);
-            if (dist > 10) {
-                const maxDist = 60;
-                mx = Math.max(-1, Math.min(1, this.joystick.dx / maxDist));
-                my = Math.max(-1, Math.min(1, this.joystick.dy / maxDist));
-            }
-        }
-
-        // Normalize diagonal
-        if (mx !== 0 && my !== 0) {
-            const len = Math.sqrt(mx * mx + my * my);
-            mx /= len;
-            my /= len;
-        }
-
-        return { x: mx, y: my };
-    }
-
-    isAttackPressed() {
-        return Phaser.Input.Keyboard.JustDown(this.keys.attack) || this.touchAttack;
-    }
-    isInteractPressed() {
-        return Phaser.Input.Keyboard.JustDown(this.keys.interact) || this.touchInteract;
-    }
-    isInventoryPressed() {
-        return Phaser.Input.Keyboard.JustDown(this.keys.inventory);
-    }
-
-    /* =============================================
-     *  TOUCH CONTROLS (placeholder zones)
-     * ============================================= */
-    setupTouchControls() {
-        // Only enable on touch devices
-        if (!this.sys.game.device.input.touch) {
-            // Desktop: still draw inventory button hint
-            const w2 = this.cameras.main.width;
-            const dg = this.add.graphics().setDepth(200).setScrollFactor(0);
-            dg.fillStyle(0x6644aa, 0.12);
-            dg.fillCircle(w2 - 40, 40, 20);
-            dg.lineStyle(1, 0x6644aa, 0.25);
-            dg.strokeCircle(w2 - 40, 40, 20);
-            this.add.text(w2 - 40, 40, '🎒', { fontSize: '14px' }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
-            return;
-        }
-
-        this.input.on('pointerdown', (ptr) => this.onPointerDown(ptr));
-        this.input.on('pointermove', (ptr) => this.onPointerMove(ptr));
-        this.input.on('pointerup', (ptr) => this.onPointerUp(ptr));
-
-        this.createTouchZones();
-    }
-
-    createTouchZones() {
-        this.clearTouchZones();
-        if (!this.sys.game.device.input.touch) return;
-
-        const w = this.cameras.main.width;
-        const h = this.cameras.main.height;
-        const g = this.add.graphics().setDepth(200).setScrollFactor(0);
-
-        // Joystick zone (bottom-left)
-        const jR = 50;
-        const jX = 90, jY = h - 100;
-        g.fillStyle(0xffffff, 0.08);
-        g.fillCircle(jX, jY, jR);
-        g.lineStyle(1, 0xffffff, 0.15);
-        g.strokeCircle(jX, jY, jR);
-        g.lineStyle(1, 0xffffff, 0.1);
-        g.strokeCircle(jX, jY, 15);
-
-        // Attack button (bottom-right)
-        const aX = w - 80, aY = h - 100;
-        g.fillStyle(0xff4444, 0.15);
-        g.fillCircle(aX, aY, 35);
-        g.lineStyle(2, 0xff4444, 0.3);
-        g.strokeCircle(aX, aY, 35);
-
-                // Inventory button (top right)
-        const ivBtX = w - 45, ivBtY = 45;
-        g.fillStyle(0x6644aa, 0.15);
-        g.fillCircle(ivBtX, ivBtY, 22);
-        g.lineStyle(2, 0x6644aa, 0.3);
-        g.strokeCircle(ivBtX, ivBtY, 22);
-
-        // Interact button (above attack)
-        const iX = w - 150, iY = h - 80;
-        g.fillStyle(0x44aaff, 0.15);
-        g.fillCircle(iX, iY, 28);
-        g.lineStyle(2, 0x44aaff, 0.3);
-        g.strokeCircle(iX, iY, 28);
-
-        // Labels
-        const fs = Math.max(9, Math.min(12, w * 0.013)) + 'px';
-        this.add.text(jX, jY, '🕹', { fontSize: '20px' }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
-        this.add.text(aX, aY, '⚔', { fontSize: '18px' }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
-        this.add.text(ivBtX, ivBtY, '🎒', { fontSize: '16px' }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
-        this.add.text(iX, iY, 'E', { fontSize: fs, fontFamily: 'Arial', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
-
-        this.touchZones.push(g, 
-            this.children.list[this.children.list.length - 1],
-            this.children.list[this.children.list.length - 2],
-            this.children.list[this.children.list.length - 3]
-        );
-
-        // Store positions for hit detection
-        this.touchPos = { joystick: { x: jX, y: jY }, attack: { x: aX, y: aY }, interact: { x: iX, y: iY }, inventory: { x: ivBtX, y: ivBtY } };
-    }
-
-    clearTouchZones() {
-        this.touchZones.forEach(z => { if (z && z.destroy) z.destroy(); });
-        this.touchZones = [];
-    }
-
-    updateTouchZones() {
-        this.clearTouchZones();
-        this.createTouchZones();
-    }
-
-    onPointerDown(ptr) {
-        if (!this.touchPos) return;
-        const tp = this.touchPos;
-
-        // Check joystick zone
-        const jd = Phaser.Math.Distance.Between(ptr.x, ptr.y, tp.joystick.x, tp.joystick.y);
-        if (jd < 60) {
-            this.joystick.active = true;
-            this.joystick.startX = ptr.x;
-            this.joystick.startY = ptr.y;
-            this.joystick.dx = 0;
-            this.joystick.dy = 0;
-        }
-
-        // Check attack zone
-        const ad = Phaser.Math.Distance.Between(ptr.x, ptr.y, tp.attack.x, tp.attack.y);
-        if (ad < 40) this.touchAttack = true;
-
-        // Check interact zone
-        const id = Phaser.Math.Distance.Between(ptr.x, ptr.y, tp.interact.x, tp.interact.y);
-        if (id < 35) this.touchInteract = true;
-
-        // Check inventory button
-        if (tp.inventory) {
-            const ivd = Phaser.Math.Distance.Between(ptr.x, ptr.y, tp.inventory.x, tp.inventory.y);
-            if (ivd < 28) this.touchInventory = true;
-        }
-    }
-
-    onPointerMove(ptr) {
-        if (this.joystick.active) {
-            this.joystick.dx = ptr.x - this.joystick.startX;
-            this.joystick.dy = ptr.y - this.joystick.startY;
-        }
-    }
-
-    onPointerUp(ptr) {
-        this.joystick.active = false;
-        this.joystick.dx = 0;
-        this.joystick.dy = 0;
-        this.touchAttack = false;
-        this.touchInteract = false;
-        this.touchInventory = false;
+    onDragEnd() {
+        this.isDragging = false;
     }
 
     /* =============================================
      *  MAP GENERATION
      * ============================================= */
     generateMap() {
-        const T = this.T;
+        const T = this.TILES;
         for (let y = 0; y < this.MAP_H; y++) {
             this.grid[y] = [];
             for (let x = 0; x < this.MAP_W; x++) this.grid[y][x] = T.GRASS;
@@ -321,26 +159,32 @@ class MainVillageScene extends Phaser.Scene {
         for (let x = 8; x < 72; x++) { this.set(x, 40, T.PATH); this.set(x, 41, T.PATH); }
         for (let y = 8; y < 72; y++) { this.set(40, y, T.PATH); this.set(41, y, T.PATH); }
         for (let x = 25; x <= 58; x++) { this.set(x, 32, T.PATH); this.set(x, 52, T.PATH); }
-        for (let y = 32; y <= 40; y++) { this.set(25, y, T.PATH); this.set(58, y, T.PATH); }
+        for (let y = 32; y <= 52; y++) { this.set(25, y, T.PATH); this.set(58, y, T.PATH); }
 
         // Buildings
-        this.placeBuilding(32, 35, '🏠 Rumah');
-        this.placeBuilding(50, 35, '📦 Gudang');
-        this.placeBuilding(32, 45, '🍳 Dapur');
-        this.placeBuilding(50, 45, '🌾 Pertanian');
-        this.placeBuilding(25, 22, '⚔ Portal');
-        this.placeBuilding(55, 22, '🐄 Ternak');
-        this.placeBuilding(25, 58, '⛏ Tambang');
-        this.placeBuilding(55, 58, '🎣 Memancing');
+        this.placeBuilding(32, 35, '🏠 Rumah',       'rumah');
+        this.placeBuilding(50, 35, '📦 Gudang',       'gudang');
+        this.placeBuilding(32, 45, '🍳 Dapur',        'dapur');
+        this.placeBuilding(50, 45, '🌾 Pertanian',    'pertanian');
+        this.placeBuilding(25, 22, '⚔ Portal',       'portal');
+        this.placeBuilding(55, 22, '🐄 Ternak',       'peternakan');
+        this.placeBuilding(25, 58, '⛏ Tambang',       'tambang');
+        this.placeBuilding(55, 58, '🎣 Memancing',     'memancing');
+
+        // Extra buildings (placeholder locations)
+        this.placeBuilding(38, 33, '⚒ Blacksmith',    'blacksmith');
+        this.placeBuilding(44, 33, '🧪 Laboratorium',  'lab');
+        this.placeBuilding(38, 50, '🏪 Marketplace',   'marketplace');
+        this.placeBuilding(44, 50, '🏛 Guild Hall',    'guild');
 
         // Forest west
-        for (let y = 3; y < 23; y++) for (let x = 3; x < 20; x++) {
+        for (let y = 3; y < 20; y++) for (let x = 3; x < 18; x++) {
             if (this.grid[y][x] === T.GRASS && Math.random() < 0.35) this.set(x, y, T.TREE);
         }
-        this.set(21, 12, T.SIGN); this.buildingList.push({ tx: 21, ty: 12, name: '🌲 Hutan' });
+        this.set(19, 12, T.SIGN); this.buildingList.push({ tx: 19, ty: 12, name: '🌲 Hutan', id: 'hutan' });
 
         // Forest east
-        for (let y = 3; y < 20; y++) for (let x = 65; x < 78; x++) {
+        for (let y = 3; y < 18; y++) for (let x = 65; x < 78; x++) {
             if (this.grid[y][x] === T.GRASS && Math.random() < 0.3) this.set(x, y, T.TREE);
         }
 
@@ -371,28 +215,122 @@ class MainVillageScene extends Phaser.Scene {
         }
         this.set(40, 29, T.PATH); this.set(41, 29, T.PATH);
         this.set(40, 55, T.PATH); this.set(41, 55, T.PATH);
-
-        // Spawn area
-        for (let dy = -1; dy <= 2; dy++) for (let dx = -1; dx <= 2; dx++) {
-            const sx = 39+dx, sy = 37+dy;
-            if (this.grid[sy] && this.grid[sy][sx] !== undefined) {
-                const t = this.grid[sy][sx];
-                if (t === T.GRASS || t === T.FLOWERS) this.set(sx, sy, T.PATH);
-            }
-        }
     }
 
-    placeBuilding(tx, ty, name) {
-        const T = this.T;
+    placeBuilding(tx, ty, name, id) {
+        const T = this.TILES;
         for (let dx = -1; dx <= 1; dx++) this.set(tx+dx, ty-1, T.ROOF);
         for (let dx = -1; dx <= 1; dx++) for (let dy = 0; dy <= 1; dy++) this.set(tx+dx, ty+dy, T.WALL);
         this.set(tx, ty+1, T.DOOR);
         this.set(tx+2, ty+1, T.SIGN);
-        this.buildingList.push({ tx: tx+2, ty: ty+1, name });
+        this.buildingList.push({ tx: tx+2, ty: ty+1, name, id });
     }
 
     set(x, y, v) { if (x >= 0 && x < this.MAP_W && y >= 0 && y < this.MAP_H) this.grid[y][x] = v; }
     get(x, y) { return (x >= 0 && x < this.MAP_W && y >= 0 && y < this.MAP_H) ? this.grid[y][x] : -1; }
+
+    /* =============================================
+     *  BUILDING ZONES (clickable)
+     * ============================================= */
+    createBuildingZones() {
+        const T = this.TILE;
+        this.buildingList.forEach(b => {
+            const wx = b.tx * T + T;
+            const wy = b.ty * T;
+            const hit = this.add.rectangle(wx, wy, T * 4, T * 4, 0x000000, 0)
+                .setInteractive({ useHandCursor: true }).setDepth(5);
+            hit.on('pointerdown', () => this.onBuildingTap(b.id || b.name));
+            this.buildingZones.push(hit);
+        });
+    }
+
+    /* =============================================
+     *  NPCS
+     * ============================================= */
+    createNPCs() {
+        NPCData.getAll().forEach(data => {
+            const npc = new VillageNPC(this, data, this.TILE);
+            npc.onTap = (n) => this.onBuildingTap(n.building);
+            this.npcs.push(npc);
+        });
+    }
+
+    /* =============================================
+     *  INTERACTION (same function for NPC or building)
+     * ============================================= */
+    onBuildingTap(buildingId) {
+        // Inventory check - if open, close it first
+        if (this.invUI && this.invUI.isOpen) {
+            this.invUI.close();
+            return;
+        }
+
+        const T = this.TILE;
+
+        switch (buildingId) {
+            case 'rumah':
+                this.saveData.progress = this.saveData.progress || {};
+                this.saveData.progress.playerX = 32 * T;
+                this.saveData.progress.playerY = 37 * T;
+                this.saveGame();
+                this.cameras.main.fadeOut(400, 0, 0, 0);
+                this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('HomeScene'));
+                break;
+
+            case 'gudang':
+                this.showNotification('📦 Gudang akan dibuka pada Prompt berikutnya.');
+                break;
+            case 'pertanian':
+                this.showNotification('🌾 Pertanian akan dibuka pada Prompt berikutnya.');
+                break;
+            case 'dapur':
+                this.showNotification('🍳 Dapur akan dibuka pada Prompt berikutnya.');
+                break;
+            case 'portal':
+                this.showNotification('⚔ Portal Monster akan dibuka pada Prompt berikutnya.');
+                break;
+            case 'peternakan':
+                this.showNotification('🐄 Peternakan akan dibuka pada Prompt berikutnya.');
+                break;
+            case 'tambang':
+                this.showNotification('⛏ Tambang akan dibuka pada Prompt berikutnya.');
+                break;
+            case 'memancing':
+                this.showNotification('🎣 Memancing akan dibuka pada Prompt berikutnya.');
+                break;
+            case 'hutan':
+                this.showNotification('🌲 Hutan akan dibuka pada Prompt berikutnya.');
+                break;
+            case 'blacksmith':
+                this.showNotification('⚒ Blacksmith akan dibuka pada Prompt berikutnya.');
+                break;
+            case 'lab':
+                this.showNotification('🧪 Laboratorium akan dibuka pada Prompt berikutnya.');
+                break;
+            case 'marketplace':
+                this.showNotification('🏪 Marketplace akan dibuka pada Prompt berikutnya.');
+                break;
+            case 'guild':
+                this.showNotification('🏛 Guild Hall akan dibuka pada Prompt berikutnya.');
+                break;
+            default:
+                this.showNotification(buildingId + ' akan dibuka pada Prompt berikutnya.');
+        }
+    }
+
+    showNotification(text) {
+        const w = this.cameras.main.width;
+        const t = this.add.text(w / 2, 60, text, {
+            fontSize: Math.max(11, Math.min(14, w * 0.015)) + 'px',
+            fontFamily: 'Arial', color: '#ffffff', fontStyle: 'bold',
+            stroke: '#000000', strokeThickness: 3,
+            backgroundColor: '#00000088', padding: { x: 12, y: 6 }
+        }).setOrigin(0.5).setDepth(500).setScrollFactor(0);
+        this.tweens.add({
+            targets: t, alpha: 0, y: 50, duration: 500, delay: 1800,
+            onComplete: () => t.destroy()
+        });
+    }
 
     /* =============================================
      *  MAP RENDERING (camera-culled)
@@ -416,13 +354,13 @@ class MainVillageScene extends Phaser.Scene {
             this.drawDetail(g, t, x*s, y*s, x, y);
         }
 
-        // Building tags
+        // Building name tags
         this.buildingList.forEach(b => {
-            const bx = b.tx * s + s, by = b.ty * s - 2;
+            const bx = b.tx * s + s, by = b.ty * s - 4;
             if (bx > cam.scrollX - 80 && bx < cam.scrollX + cam.width/z + 80 &&
                 by > cam.scrollY - 15 && by < cam.scrollY + cam.height/z + 15) {
-                g.fillStyle(0x3a2a10, 0.8);
-                g.fillRoundedRect(bx - 28, by - 5, 56, 10, 2);
+                g.fillStyle(0x3a2a10, 0.85);
+                g.fillRoundedRect(bx - 32, by - 6, 64, 12, 3);
             }
         });
     }
@@ -459,125 +397,7 @@ class MainVillageScene extends Phaser.Scene {
     }
 
     /* =============================================
-     *  PLAYER
-     * ============================================= */
-    createPlayer() {
-        let sx = 40 * this.TILE, sy = 38 * this.TILE;
-        if (this.saveData?.progress?.playerX !== undefined) {
-            sx = this.saveData.progress.playerX;
-            sy = this.saveData.progress.playerY;
-        }
-
-        this.playerBody = this.physics.add.sprite(sx, sy, null);
-        this.playerBody.setVisible(false);
-        this.playerBody.setSize(8, 8);
-        this.playerBody.setOffset(-4, -4);
-        this.playerBody.setCollideWorldBounds(true);
-        this.playerBody.setMaxVelocity(120, 120);
-        this.playerBody.setDamping(true);
-        this.playerBody.setDrag(0.85);
-
-        this.playerGfx = this.add.graphics().setDepth(10);
-        this.facing = 'down';
-        this.isMoving = false;
-        this.animFrame = 0;
-        this.animTimer = 0;
-    }
-
-    drawPlayer() {
-        const g = this.playerGfx; g.clear();
-        const px = this.playerBody.x, py = this.playerBody.y;
-        const f = this.facing, m = this.isMoving;
-        const bob = m ? Math.sin(this.animFrame * Math.PI * 0.5) * 1 : 0;
-        const y = py + bob;
-        const s = 1.5; // scale multiplier
-
-        // Gender-based colors
-        const isMale = !this.saveData || !this.saveData.player || this.saveData.player.gender !== 'female';
-        const skin = 0xffcc99;
-        const hair = isMale ? 0x442200 : 0x883322;
-        const shirt = isMale ? 0x2266bb : 0xcc4477;
-        const pants = isMale ? 0x334466 : 0x554466;
-        const boot = 0x3a2a1a;
-        const eye = isMale ? 0x2244aa : 0x228844;
-
-        // Shadow
-        g.fillStyle(0x000000, 0.2);
-        g.fillEllipse(px, py + 10*s, 14*s, 5*s);
-
-        const step = m && this.animFrame%2===1 ? 1.5 : 0;
-
-        // Boots
-        g.fillStyle(boot, 1);
-        g.fillRect(px - 4*s, y + 5*s, 3*s, (4+step)*s);
-        g.fillRect(px + 1*s, y + 5*s, 3*s, (4-step)*s);
-
-        // Pants
-        g.fillStyle(pants, 1);
-        g.fillRect(px - 4*s, y - 1*s, 3*s, 7*s);
-        g.fillRect(px + 1*s, y - 1*s, 3*s, 7*s);
-
-        // Shirt
-        g.fillStyle(shirt, 1);
-        g.fillRect(px - 5*s, y - 8*s, 10*s, 8*s);
-
-        // Arms
-        const arm = m ? Math.sin(this.animFrame * Math.PI) * 3 : 0;
-        g.fillStyle(skin, 1);
-        g.fillRect(px - 7*s, y - 6*s + arm, 3*s, 7*s);
-        g.fillRect(px + 4*s, y - 6*s - arm, 3*s, 7*s);
-
-        // Head
-        g.fillStyle(skin, 1);
-        g.fillRect(px - 4*s, y - 18*s, 8*s, 11*s);
-
-        // Hair
-        g.fillStyle(hair, 1);
-        g.fillRect(px - 4*s, y - 19*s, 8*s, 4*s);
-        if (f === 'down') {
-            g.fillRect(px - 5*s, y - 18*s, 2*s, 6*s);
-            g.fillRect(px + 3*s, y - 18*s, 2*s, 6*s);
-        } else if (f === 'up') {
-            g.fillRect(px - 5*s, y - 19*s, 10*s, 6*s);
-        } else if (f === 'left') {
-            g.fillRect(px - 5*s, y - 19*s, 8*s, 4*s);
-            g.fillRect(px - 5*s, y - 16*s, 2*s, 6*s);
-            if (!isMale) { g.fillRect(px - 6*s, y - 14*s, 2*s, 10*s); }
-        } else {
-            g.fillRect(px - 3*s, y - 19*s, 8*s, 4*s);
-            g.fillRect(px + 3*s, y - 16*s, 2*s, 6*s);
-            if (!isMale) { g.fillRect(px + 4*s, y - 14*s, 2*s, 10*s); }
-        }
-
-        // Eyes
-        if (f !== 'up') {
-            g.fillStyle(0xffffff, 1);
-            if (f === 'down') {
-                g.fillRect(px - 3*s, y - 14*s, 3*s, 3*s);
-                g.fillRect(px + 1*s, y - 14*s, 3*s, 3*s);
-            } else if (f === 'left') {
-                g.fillRect(px - 4*s, y - 14*s, 3*s, 3*s);
-            } else {
-                g.fillRect(px + 1*s, y - 14*s, 3*s, 3*s);
-            }
-            g.fillStyle(eye, 1);
-            if (f === 'down') {
-                g.fillRect(px - 2*s, y - 13*s, 2*s, 2*s);
-                g.fillRect(px + 1*s, y - 13*s, 2*s, 2*s);
-            } else if (f === 'left') {
-                g.fillRect(px - 3*s, y - 13*s, 2*s, 2*s);
-            } else {
-                g.fillRect(px + 2*s, y - 13*s, 2*s, 2*s);
-            }
-        }
-
-        // Mouth
-        g.fillStyle(0xcc8866, 1);
-        g.fillRect(px - 1*s, y - 10*s, 2*s, 1*s);
-    }
-
-    /* =============================================
-     *  UI HUD (responsive layout)
+     *  UI HUD
      * ============================================= */
     createUI() {
         if (this.uiContainer) this.uiContainer.destroy();
@@ -591,69 +411,60 @@ class MainVillageScene extends Phaser.Scene {
         const p = d.player || {}, s = d.stats || {}, c = d.currency || {};
 
         if (isP) {
-            // Portrait: compact top bar
             bg.fillStyle(0x000000, 0.7);
-            bg.fillRoundedRect(4, 4, w - 8, 90, 6);
+            bg.fillRoundedRect(4, 4, w - 8, 80, 6);
             this.uiContainer.add(bg);
-
             const fs = Math.max(9, Math.min(12, w * 0.02)) + 'px';
-            const x1 = 12, x2 = w / 2 + 10;
+            const lh = 15;
             let y1 = 12;
-            const lh = Math.max(13, Math.min(16, h * 0.015));
-
-            const addP = (label, val, col) => {
-                this.uiContainer.add(this.add.text(x1, y1, label, { fontSize: fs, fontFamily: 'Arial', color: '#8888aa' }));
-                this.uiContainer.add(this.add.text(x1 + 70, y1, String(val), { fontSize: fs, fontFamily: 'Arial', color: col || '#fff', fontStyle: 'bold' }));
+            const add = (l, v, col) => {
+                this.uiContainer.add(this.add.text(12, y1, l, { fontSize: fs, fontFamily: 'Arial', color: '#8888aa' }));
+                this.uiContainer.add(this.add.text(80, y1, String(v), { fontSize: fs, fontFamily: 'Arial', color: col || '#fff', fontStyle: 'bold' }));
                 y1 += lh;
             };
-            let y2 = 12;
-            const addP2 = (label, val, col) => {
-                this.uiContainer.add(this.add.text(x2, y2, label, { fontSize: fs, fontFamily: 'Arial', color: '#8888aa' }));
-                this.uiContainer.add(this.add.text(x2 + 70, y2, String(val), { fontSize: fs, fontFamily: 'Arial', color: col || '#fff', fontStyle: 'bold' }));
-                y2 += lh;
-            };
-            addP('Nama:', p.name||'???', '#ffdd88');
-            addP('Lv:', s.level||1, '#44ccff');
-            addP('HP:', (s.hp||100)+'/'+(s.maxHp||100), '#44cc44');
-            addP2('Energy:', (s.energy||100)+'/'+(s.maxEnergy||100), '#ffcc44');
-            addP2('Gold:', String(c.gold||0).replace(/\B(?=(\d{3})+(?!\d))/g, ','), '#ffaa44');
-            addP2('💎', String(c.diamond||0), '#44ddff');
+            add('Nama:', p.name||'???', '#ffdd88');
+            add('Lv:', s.level||1, '#44ccff');
+            add('HP:', (s.hp||100)+'/'+(s.maxHp||100), '#44cc44');
         } else {
-            // Landscape: side panel
             bg.fillStyle(0x000000, 0.65);
-            bg.fillRoundedRect(6, 6, 190, 120, 8);
+            bg.fillRoundedRect(6, 6, 180, 110, 8);
             this.uiContainer.add(bg);
-
             const fs = Math.max(10, Math.min(12, w * 0.012)) + 'px';
-            const x = 14; let y = 14;
-            const lh = 15;
-            const add = (label, val, col) => {
-                this.uiContainer.add(this.add.text(x, y, label, { fontSize: fs, fontFamily: 'Arial', color: '#8888aa' }));
-                this.uiContainer.add(this.add.text(x + 80, y, String(val), { fontSize: fs, fontFamily: 'Arial', color: col || '#fff', fontStyle: 'bold' }));
-                y += lh;
+            let y = 14;
+            const add = (l, v, col) => {
+                this.uiContainer.add(this.add.text(14, y, l, { fontSize: fs, fontFamily: 'Arial', color: '#8888aa' }));
+                this.uiContainer.add(this.add.text(80, y, String(v), { fontSize: fs, fontFamily: 'Arial', color: col || '#fff', fontStyle: 'bold' }));
+                y += 15;
             };
             add('Nama:', p.name||'???', '#ffdd88');
             add('Level:', s.level||1, '#44ccff');
             add('HP:', (s.hp||100)+'/'+(s.maxHp||100), '#44cc44');
             add('Energy:', (s.energy||100)+'/'+(s.maxEnergy||100), '#ffcc44');
             add('Gold:', String(c.gold||0).replace(/\B(?=(\d{3})+(?!\d))/g, ','), '#ffaa44');
-            add('Diamond:', String(c.diamond||0), '#44ddff');
-            add('Map Lv:', String(d.progress?.mapLevel||0), '#aaaaff');
         }
+
+        // Village mode hint
+        const hint = this.add.text(w / 2, h - 20, '👆 Geser untuk pan · Scroll untuk zoom · Klik bangunan/NPC', {
+            fontSize: Math.max(9, Math.min(11, w * 0.011)) + 'px',
+            fontFamily: 'Arial', color: '#666688', fontStyle: 'italic'
+        }).setOrigin(0.5).setDepth(100).setScrollFactor(0);
+        this.uiContainer.add(hint);
+        this.tweens.add({ targets: hint, alpha: 0, duration: 1000, delay: 3000 });
     }
 
     /* =============================================
-     *  AUTO-SAVE
+     *  INVENTORY
      * ============================================= */
-    setupAutoSave() {
-        window.addEventListener('beforeunload', () => this.saveGame());
-        this.time.addEvent({ delay: 30000, loop: true, callback: () => this.saveGame() });
+    toggleInventory() {
+        if (this.invUI.isOpen) { this.invUI.close(); }
+        else { this.invUI.open(this.saveData); }
     }
+
+    /* =============================================
+     *  SAVE/LOAD
+     * ============================================= */
     saveGame() {
-        if (!this.saveData || !this.playerBody) return;
-        this.saveData.progress.playerX = this.playerBody.x;
-        if (this.inventory) InventorySave.save(this.inventory);
-        this.saveData.progress.playerY = this.playerBody.y;
+        if (!this.saveData) return;
         try { localStorage.setItem('isekai_world_save', JSON.stringify(this.saveData)); } catch(e) {}
     }
     loadSave() {
@@ -661,138 +472,18 @@ class MainVillageScene extends Phaser.Scene {
     }
 
     /* =============================================
-     *  UPDATE (per frame)
+     *  UPDATE
      * ============================================= */
     update(time, delta) {
-        // Get input from any source
-        const mv = this.getMovementInput();
-        const spd = 100;
-
-        // Collision check
-        const nextX = this.playerBody.x + mv.x * spd * (delta / 1000);
-        const nextY = this.playerBody.y + mv.y * spd * (delta / 1000);
-        const txN = Math.floor(nextX / this.TILE);
-        const tyN = Math.floor(nextY / this.TILE);
-        const txC = Math.floor(this.playerBody.x / this.TILE);
-        const tyC = Math.floor(this.playerBody.y / this.TILE);
-
-        let vx = mv.x * spd, vy = mv.y * spd;
-        if (this.blockedSet.has(this.get(txN, tyC))) vx = 0;
-        if (this.blockedSet.has(this.get(txC, tyN))) vy = 0;
-
-        this.playerBody.setVelocity(vx, vy);
-        this.isMoving = (vx !== 0 || vy !== 0);
-
-        // Facing
-        if (Math.abs(mv.x) > 0.1 || Math.abs(mv.y) > 0.1) {
-            if (Math.abs(mv.x) > Math.abs(mv.y)) {
-                this.facing = mv.x < 0 ? 'left' : 'right';
-            } else {
-                this.facing = mv.y < 0 ? 'up' : 'down';
-            }
-        }
-
-        // Animation
-        if (this.isMoving) {
-            this.animTimer += delta;
-            if (this.animTimer >= 150) { this.animTimer = 0; this.animFrame = (this.animFrame + 1) % 4; }
-        } else {
-            this.animFrame = 0;
-        }
-
-        this.drawPlayer();
         this.renderMap();
+        this.npcs.forEach(npc => npc.update(delta));
 
-        // Update interaction system
-        if (this.interactionMgr) {
-            this.interactionMgr.update(this.playerBody.x, this.playerBody.y, this.cameras.main);
-        }
-
-        // Check interact key (E) or touch button
-        if (this.interactionMgr && (Phaser.Input.Keyboard.JustDown(this.keys.interact) || this.touchInteract)) {
-            this.touchInteract = false;
-            const target = this.interactionMgr.onInteract();
-            if (target) this.onObjectInteract(target);
-        }
-
-        // Inventory toggle
+        // Inventory key
         if (Phaser.Input.Keyboard.JustDown(this.keys.inventory) || this.touchInventory) {
             this.touchInventory = false;
             this.toggleInventory();
         }
     }
 
-    toggleInventory() {
-        if (this.invUI.isOpen) {
-            this.invUI.close();
-            this.invOpen = false;
-        } else {
-            this.invUI.open(this.saveData);
-            this.invOpen = true;
-        }
-    }
-
-    /* =============================================
-     *  INTERACTION CALLBACK
-     * ============================================= */
-    createBuildingClickZones() {
-        this.input.on("pointerdown", (pointer) => {
-            const cam = this.cameras.main;
-            const worldX = pointer.x / cam.zoom + cam.scrollX;
-            const worldY = pointer.y / cam.zoom + cam.scrollY;
-            const objects = InteractionData.getObjects("main_village");
-            for (const obj of objects) {
-                const T = this.TILE;
-                const objX = obj.tileX * T + T;
-                const objY = (obj.tileY + 2) * T;
-                const dist = Phaser.Math.Distance.Between(worldX, worldY, objX, objY);
-                if (dist < T * 3) {
-                    const pd = Phaser.Math.Distance.Between(this.playerBody.x, this.playerBody.y, objX, objY);
-                    if (pd < obj.radius + 30) {
-                        this.onObjectInteract(obj);
-                    } else {
-                        this.showFloatingText("Dekati " + obj.name + " dulu!", "#ff8844");
-                    }
-                    return;
-                }
-            }
-        });
-    }
-
-    showFloatingText(msg, color) {
-        const w = this.cameras.main.width;
-        const t = this.add.text(w / 2, this.cameras.main.height * 0.4, msg, {
-            fontSize: "14px", fontFamily: "Arial", color: color || "#ffffff",
-            fontStyle: "bold", stroke: "#000", strokeThickness: 3
-        }).setOrigin(0.5).setDepth(300).setScrollFactor(0);
-        this.tweens.add({
-            targets: t, alpha: 0, y: t.y - 20, duration: 600, delay: 800,
-            onComplete: () => t.destroy()
-        });
-    }
-
-    onObjectInteract(obj) {
-        // Rumah: masuk ke interior
-        if (obj.id === 'rumah') {
-            this.saveGame();
-            this.cameras.main.fadeOut(400, 0, 0, 0);
-            this.cameras.main.once('camerafadeoutcomplete', () => {
-                this.scene.start('HomeScene');
-            });
-            return;
-        }
-        // Placeholder lainnya: tampilkan notifikasi
-        const w = this.cameras.main.width;
-        const msg = obj.name + " - " + obj.action;
-        const t = this.add.text(w / 2, this.cameras.main.height - (this.isPortrait ? 180 : 60), msg, {
-            fontSize: "13px", fontFamily: "Arial", color: "#ffffff",
-            fontStyle: "bold", stroke: "#000000", strokeThickness: 3
-        }).setOrigin(0.5).setDepth(250).setScrollFactor(0);
-        this.tweens.add({
-            targets: t, alpha: 0, y: t.y - 20, duration: 500, delay: 1200,
-            onComplete: () => t.destroy()
-        });
-    }
-
-    shutdown() { this.saveGame(); if (this.interactionMgr) this.interactionMgr.destroy(); }
+    shutdown() { this.saveGame(); }
 }
