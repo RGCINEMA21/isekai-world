@@ -5,50 +5,41 @@
  */
 const SpawnDatabase = {
     areas: {
-        padang_rumput: [
+        beginner_grassland: [
             {
-                id: 'sp_pr_1',
-                x: 15, y: 15,
+                id: 'sp_bg_1',
+                x: 10, y: 12,
                 monsterPool: ['carrot_slime', 'green_slime'],
-                radius: 80,
+                radius: 50,
                 maxMonsters: 3,
                 respawnTime: 8000,
                 active: true
             },
             {
-                id: 'sp_pr_2',
-                x: 40, y: 12,
+                id: 'sp_bg_2',
+                x: 22, y: 8,
                 monsterPool: ['carrot_slime', 'wild_rabbit'],
-                radius: 70,
+                radius: 50,
                 maxMonsters: 3,
                 respawnTime: 8000,
                 active: true
             },
             {
-                id: 'sp_pr_3',
-                x: 25, y: 35,
+                id: 'sp_bg_3',
+                x: 8, y: 20,
                 monsterPool: ['green_slime', 'wild_rabbit'],
-                radius: 90,
-                maxMonsters: 4,
+                radius: 50,
+                maxMonsters: 3,
                 respawnTime: 10000,
                 active: true
             },
             {
-                id: 'sp_pr_4',
-                x: 45, y: 40,
+                id: 'sp_bg_4',
+                x: 20, y: 18,
                 monsterPool: ['carrot_slime', 'green_slime', 'wild_rabbit'],
-                radius: 75,
+                radius: 50,
                 maxMonsters: 3,
                 respawnTime: 8000,
-                active: true
-            },
-            {
-                id: 'sp_pr_5',
-                x: 10, y: 45,
-                monsterPool: ['carrot_slime'],
-                radius: 60,
-                maxMonsters: 2,
-                respawnTime: 6000,
                 active: true
             }
         ]

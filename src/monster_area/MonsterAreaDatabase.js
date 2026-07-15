@@ -12,10 +12,10 @@ const MonsterAreaDatabase = {
             description: 'Padang rumput hijau untuk petarung pemula.',
             levelRequired: 1,
             recommendedLevel: 1,
-            mapWidth: 50,
-            mapHeight: 50,
-            spawnX: 40,
-            spawnY: 46,
+            mapWidth: 25,
+            mapHeight: 25,
+            spawnX: 12,
+            spawnY: 22,
             theme: 'grassland',
             bgColor: 0x5a9a3a,
             monsters: [
@@ -39,10 +39,10 @@ const MonsterAreaDatabase = {
             description: 'Ladang wortel ajaib dengan monster sayuran.',
             levelRequired: 3,
             recommendedLevel: 4,
-            mapWidth: 50,
-            mapHeight: 50,
-            spawnX: 40,
-            spawnY: 46,
+            mapWidth: 25,
+            mapHeight: 25,
+            spawnX: 12,
+            spawnY: 22,
             theme: 'valley',
             bgColor: 0x7aaa3a,
             monsters: [
@@ -66,10 +66,10 @@ const MonsterAreaDatabase = {
             description: 'Hutan ajaib dipenuhi roh dan makhluk mistis.',
             levelRequired: 6,
             recommendedLevel: 7,
-            mapWidth: 55,
-            mapHeight: 55,
-            spawnX: 45,
-            spawnY: 50,
+            mapWidth: 25,
+            mapHeight: 25,
+            spawnX: 12,
+            spawnY: 22,
             theme: 'forest',
             bgColor: 0x2d6a1e,
             monsters: [
@@ -93,10 +93,10 @@ const MonsterAreaDatabase = {
             description: 'Pegunungan berbatu dengan golem batu.',
             levelRequired: 10,
             recommendedLevel: 12,
-            mapWidth: 50,
-            mapHeight: 50,
-            spawnX: 42,
-            spawnY: 46,
+            mapWidth: 25,
+            mapHeight: 25,
+            spawnX: 12,
+            spawnY: 22,
             theme: 'canyon',
             bgColor: 0x8a7a5a,
             monsters: [
@@ -120,69 +120,67 @@ const MonsterAreaDatabase = {
             description: 'Gunung salju yang membeku dan berbahaya.',
             levelRequired: 15,
             recommendedLevel: 17,
-            mapWidth: 50,
-            mapHeight: 50,
-            spawnX: 42,
-            spawnY: 46,
-            theme: 'snow',
-            bgColor: 0xaabbcc,
+            mapWidth: 25,
+            mapHeight: 25,
+            spawnX: 12,
+            spawnY: 22,
+            theme: 'frost',
+            bgColor: 0x88aacc,
             monsters: [
-                { id: 'frost_slime', name: 'Frost Slime', level: [15,18], weight: 35 },
-                { id: 'ice_wolf', name: 'Ice Wolf', level: [15,19], weight: 35 },
+                { id: 'frost_slime', name: 'Frost Slime', level: [15,17], weight: 35 },
+                { id: 'ice_wolf', name: 'Ice Wolf', level: [15,18], weight: 35 },
                 { id: 'snow_spirit', name: 'Snow Spirit', level: [16,20], weight: 30 }
             ],
-            boss: { id: 'frost_giant', name: 'Frost Giant', level: 24, respawnTime: 540000 },
+            boss: { id: 'frost_giant', name: 'Frost Giant', level: 22, respawnTime: 480000 },
             drops: [
-                { itemId: 'kain', min: 2, max: 5, rate: 0.4 },
-                { itemId: 'batu', min: 2, max: 6, rate: 0.5 },
-                { itemId: 'iron', min: 1, max: 3, rate: 0.25 }
+                { itemId: 'ice_crystal', min: 1, max: 3, rate: 0.3 },
+                { itemId: 'frost_core', min: 1, max: 2, rate: 0.2 }
             ],
             goldReward: [35, 70],
-            expReward: [60, 100]
+            expReward: [60, 110]
         },
         {
             id: 'volcano_crater',
             name: 'Volcano Crater',
             icon: '🌋',
-            description: 'Kawah gunung api yang panas dan mematikan.',
+            description: 'Gunung berapi dengan monster api mematikan.',
             levelRequired: 20,
             recommendedLevel: 22,
-            mapWidth: 50,
-            mapHeight: 50,
-            spawnX: 42,
-            spawnY: 46,
+            mapWidth: 25,
+            mapHeight: 25,
+            spawnX: 12,
+            spawnY: 22,
             theme: 'volcano',
-            bgColor: 0x884422,
+            bgColor: 0xcc4422,
             monsters: [
-                { id: 'fire_salamander', name: 'Fire Salamander', level: [20,23], weight: 30 },
-                { id: 'lava_slime', name: 'Lava Slime', level: [20,24], weight: 40 },
+                { id: 'fire_salamander', name: 'Fire Salamander', level: [20,23], weight: 35 },
+                { id: 'lava_slime', name: 'Lava Slime', level: [20,24], weight: 35 },
                 { id: 'flame_bat', name: 'Flame Bat', level: [21,25], weight: 30 }
             ],
-            boss: { id: 'volcano_dragon', name: 'Volcano Dragon', level: 30, respawnTime: 600000 },
+            boss: { id: 'volcano_dragon', name: 'Volcano Dragon', level: 28, respawnTime: 600000 },
             drops: [
-                { itemId: 'iron', min: 2, max: 5, rate: 0.35 },
-                { itemId: 'gold_ore', min: 1, max: 3, rate: 0.2 },
-                { itemId: 'kayu', min: 1, max: 4, rate: 0.3 }
+                { itemId: 'lava_core', min: 1, max: 3, rate: 0.3 },
+                { itemId: 'fire_crystal', min: 1, max: 2, rate: 0.2 }
             ],
             goldReward: [50, 100],
-            expReward: [80, 140]
+            expReward: [80, 150]
         },
         {
             id: 'mythril_cave',
             name: 'Mythril Cave',
             icon: '💎',
-            description: 'Gua bawah tanah penuh mythril dan kristal.',
+            description: 'Gua Mythril penuh kristal berbahaya.',
             levelRequired: 25,
             recommendedLevel: 27,
-            mapWidth: 50,
-            mapHeight: 50,
-            spawnX: 40,
-            spawnY: 46,
+            mapWidth: 25,
+            mapHeight: 25,
+            spawnX: 12,
+            spawnY: 22,
             theme: 'cave',
-            bgColor: 0x4a3a5a,
+            bgColor: 0x443366,
             monsters: [
-                { id: 'mythril_golem', name: 'Mythril Golem', level: [25,28], weight: 30 },
-                { id: 'crystal_spider', name: 'Crystal Spider', level: [25,29], weight: 40 },
+                { id: 'mythril_golem', name: 'Mythril Golem', level: [25,28], weight: 35 },
+                { id: 'crystal_spider', name: 'Crystal Spider', level: [25,29], weight: 35 },
                 { id: 'cave_bat', name: 'Cave Bat', level: [26,30], weight: 30 }
             ],
             boss: { id: 'mythril_guardian', name: 'Mythril Guardian', level: 35, respawnTime: 600000 },
@@ -201,10 +199,10 @@ const MonsterAreaDatabase = {
             description: 'Reruntuhan kuno dipenuhi kristal ajaib.',
             levelRequired: 30,
             recommendedLevel: 32,
-            mapWidth: 50,
-            mapHeight: 50,
-            spawnX: 42,
-            spawnY: 46,
+            mapWidth: 25,
+            mapHeight: 25,
+            spawnX: 12,
+            spawnY: 22,
             theme: 'ruins',
             bgColor: 0x554488,
             monsters: [
@@ -228,10 +226,10 @@ const MonsterAreaDatabase = {
             description: 'Rawa gelap beracun dan penuh bayangan.',
             levelRequired: 35,
             recommendedLevel: 37,
-            mapWidth: 50,
-            mapHeight: 50,
-            spawnX: 42,
-            spawnY: 46,
+            mapWidth: 25,
+            mapHeight: 25,
+            spawnX: 12,
+            spawnY: 22,
             theme: 'swamp',
             bgColor: 0x2a3a2a,
             monsters: [
@@ -255,10 +253,10 @@ const MonsterAreaDatabase = {
             description: 'Sarang naga kuno, area paling berbahaya.',
             levelRequired: 40,
             recommendedLevel: 42,
-            mapWidth: 55,
-            mapHeight: 55,
-            spawnX: 45,
-            spawnY: 50,
+            mapWidth: 25,
+            mapHeight: 25,
+            spawnX: 12,
+            spawnY: 22,
             theme: 'dragon',
             bgColor: 0x3a1a2a,
             monsters: [
@@ -277,34 +275,28 @@ const MonsterAreaDatabase = {
         }
     ],
 
-    /** Dapatkan area berdasarkan ID */
     getArea(areaId) {
         return this.areas.find(a => a.id === areaId) || null;
     },
 
-    /** Dapatkan semua area */
     getAllAreas() {
         return this.areas;
     },
 
-    /** Cek apakah area terbuka berdasarkan level */
     isUnlocked(areaId, playerLevel) {
         const area = this.getArea(areaId);
         if (!area) return false;
         return playerLevel >= area.levelRequired;
     },
 
-    /** Dapatkan area yang terbuka */
     getUnlockedAreas(playerLevel) {
         return this.areas.filter(a => playerLevel >= a.levelRequired);
     },
 
-    /** Dapatkan area berikutnya yang belum terbuka */
     getNextLockedArea(playerLevel) {
         return this.areas.find(a => playerLevel < a.levelRequired);
     },
 
-    /** Dapatkan data untuk masuk ke area (dipanggil PortalScene) */
     getAreaConfig(areaId) {
         const area = this.getArea(areaId);
         if (!area) return null;

@@ -1,6 +1,7 @@
 /**
  * MonsterAreaCamera - Smooth camera following player.
  * Responsive zoom, bounds checking, smooth interpolation.
+ * Optimized for 25x25 tile maps (400x400 px).
  */
 class MonsterAreaCamera {
     constructor(scene, playerController, map) {
@@ -9,7 +10,7 @@ class MonsterAreaCamera {
         this.map = map;
         this.camera = scene.cameras.main;
 
-        this.smoothFactor = 0.08;
+        this.smoothFactor = 0.1;
         this.targetX = 0;
         this.targetY = 0;
         this.zoomLevel = 2;
@@ -20,18 +21,22 @@ class MonsterAreaCamera {
         const h = this.camera.height;
         const isPortrait = h > w;
 
-        // Pixel dimensions of map
         const mapPxW = this.map.getPixelWidth();
         const mapPxH = this.map.getPixelHeight();
 
         // Set bounds
         this.camera.setBounds(0, 0, mapPxW, mapPxH);
 
-        // Zoom: pixel art looks best at 2x
+        // Calculate zoom: fit map nicely on screen
+        // For 25x25 map at 16px = 400x400 pixel map
         if (isPortrait) {
-            this.zoomLevel = Math.min(2.0, Math.max(1.2, w / 300));
+            // Portrait: zoom so map width fills ~80% of screen width
+            this.zoomLevel = (w * 0.85) / mapPxW;
+            this.zoomLevel = Phaser.Math.Clamp(this.zoomLevel, 1.0, 2.5);
         } else {
-            this.zoomLevel = Math.min(2.0, Math.max(1.2, w / 400));
+            // Landscape: zoom so map height fills ~75% of screen height
+            this.zoomLevel = (h * 0.75) / mapPxH;
+            this.zoomLevel = Phaser.Math.Clamp(this.zoomLevel, 1.0, 2.5);
         }
 
         this.camera.setZoom(this.zoomLevel);
@@ -67,11 +72,17 @@ class MonsterAreaCamera {
 
     onResize(w, h) {
         const isPortrait = h > w;
+        const mapPxW = this.map.getPixelWidth();
+        const mapPxH = this.map.getPixelHeight();
+
         if (isPortrait) {
-            this.zoomLevel = Math.min(2.0, Math.max(1.2, w / 300));
+            this.zoomLevel = (w * 0.85) / mapPxW;
+            this.zoomLevel = Phaser.Math.Clamp(this.zoomLevel, 1.0, 2.5);
         } else {
-            this.zoomLevel = Math.min(2.0, Math.max(1.2, w / 400));
+            this.zoomLevel = (h * 0.75) / mapPxH;
+            this.zoomLevel = Phaser.Math.Clamp(this.zoomLevel, 1.0, 2.5);
         }
+
         this.camera.setZoom(this.zoomLevel);
         this.clampScroll();
     }
