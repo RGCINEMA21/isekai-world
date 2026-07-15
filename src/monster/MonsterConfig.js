@@ -90,8 +90,8 @@ const MonsterConfig = {
             damage: Math.floor((baseStats.damage + this.scaling.damagePerLevel * (level - 1)) * mult),
             attackSpeed: baseStats.attackSpeed,
             moveSpeed: baseStats.moveSpeed,
-            expReward: Math.floor((baseStats.expReward + this.scaling.expPerLevel * (level - 1)) * mult),
-            goldReward: Math.floor((baseStats.goldReward + this.scaling.goldPerLevel * (level - 1)) * mult)
+            expReward: Math.floor(((baseStats.expReward || this.baseStats.expReward) + this.scaling.expPerLevel * (level - 1)) * mult),
+            goldReward: Math.floor(((baseStats.goldReward || this.baseStats.goldReward) + this.scaling.goldPerLevel * (level - 1)) * mult)
         };
     }
 };

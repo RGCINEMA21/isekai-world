@@ -120,14 +120,23 @@ class InventoryManager {
 
     /** Serialize for save */
     toJSON() {
-        return this.slots.map(s => s.toJSON());
+        return {
+            maxSlots: this.maxSlots,
+            cols: this.cols,
+            rows: this.rows,
+            slots: this.slots.map(s => s.toJSON())
+        };
     }
 
     /** Deserialize from save */
     static fromJSON(data, maxSlots = 20) {
         const inv = new InventoryManager(maxSlots);
-        if (data && Array.isArray(data)) {
-            data.forEach((d, i) => {
+        if (data) {
+            // Support both old format (array) and new format (object with slots)
+            const slotData = Array.isArray(data) ? data : (data.slots || []);
+            if (data.cols) inv.cols = data.cols;
+            if (data.rows) inv.rows = data.rows;
+            slotData.forEach((d, i) => {
                 if (i < inv.maxSlots) inv.slots[i] = InventorySlot.fromJSON(d, i);
             });
         }

@@ -12,9 +12,9 @@ class VillageNPC {
         this.hairColor = data.hairColor;
         this.role = data.role;
 
-        // World position
-        this.worldX = data.tileX * tileSize + tileSize;
-        this.worldY = data.tileY * tileSize + tileSize;
+        // World position (center of tile)
+        this.worldX = data.tileX * tileSize + tileSize / 2;
+        this.worldY = data.tileY * tileSize + tileSize / 2;
 
         // Graphics
         this.gfx = scene.add.graphics().setDepth(15);
@@ -33,7 +33,8 @@ class VillageNPC {
         this.hitArea = scene.add.rectangle(this.worldX, this.worldY, tileSize * 2.5, tileSize * 3, 0x000000, 0)
             .setInteractive({ useHandCursor: true }).setDepth(16);
 
-        this.hitArea.on('pointerdown', () => {
+        this.hitArea.on('pointerdown', (pointer, localX, localY, event) => {
+            if (event && event.stopPropagation) event.stopPropagation();
             if (this.onTap) this.onTap(this);
         });
 

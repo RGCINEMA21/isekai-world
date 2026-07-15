@@ -19,6 +19,10 @@ class AdventureManager {
         this.animFrame = 0;
         this.animTimer = 0;
         
+        // Animation offsets (for battle lunge, hurt, etc.)
+        this.drawOffsetX = 0;
+        this.drawOffsetY = 0;
+        
         this.moveSpeed = 120;
         this.diagonalSpeed = this.moveSpeed * 0.707;
         

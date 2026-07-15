@@ -101,7 +101,7 @@ class PortalScene extends Phaser.Scene {
 
         this.cameras.main.fadeOut(300, 0, 0, 0);
         this.cameras.main.once('camerafadeoutcomplete', () => {
-            this.scene.start('MainVillageScene');
+            this.scene.start('VillageScene');
         });
     }
 

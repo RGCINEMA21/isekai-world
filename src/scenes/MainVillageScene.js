@@ -57,15 +57,20 @@ class MainVillageScene extends Phaser.Scene {
             this.cameras.main.zoom = newZoom;
         });
 
-        // Pinch zoom (mobile)
+        // Pinch zoom (mobile) - only when two fingers and enough distance
         this.lastPinchDist = 0;
+        this.isPinching = false;
         this.input.on('pointermove', (p) => {
             if (this.input.pointer1.isDown && this.input.pointer2.isDown) {
                 const d = Phaser.Math.Distance.Between(
                     this.input.pointer1.x, this.input.pointer1.y,
                     this.input.pointer2.x, this.input.pointer2.y
                 );
-                if (this.lastPinchDist > 0) {
+                if (d > 30) {
+                    this.isPinching = true;
+                    this.isDragging = false;
+                }
+                if (this.isPinching && this.lastPinchDist > 0) {
                     const diff = d - this.lastPinchDist;
                     const newZoom = Phaser.Math.Clamp(this.cameras.main.zoom + diff * 0.005, 0.5, 3);
                     this.cameras.main.zoom = newZoom;
@@ -73,7 +78,7 @@ class MainVillageScene extends Phaser.Scene {
                 this.lastPinchDist = d;
             }
         });
-        this.input.on('pointerup', () => { this.lastPinchDist = 0; });
+        this.input.on('pointerup', () => { this.lastPinchDist = 0; this.isPinching = false; });
 
         // UI
         this.createUI();
@@ -117,6 +122,10 @@ class MainVillageScene extends Phaser.Scene {
     }
 
     onDragStart(ptr) {
+        // Don't start drag if clicking on interactive object (building/NPC)
+        if (ptr.downElement && ptr.downElement !== this.sys.game.canvas) {
+            return;
+        }
         this.isDragging = true;
         this.dragStartX = ptr.x;
         this.dragStartY = ptr.y;
@@ -336,13 +345,19 @@ class MainVillageScene extends Phaser.Scene {
         });
     }
 
-    showBuildingLabel(building, x, y) {
+    showBuildingLabel(building, worldX, worldY) {
         this.hideBuildingLabel();
-        this.buildingLabel = this.add.text(x, y, building.name, {
-            fontSize: '11px', fontFamily: 'Arial', color: '#ffffff',
+        // Convert world coords to screen coords
+        const cam = this.cameras.main;
+        const zoom = cam.zoom || 1;
+        const sx = (worldX - cam.scrollX) * zoom;
+        const sy = (worldY - cam.scrollY) * zoom;
+        this.buildingLabel = this.add.text(sx, sy, building.name, {
+            fontSize: Math.max(10, Math.min(13, this.cameras.main.width * 0.012)) + 'px',
+            fontFamily: 'Arial', color: '#ffffff',
             stroke: '#000000', strokeThickness: 3,
             backgroundColor: '#00000088', padding: { x: 6, y: 3 }
-        }).setOrigin(0.5).setDepth(200);
+        }).setOrigin(0.5).setDepth(200).setScrollFactor(0);
     }
 
     hideBuildingLabel() {

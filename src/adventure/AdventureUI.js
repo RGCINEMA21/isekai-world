@@ -70,6 +70,40 @@ class AdventureUI {
         addStat('Gold:', String(currency.gold || 0).replace(/\B(?=(\d{3})+(?!\d))/g, ','), '#ffaa44');
         addStat('Diamond:', String(currency.diamond || 0), '#44ddff');
         
+        // EXP Bar
+        const expInfo = this.scene.rewardManager ? this.scene.rewardManager.getExpInfo() : null;
+        if (expInfo) {
+            const expBarY = y + 2;
+            const expBarW = this.isPortrait ? w * 0.35 : 120;
+            const expBarH = 6;
+            
+            // EXP label
+            this.container.add(this.scene.add.text(x, expBarY, 'EXP:', {
+                fontSize: Math.max(8, Math.min(10, w * 0.01)) + 'px',
+                fontFamily: 'Arial', color: '#aa8844'
+            }));
+            
+            // EXP bar background
+            const expBg = this.scene.add.graphics();
+            expBg.fillStyle(0x333333, 0.8);
+            expBg.fillRoundedRect(x + 40, expBarY, expBarW, expBarH, 3);
+            this.container.add(expBg);
+            
+            // EXP bar fill
+            const expFill = this.scene.add.graphics();
+            const pct = Math.min(1, expInfo.percent);
+            expFill.fillStyle(0x44aaff, 1);
+            expFill.fillRoundedRect(x + 40, expBarY, Math.max(0, expBarW * pct), expBarH, 3);
+            this.container.add(expFill);
+            
+            // EXP text
+            this.container.add(this.scene.add.text(x + 44 + expBarW, expBarY + 3, 
+                `${expInfo.exp}/${expInfo.expToNext}`, {
+                fontSize: Math.max(7, Math.min(9, w * 0.009)) + 'px',
+                fontFamily: 'monospace', color: '#88bbee'
+            }).setOrigin(0, 0.5));
+        }
+        
         // Area name
         const areaBg = this.scene.add.graphics();
         areaBg.fillStyle(0x2c1810, 0.8);
@@ -194,6 +228,12 @@ class AdventureUI {
         }
     }
     
+    /** Perbarui stats HUD dengan data terbaru */
+    updateStats(saveData) {
+        if (!saveData) return;
+        this.createHUD();
+    }
+
     destroy() {
         if (this.container) {
             this.container.destroy();

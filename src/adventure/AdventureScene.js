@@ -1,6 +1,6 @@
 /**
  * AdventureScene - Main adventure mode scene.
- * Handles player movement, camera, UI, and area exploration.
+ * Handles player movement, camera, UI, area exploration, and auto battle.
  * Reusable by: Portal Monster, Hutan, Tambang, Memancing, Dungeon, Arena Boss.
  */
 class AdventureScene extends Phaser.Scene {
@@ -8,9 +8,6 @@ class AdventureScene extends Phaser.Scene {
         super({ key: 'AdventureScene' });
     }
     
-    /**
-     * Initialize scene with data from previous scene.
-     */
     init(data) {
         this.areaId = data.areaId || 'forest';
         this.areaName = data.areaName || 'Forest';
@@ -21,10 +18,8 @@ class AdventureScene extends Phaser.Scene {
     }
     
     create() {
-        // Load save data
         this.saveData = this.loadSave();
         
-        // Create manager first
         this.manager = new AdventureManager({
             areaId: this.areaId,
             areaName: this.areaName,
@@ -34,44 +29,56 @@ class AdventureScene extends Phaser.Scene {
             player: this.saveData?.player || {}
         });
         
-        // Initialize player position
         this.manager.initPlayer(this.startX * this.manager.tileSize, this.startY * this.manager.tileSize);
         
-        // Generate map (draw the world)
         this.generateMap();
-        
-        // Create player graphics (drawn on top of map)
         this.playerGfx = this.add.graphics().setDepth(10);
         
-        // Setup camera AFTER map and player are created
+        this.spawner = new MonsterSpawner(this, this.manager);
+        this.spawner.init();
+        
+        this.battleManager = new BattleManager(this, this.manager, this.spawner, null);
+        
+
+        // Reward System
+        this.rewardManager = new RewardManager(this, this.saveData);
+        this.battleManager.rewardManager = this.rewardManager;
+
+
+        // Load warehouse untuk Storage Manager
+        this.warehouseManager = WarehouseSave.loadOrCreate();
+        this.inventoryManager = InventorySave.load(20);
+        this.storageManager = new StorageManager(this.inventoryManager, this.warehouseManager);
+        this.rewardManager.initStorage(this.storageManager);
+
+        this.spawnDebugger = new SpawnDebugger(this);
+        this.debugMode = false;
+        
         this.cam = new AdventureCamera(this, this.manager);
         this.cam.init();
         
-        // Setup input
         this.setupInput();
         
-        // UI
+        // Virtual joystick for mobile
+        this.joystick = null;
+        this.joystickActive = false;
+        this.joystickBase = null;
+        this.joystickStick = null;
+        this.joystickPointer = null;
+        
         this.ui = new AdventureUI(this, this.manager);
         this.ui.init();
         
-        // Transition
         this.transition = new TransitionManager(this);
-        
-        // Auto-save timer
         this.lastSaveTime = 0;
         
-        // Resize handler
         this.scale.on('resize', (sz) => this.onResize(sz));
         
-        // Fade in with slight delay to ensure rendering
         this.time.delayedCall(50, () => {
             this.cameras.main.fadeIn(400, 0, 0, 0);
         });
     }
     
-    /**
-     * Generate the adventure map using graphics.
-     */
     generateMap() {
         const width = this.manager.mapWidth;
         const height = this.manager.mapHeight;
@@ -79,7 +86,6 @@ class AdventureScene extends Phaser.Scene {
         
         this.mapGfx = this.add.graphics().setDepth(0);
         
-        // Use a seeded random for consistent tree placement
         let seed = this.areaId.length * 1337;
         const seededRandom = () => {
             seed = (seed * 9301 + 49297) % 233280;
@@ -91,7 +97,6 @@ class AdventureScene extends Phaser.Scene {
                 const px = x * tileSize;
                 const py = y * tileSize;
                 
-                // Base ground color based on area type
                 let baseColor = 0x4a8a3a;
                 if (this.areaId === 'tambang') baseColor = 0x8a7a5a;
                 else if (this.areaId === 'memancing') baseColor = 0x3a8a6a;
@@ -99,7 +104,6 @@ class AdventureScene extends Phaser.Scene {
                 this.mapGfx.fillStyle(baseColor, 1);
                 this.mapGfx.fillRect(px, py, tileSize, tileSize);
                 
-                // Variation
                 const noise = Math.sin(x * 0.5) * Math.cos(y * 0.5);
                 if (noise > 0.3) {
                     this.mapGfx.fillStyle(0x3a7a2a, 1);
@@ -112,7 +116,6 @@ class AdventureScene extends Phaser.Scene {
                     this.mapGfx.fillRect(px, py, tileSize, tileSize);
                 }
                 
-                // Border walls (prevent going out of map)
                 if (x === 0 || y === 0 || x === width - 1 || y === height - 1) {
                     this.mapGfx.fillStyle(0x5a3a1a, 1);
                     this.mapGfx.fillRect(px, py, tileSize, tileSize);
@@ -120,7 +123,6 @@ class AdventureScene extends Phaser.Scene {
                     this.mapGfx.fillRect(px, py, tileSize, tileSize);
                 }
                 
-                // Trees (seeded random)
                 if (seededRandom() < 0.02 && x > 3 && x < width - 3 && y > 3 && y < height - 3) {
                     this.mapGfx.fillStyle(0x5a3a1a, 1);
                     this.mapGfx.fillRect(px + 6, py + 10, 4, 6);
@@ -132,14 +134,10 @@ class AdventureScene extends Phaser.Scene {
             }
         }
         
-        // Spawn marker
         this.mapGfx.fillStyle(0xffaa44, 0.5);
         this.mapGfx.fillCircle(this.startX * tileSize + 8, this.startY * tileSize + 8, 12);
     }
     
-    /**
-     * Setup keyboard input.
-     */
     setupInput() {
         this.cursors = this.input.keyboard.createCursorKeys();
         this.keys = this.input.keyboard.addKeys({
@@ -148,81 +146,174 @@ class AdventureScene extends Phaser.Scene {
             left: 'A',
             right: 'D'
         });
+        
+        this.input.keyboard.on('keydown-F1', () => {
+            this.debugMode = !this.debugMode;
+            if (this.debugMode) {
+                this.spawnDebugger.show();
+                if (this.spawner) this.spawner.toggleDebug();
+            } else {
+                this.spawnDebugger.hide();
+                if (this.spawner) this.spawner.toggleDebug();
+            }
+        });
+        
+        // Monster click/touch handling
+        this.input.on('pointerdown', (pointer) => {
+            if (this.battleManager && this.battleManager.isInBattle) return;
+            // If pointer is on joystick area, don't process monster click
+            if (this.joystickActive) return;
+            
+            const zoom = this.cameras.main.zoom || 1;
+            const worldX = pointer.x / zoom + this.cameras.main.scrollX;
+            const worldY = pointer.y / zoom + this.cameras.main.scrollY;
+            
+            if (this.spawner && this.spawner.spawnManager) {
+                const monsters = this.spawner.spawnManager.getAllActiveMonsters();
+                let closestMonster = null;
+                let closestDist = 30;
+                
+                for (const monster of monsters) {
+                    if (!monster.active) continue;
+                    const dist = Phaser.Math.Distance.Between(worldX, worldY, monster.x, monster.y);
+                    if (dist < closestDist) {
+                        closestDist = dist;
+                        closestMonster = monster;
+                    }
+                }
+                
+                if (closestMonster) {
+                    this.battleManager.onMonsterClicked(closestMonster);
+                }
+            }
+        });
     }
     
-    /**
-     * Get movement velocity from input.
-     */
+    /* =============================================
+     *  VIRTUAL JOYSTICK
+     * ============================================= */
+    createJoystick(x, y) {
+        if (this.joystickBase) this.destroyJoystick();
+        
+        const baseRadius = 40;
+        const stickRadius = 18;
+        
+        this.joystickBase = this.add.graphics().setDepth(150).setScrollFactor(0);
+        this.joystickBase.fillStyle(0xffffff, 0.15);
+        this.joystickBase.fillCircle(x, y, baseRadius);
+        this.joystickBase.lineStyle(2, 0xffffff, 0.3);
+        this.joystickBase.strokeCircle(x, y, baseRadius);
+        
+        this.joystickStick = this.add.graphics().setDepth(151).setScrollFactor(0);
+        this.joystickStick.fillStyle(0xffffff, 0.4);
+        this.joystickStick.fillCircle(x, y, stickRadius);
+        
+        this.joystickData = {
+            baseX: x,
+            baseY: y,
+            stickX: x,
+            stickY: y,
+            baseRadius: baseRadius,
+            stickRadius: stickRadius,
+            dx: 0,
+            dy: 0
+        };
+    }
+    
+    updateJoystick(pointer) {
+        if (!this.joystickData) return;
+        const jd = this.joystickData;
+        
+        const dx = pointer.x - jd.baseX;
+        const dy = pointer.y - jd.baseY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        if (dist <= jd.baseRadius) {
+            jd.stickX = pointer.x;
+            jd.stickY = pointer.y;
+        } else {
+            jd.stickX = jd.baseX + (dx / dist) * jd.baseRadius;
+            jd.stickY = jd.baseY + (dy / dist) * jd.baseRadius;
+        }
+        
+        const normDist = Math.min(dist, jd.baseRadius) / jd.baseRadius;
+        jd.dx = (jd.stickX - jd.baseX) / jd.baseRadius;
+        jd.dy = (jd.stickY - jd.baseY) / jd.baseRadius;
+        
+        // Redraw stick
+        if (this.joystickStick) {
+            this.joystickStick.clear();
+            this.joystickStick.fillStyle(0xffffff, 0.5);
+            this.joystickStick.fillCircle(jd.stickX, jd.stickY, jd.stickRadius);
+        }
+    }
+    
+    destroyJoystick() {
+        if (this.joystickBase) { this.joystickBase.destroy(); this.joystickBase = null; }
+        if (this.joystickStick) { this.joystickStick.destroy(); this.joystickStick = null; }
+        this.joystickData = null;
+        this.joystickActive = false;
+        this.joystickPointer = null;
+    }
+    
+    getJoystickVelocity() {
+        if (!this.joystickData) return { x: 0, y: 0 };
+        return { x: this.joystickData.dx, y: this.joystickData.dy };
+    }
+    
     getMovementVelocity() {
-        let vx = 0, vy = 0;
+        let vx = 0;
+        let vy = 0;
+        
         if (this.cursors.left.isDown || this.keys.left.isDown) vx = -1;
-        else if (this.cursors.right.isDown || this.keys.right.isDown) vx = 1;
+        if (this.cursors.right.isDown || this.keys.right.isDown) vx = 1;
         if (this.cursors.up.isDown || this.keys.up.isDown) vy = -1;
-        else if (this.cursors.down.isDown || this.keys.down.isDown) vy = 1;
+        if (this.cursors.down.isDown || this.keys.down.isDown) vy = 1;
+        
         return { x: vx, y: vy };
     }
     
-    /**
-     * Draw the player character using placeholder graphics.
-     */
     drawPlayer() {
         if (!this.playerGfx) return;
         this.playerGfx.clear();
         
-        const x = Math.round(this.manager.playerX);
-        const y = Math.round(this.manager.playerY);
+        const x = Math.round(this.manager.playerX + (this.manager.drawOffsetX || 0));
+        const y = Math.round(this.manager.playerY + (this.manager.drawOffsetY || 0));
         const facing = this.manager.facing;
         const moving = this.manager.isMoving;
         const frame = this.manager.animFrame;
         
-        // Get gender colors from save data
         const gender = this.saveData?.player?.gender || 'male';
-        
-        // Character colors
         const skin = 0xffcc99;
-        let hair, shirt;
-        if (gender === 'female') {
-            hair = 0xcc6633;
-            shirt = 0xcc4488;
-        } else {
-            hair = 0x443322;
-            shirt = 0x4466aa;
-        }
+        const hair = gender === 'female' ? 0xcc6633 : 0x443322;
+        const shirt = gender === 'female' ? 0xcc4488 : 0x4466aa;
         const pants = 0x444466;
         const boot = 0x3a2a1a;
         
-        const s = 1;
         const step = moving ? Math.sin(frame * Math.PI) * 2 : 0;
         
-        // Shadow
         this.playerGfx.fillStyle(0x000000, 0.2);
         this.playerGfx.fillEllipse(x, y + 12, 14, 5);
         
-        // Boots
         this.playerGfx.fillStyle(boot, 1);
         this.playerGfx.fillRect(x - 3, y + 3 + (moving && facing !== 'up' ? step : 0), 2, 3);
         this.playerGfx.fillRect(x + 1, y + 3 + (moving && facing !== 'up' ? -step : 0), 2, 3);
         
-        // Pants
         this.playerGfx.fillStyle(pants, 1);
         this.playerGfx.fillRect(x - 3, y - 1, 2, 5);
         this.playerGfx.fillRect(x + 1, y - 1, 2, 5);
         
-        // Shirt
         this.playerGfx.fillStyle(shirt, 1);
         this.playerGfx.fillRect(x - 4, y - 6, 8, 6);
         
-        // Arms
         const armSwing = moving ? Math.sin(frame * Math.PI) * 2 : 0;
         this.playerGfx.fillStyle(skin, 1);
         this.playerGfx.fillRect(x - 5, y - 4 + armSwing, 2, 5);
         this.playerGfx.fillRect(x + 3, y - 4 - armSwing, 2, 5);
         
-        // Head
         this.playerGfx.fillStyle(skin, 1);
         this.playerGfx.fillRect(x - 3, y - 12, 6, 7);
         
-        // Hair
         this.playerGfx.fillStyle(hair, 1);
         this.playerGfx.fillRect(x - 3, y - 13, 6, 3);
         if (facing === 'down') {
@@ -238,7 +329,6 @@ class AdventureScene extends Phaser.Scene {
             this.playerGfx.fillRect(x + 3, y - 11, 1, 4);
         }
         
-        // Eyes
         if (facing !== 'up') {
             this.playerGfx.fillStyle(0xffffff, 1);
             if (facing === 'down') {
@@ -259,9 +349,6 @@ class AdventureScene extends Phaser.Scene {
         }
     }
     
-    /**
-     * Toggle inventory UI.
-     */
     toggleInventory() {
         if (!this.invUI) {
             const inventory = InventorySave.load(20);
@@ -275,21 +362,20 @@ class AdventureScene extends Phaser.Scene {
         }
     }
     
-    /**
-     * Exit adventure mode and return to village.
-     */
     exitAdventure() {
         this.saveGame();
-        this.ui.destroy();
+        // Simpan warehouse dan inventory
+        if (this.warehouseManager) WarehouseSave.save(this.warehouseManager);
+        if (this.inventoryManager) InventorySave.save(this.inventoryManager);
+        if (this.ui) this.ui.destroy();
+        if (this.battleManager) this.battleManager.destroy();
+        this.destroyJoystick();
         this.cameras.main.fadeOut(400, 0, 0, 0);
         this.cameras.main.once('camerafadeoutcomplete', () => {
-            this.scene.start('MainVillageScene');
+            this.scene.start('VillageScene');
         });
     }
     
-    /**
-     * Save game data to localStorage.
-     */
     saveGame() {
         if (!this.saveData) return;
         this.saveData.progress = this.saveData.progress || {};
@@ -302,9 +388,6 @@ class AdventureScene extends Phaser.Scene {
         }
     }
     
-    /**
-     * Load save data from localStorage.
-     */
     loadSave() {
         try {
             const raw = localStorage.getItem('isekai_world_save');
@@ -314,43 +397,119 @@ class AdventureScene extends Phaser.Scene {
         }
     }
     
-    /**
-     * Handle screen resize.
-     */
     onResize(size) {
         if (this.cam) this.cam.onResize(size.width, size.height);
         if (this.ui) this.ui.createHUD();
+        // Recreate joystick if active
+        if (this.joystickActive) {
+            this.createJoystick(70, size.height - 80);
+        }
     }
     
-    /**
-     * Update game logic every frame.
-     */
     update(time, delta) {
-        // Get movement input
-        const velocity = this.getMovementVelocity();
+        const isAutoWalking = this.battleManager && this.battleManager.isAutoWalking;
+        const isInBattle = this.battleManager && this.battleManager.isInBattle;
         
-        // Update player movement
-        this.manager.updateMovement(velocity, delta);
+        // Handle joystick touch input
+        const hasTouch = this.sys.game.device.input.touch;
+        if (hasTouch && !isInBattle) {
+            this._handleJoystickInput();
+        }
         
-        // Update camera
+        // Movement: combine keyboard + joystick
+        if (!isAutoWalking && !isInBattle) {
+            const kbVel = this.getMovementVelocity();
+            const jsVel = this.getJoystickVelocity();
+            
+            let finalVx = kbVel.x;
+            let finalVy = kbVel.y;
+            
+            // Joystick overrides keyboard if active
+            if (Math.abs(jsVel.x) > 0.1 || Math.abs(jsVel.y) > 0.1) {
+                finalVx = jsVel.x;
+                finalVy = jsVel.y;
+                // Normalize diagonal
+                const len = Math.sqrt(finalVx * finalVx + finalVy * finalVy);
+                if (len > 1) { finalVx /= len; finalVy /= len; }
+            }
+            
+            this.manager.updateMovement({ x: finalVx, y: finalVy }, delta);
+        }
+        
         this.cam.update(delta);
         
-        // Draw player
+        if (this.spawner) {
+            this.spawner.update(delta);
+        }
+        
+        if (this.battleManager) {
+            this.battleManager.update(delta);
+        }
+        
+        if (this.debugMode && this.spawnDebugger && this.spawner) {
+            this.spawnDebugger.updateDisplay(this.spawner);
+        }
+        
         this.drawPlayer();
         
-        // Auto-save every 30 seconds
         if (time - this.lastSaveTime > 30000) {
             this.saveGame();
             this.lastSaveTime = time;
         }
     }
     
-    /**
-     * Clean up when scene shuts down.
-     */
+    _handleJoystickInput() {
+        const pointers = this.input.manager.pointers;
+        const isMobile = !this.sys.game.device.os.desktop;
+        
+        // Check for touch input (works on all touch-capable devices)
+        const hasTouch = this.scene.sys.game.device.input.touch;
+        if (!hasTouch) {
+            if (this.joystickActive) this.destroyJoystick();
+            return;
+        }
+        
+        // Find any pointer not used by UI buttons (left side for joystick)
+        let leftPointer = null;
+        const w = this.cameras.main.width;
+        for (const p of pointers) {
+            if (p.isDown && p.x < w * 0.6) {
+                leftPointer = p;
+                break;
+            }
+        }
+        
+        if (leftPointer && !this.joystickActive) {
+            this.joystickActive = true;
+            this.joystickPointer = leftPointer.id;
+            this.createJoystick(leftPointer.x, leftPointer.y);
+            this.updateJoystick(leftPointer);
+        } else if (leftPointer && this.joystickActive && leftPointer.id === this.joystickPointer) {
+            this.updateJoystick(leftPointer);
+        } else if (!leftPointer && this.joystickActive) {
+            this.destroyJoystick();
+        }
+    }
+    
+    /** Callback saat reward selesai diproses */
+    onRewardProcessed(rewardResult) {
+        // Update UI dengan data terbaru
+        if (this.ui) {
+            this.ui.updateStats(this.saveData);
+        }
+    }
+
     shutdown() {
         this.saveGame();
         if (this.ui) this.ui.destroy();
         if (this.invUI) { this.invUI.destroy(); this.invUI = null; }
+        if (this.spawner) { this.spawner.destroy(); this.spawner = null; }
+        if (this.spawnDebugger) { this.spawnDebugger.destroy(); this.spawnDebugger = null; }
+        if (this.battleManager) { this.battleManager.destroy(); this.battleManager = null; }
+        if (this.rewardManager) { this.rewardManager.destroy(); this.rewardManager = null; }
+        // Simpan warehouse dan inventory
+        if (this.warehouseManager) WarehouseSave.save(this.warehouseManager);
+        if (this.inventoryManager) InventorySave.save(this.inventoryManager);
+        this.destroyJoystick();
     }
 }

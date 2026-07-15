@@ -314,7 +314,7 @@ class HomeScene extends Phaser.Scene {
         this.saveGame();
         this.cameras.main.fadeOut(400, 0, 0, 0);
         this.cameras.main.once('camerafadeoutcomplete', () => {
-            this.scene.start('MainVillageScene');
+            this.scene.start('VillageScene');
         });
     }
 

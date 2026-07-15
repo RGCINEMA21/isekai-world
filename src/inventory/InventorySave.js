@@ -22,6 +22,10 @@ const InventorySave = {
             const raw = localStorage.getItem(this.SAVE_KEY);
             if (!raw) return new InventoryManager(maxSlots);
             const data = JSON.parse(raw);
+            // Handle both old format (array of slots) and new format (object with slots array)
+            if (Array.isArray(data)) {
+                return InventoryManager.fromJSON({ slots: data, cols: 5, rows: 4 }, maxSlots);
+            }
             return InventoryManager.fromJSON(data, maxSlots);
         } catch (e) {
             console.error('[InventorySave] Load failed:', e);
