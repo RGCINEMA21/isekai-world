@@ -8,11 +8,11 @@ class MonsterAreaMap {
         this.areaId = config.areaId || 'beginner_grassland';
         this.areaName = config.areaName || 'Beginner Grassland';
         this.tileSize = config.tileSize || 16;
-        this.mapWidth = config.mapWidth || 80;
-        this.mapHeight = config.mapHeight || 80;
+        this.mapWidth = config.mapWidth || 50;
+        this.mapHeight = config.mapHeight || 50;
         this.theme = config.theme || 'grassland';
-        this.spawnX = config.spawnX || 40;
-        this.spawnY = config.spawnY || 70;
+        this.spawnX = config.spawnX || 25;
+        this.spawnY = config.spawnY || 46;
 
         // Tile types
         this.T = {

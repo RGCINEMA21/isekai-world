@@ -10,10 +10,10 @@ class MonsterAreaScene extends Phaser.Scene {
     init(data) {
         this.areaId = data.areaId || 'beginner_grassland';
         this.areaName = data.areaName || 'Beginner Grassland';
-        this.mapWidth = data.mapWidth || 80;
-        this.mapHeight = data.mapHeight || 80;
-        this.spawnX = data.spawnX || 40;
-        this.spawnY = data.spawnY || 70;
+        this.mapWidth = data.mapWidth || 50;
+        this.mapHeight = data.mapHeight || 50;
+        this.spawnX = data.spawnX || 25;
+        this.spawnY = data.spawnY || 46;
         this.theme = data.theme || 'grassland';
     }
 
