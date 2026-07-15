@@ -1,8 +1,8 @@
 /**
  * PlayerController - Movement, animation, collision.
  * Desktop: WASD + Arrow Keys
- * Mobile: Fixed-position analog joystick (bottom-left)
- * All sizing is percentage-based for any screen size.
+ * Mobile: Large fixed-position analog joystick (bottom-left)
+ * Joystick is ALWAYS visible and large enough to use comfortably.
  */
 class PlayerController {
     constructor(scene, map, saveData) {
@@ -28,31 +28,13 @@ class PlayerController {
 
         this.gfx = scene.add.graphics().setDepth(10);
 
-        // === INPUT STATE ===
         this.inputVx = 0;
         this.inputVy = 0;
 
-        // === KEYBOARD ===
         this._setupKeyboard();
-
-        // === VIRTUAL ANALOG JOYSTICK (fixed position, bottom-left) ===
-        this.joyBase = null;
-        this.joyStick = null;
-        this.joyActive = false;
-        this.joyBaseX = 0;
-        this.joyBaseY = 0;
-        this.joyStickX = 0;
-        this.joyStickY = 0;
-        this.joyDx = 0;
-        this.joyDy = 0;
-        this.joyRadius = 0;
-        this.joyStickRadius = 0;
-        this.joyPointerId = -1;
-
         this._setupJoystick();
     }
 
-    // === KEYBOARD ===
     _setupKeyboard() {
         const kb = this.scene.input.keyboard;
         if (!kb) return;
@@ -64,59 +46,59 @@ class PlayerController {
         kb.addCapture(['UP','DOWN','LEFT','RIGHT','W','A','S','D']);
     }
 
-    // === VIRTUAL ANALOG JOYSTICK ===
+    // === LARGE ANALOG JOYSTICK ===
     _setupJoystick() {
         const scene = this.scene;
         const w = scene.cameras.main.width;
         const h = scene.cameras.main.height;
 
-        // Size joystick relative to screen
-        this.joyRadius = Math.max(40, Math.min(65, Math.min(w, h) * 0.08));
-        this.joyStickRadius = Math.round(this.joyRadius * 0.4);
+        // BIG joystick - 20% of screen width, minimum 70px
+        this.joyRadius = Math.max(70, Math.round(w * 0.2));
+        this.joyStickRadius = Math.round(this.joyRadius * 0.38);
 
-        // Position: bottom-left with margin
-        this.joyBaseX = Math.max(70, w * 0.1);
-        this.joyBaseY = h - Math.max(90, h * 0.12);
+        // Bottom-left position with comfortable margin
+        this.joyBaseX = this.joyRadius + 20;
+        this.joyBaseY = h - this.joyRadius - 40;
         this.joyStickX = this.joyBaseX;
         this.joyStickY = this.joyBaseY;
+        this.joyDx = 0;
+        this.joyDy = 0;
+        this.joyActive = false;
+        this.joyPointerId = -1;
 
-        // Create graphics layers
+        // Graphics
         this.joyBase = scene.add.graphics().setDepth(200).setScrollFactor(0);
         this.joyStick = scene.add.graphics().setDepth(201).setScrollFactor(0);
-
-        // Draw static base
         this._drawBase();
+        this._drawStick();
 
-        // Invisible interactive zone for joystick
-        this.joyZone = scene.add.circle(this.joyBaseX, this.joyBaseY, this.joyRadius + 40, 0x000000, 0)
-            .setInteractive({ useHandCursor: false })
-            .setDepth(202)
-            .setScrollFactor(0);
+        // Large invisible touch zone
+        this.joyZone = scene.add.circle(this.joyBaseX, this.joyBaseY, this.joyRadius + 50, 0x000000, 0)
+            .setInteractive().setDepth(202).setScrollFactor(0);
 
         this.joyZone.on('pointerdown', (pointer) => {
             this.joyActive = true;
             this.joyPointerId = pointer.id;
-            this._updateStickPosition(pointer.x, pointer.y);
+            this._moveStick(pointer.x, pointer.y);
             this._drawStick();
         });
 
         scene.input.on('pointermove', (pointer) => {
             if (!this.joyActive || pointer.id !== this.joyPointerId) return;
-            this._updateStickPosition(pointer.x, pointer.y);
+            this._moveStick(pointer.x, pointer.y);
             this._drawStick();
         });
 
         scene.input.on('pointerup', (pointer) => {
             if (pointer.id !== this.joyPointerId) return;
-            this._resetJoystick();
+            this._resetStick();
         });
     }
 
-    _updateStickPosition(px, py) {
+    _moveStick(px, py) {
         const dx = px - this.joyBaseX;
         const dy = py - this.joyBaseY;
         const dist = Math.sqrt(dx * dx + dy * dy);
-
         if (dist <= this.joyRadius) {
             this.joyStickX = px;
             this.joyStickY = py;
@@ -124,7 +106,6 @@ class PlayerController {
             this.joyStickX = this.joyBaseX + (dx / dist) * this.joyRadius;
             this.joyStickY = this.joyBaseY + (dy / dist) * this.joyRadius;
         }
-
         this.joyDx = (this.joyStickX - this.joyBaseX) / this.joyRadius;
         this.joyDy = (this.joyStickY - this.joyBaseY) / this.joyRadius;
     }
@@ -132,29 +113,39 @@ class PlayerController {
     _drawBase() {
         const g = this.joyBase;
         g.clear();
-        g.lineStyle(3, 0xffffff, 0.3);
+        // Outer ring - bright and visible
+        g.lineStyle(4, 0xffffff, 0.4);
         g.strokeCircle(this.joyBaseX, this.joyBaseY, this.joyRadius);
-        g.fillStyle(0xffffff, 0.08);
+        // Fill
+        g.fillStyle(0xffffff, 0.1);
         g.fillCircle(this.joyBaseX, this.joyBaseY, this.joyRadius);
-        g.lineStyle(1, 0xffffff, 0.1);
+        // Crosshair
+        g.lineStyle(2, 0xffffff, 0.15);
         g.lineBetween(this.joyBaseX - this.joyRadius, this.joyBaseY, this.joyBaseX + this.joyRadius, this.joyBaseY);
         g.lineBetween(this.joyBaseX, this.joyBaseY - this.joyRadius, this.joyBaseX, this.joyBaseY + this.joyRadius);
+        // Center dot
+        g.fillStyle(0xffffff, 0.3);
+        g.fillCircle(this.joyBaseX, this.joyBaseY, 6);
     }
 
     _drawStick() {
         const g = this.joyStick;
         g.clear();
-        g.fillStyle(0xffffff, 0.15);
-        g.fillCircle(this.joyStickX, this.joyStickY, this.joyStickRadius + 4);
-        g.fillStyle(0xffffff, 0.45);
+        // Glow
+        g.fillStyle(0xffffff, 0.2);
+        g.fillCircle(this.joyStickX, this.joyStickY, this.joyStickRadius + 6);
+        // Body
+        g.fillStyle(0xffffff, 0.5);
         g.fillCircle(this.joyStickX, this.joyStickY, this.joyStickRadius);
-        g.lineStyle(2, 0xffffff, 0.7);
+        // Border
+        g.lineStyle(3, 0xffffff, 0.8);
         g.strokeCircle(this.joyStickX, this.joyStickY, this.joyStickRadius);
-        g.fillStyle(0xffffff, 0.6);
-        g.fillCircle(this.joyStickX, this.joyStickY, 4);
+        // Inner dot
+        g.fillStyle(0xffffff, 0.7);
+        g.fillCircle(this.joyStickX, this.joyStickY, 5);
     }
 
-    _resetJoystick() {
+    _resetStick() {
         this.joyActive = false;
         this.joyPointerId = -1;
         this.joyDx = 0;
@@ -164,12 +155,11 @@ class PlayerController {
         this._drawStick();
     }
 
-    /** Reposition joystick on resize */
     reposition(w, h) {
-        this.joyRadius = Math.max(40, Math.min(65, Math.min(w, h) * 0.08));
-        this.joyStickRadius = Math.round(this.joyRadius * 0.4);
-        this.joyBaseX = Math.max(70, w * 0.1);
-        this.joyBaseY = h - Math.max(90, h * 0.12);
+        this.joyRadius = Math.max(70, Math.round(w * 0.2));
+        this.joyStickRadius = Math.round(this.joyRadius * 0.38);
+        this.joyBaseX = this.joyRadius + 20;
+        this.joyBaseY = h - this.joyRadius - 40;
         this.joyStickX = this.joyBaseX;
         this.joyStickY = this.joyBaseY;
         this.joyDx = 0;
@@ -178,7 +168,7 @@ class PlayerController {
         this._drawStick();
         if (this.joyZone) {
             this.joyZone.setPosition(this.joyBaseX, this.joyBaseY);
-            this.joyZone.setRadius(this.joyRadius + 40);
+            this.joyZone.setRadius(this.joyRadius + 50);
         }
     }
 
@@ -204,7 +194,6 @@ class PlayerController {
         let vx = 0;
         let vy = 0;
 
-        // Keyboard
         if (this.cursors) {
             if (this.cursors.left.isDown)  vx = -1;
             if (this.cursors.right.isDown) vx = 1;
@@ -218,39 +207,29 @@ class PlayerController {
             if (this.keyS && this.keyS.isDown) vy = 1;
         }
 
-        // Analog joystick
         if (vx === 0 && vy === 0 && this.joyActive) {
             vx = this.joyDx;
             vy = this.joyDy;
         }
 
-        // Threshold
         if (Math.abs(vx) < 0.1) vx = 0;
         if (Math.abs(vy) < 0.1) vy = 0;
 
-        // Normalize diagonal
         if (vx !== 0 && vy !== 0) {
             const len = Math.sqrt(vx * vx + vy * vy);
             if (len > 1) { vx /= len; vy /= len; }
         }
 
-        // Movement
         const dt = delta / 1000;
         const newX = this.x + vx * this.moveSpeed * dt;
         const newY = this.y + vy * this.moveSpeed * dt;
 
-        if (vx !== 0 && this._canMoveTo(newX, this.y)) {
-            this.x = newX;
-        }
-        if (vy !== 0 && this._canMoveTo(this.x, newY)) {
-            this.y = newY;
-        }
+        if (vx !== 0 && this._canMoveTo(newX, this.y)) this.x = newX;
+        if (vy !== 0 && this._canMoveTo(this.x, newY)) this.y = newY;
 
-        // Clamp to map
         this.x = Phaser.Math.Clamp(this.x, this.map.tileSize, this.map.getPixelWidth() - this.map.tileSize);
         this.y = Phaser.Math.Clamp(this.y, this.map.tileSize, this.map.getPixelHeight() - this.map.tileSize);
 
-        // Facing & animation
         if (vx !== 0 || vy !== 0) {
             this.isMoving = true;
             if (Math.abs(vx) > Math.abs(vy)) {
