@@ -73,17 +73,17 @@ class MonsterAreaUI {
         addStat('Level:', stats.level || 1, '#44ccff');
         addStat('Gold:', String(currency.gold || 0).replace(/\B(?=(\d{3})+(?!\d))/g, ','), '#ffaa44');
 
-        // === BOTTOM BUTTONS ===
+        // === BOTTOM BUTTONS (right side, away from D-pad) ===
         const btnSize = 40;
-        const btnMargin = 12;
+        const btnMargin = 14;
 
-        // Back button (bottom-left)
-        this._createCircleBtn(btnMargin + btnSize/2, h - btnMargin - btnSize/2, btnSize,
-            0x8b2222, 0xcc6644, '🏠', onBack);
-
-        // Inventory button (bottom-right)
-        this._createCircleBtn(w - btnMargin - btnSize/2, h - btnMargin - btnSize/2, btnSize,
+        // Inventory button (right side, above back)
+        this._createCircleBtn(w - btnMargin - btnSize/2, h - btnMargin - btnSize/2 - btnSize - 10, btnSize,
             0x6b3a0a, 0xc9a84c, '🎒', onInventory);
+
+        // Back button (bottom-right)
+        this._createCircleBtn(w - btnMargin - btnSize/2, h - btnMargin - btnSize/2, btnSize,
+            0x8b2222, 0xcc6644, '🏠', onBack);
 
         // Hint
         const hint = this.scene.add.text(w / 2, h - 16, '👆 Geser kiri untuk gerak · Klik tombol', {

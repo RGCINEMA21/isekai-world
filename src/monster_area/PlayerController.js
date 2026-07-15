@@ -1,13 +1,9 @@
 /**
  * PlayerController - Handles player movement, animation, and collision.
- * Supports WASD + Arrow keys (desktop) and virtual joystick (mobile).
+ * Desktop: WASD + Arrow Keys
+ * Mobile: D-Pad buttons (always visible) + touch anywhere
  */
 class PlayerController {
-    /**
-     * @param {Phaser.Scene} scene
-     * @param {MonsterAreaMap} map
-     * @param {Object} saveData
-     */
     constructor(scene, map, saveData) {
         this.scene = scene;
         this.map = map;
@@ -17,7 +13,6 @@ class PlayerController {
         this.x = map.getSpawnPixelX();
         this.y = map.getSpawnPixelY();
 
-        // Try to restore saved position
         if (saveData?.progress?.areaX != null) {
             this.x = saveData.progress.areaX;
             this.y = saveData.progress.areaY;
@@ -29,67 +24,167 @@ class PlayerController {
         this.animTimer = 0;
         this.moveSpeed = 120;
 
-        // Size of player body for collision
         this.bodyW = 8;
         this.bodyH = 4;
 
-        // Graphics
         this.gfx = scene.add.graphics().setDepth(10);
 
-        // Input
-        this.cursors = scene.input.keyboard.createCursorKeys();
-        this.keys = scene.input.keyboard.addKeys({
-            up: 'W', down: 'S', left: 'A', right: 'D'
-        });
+        // === INPUT STATE ===
+        this.inputVx = 0;
+        this.inputVy = 0;
 
-        // Joystick
-        this.joystickActive = false;
-        this.joystickBase = null;
-        this.joystickStick = null;
-        this.joystickData = null;
-        this.joystickPointer = null;
+        // === KEYBOARD ===
+        this._setupKeyboard();
 
-        // Player gender from save
+        // === MOBILE D-PAD ===
+        this.dpadContainer = null;
+        this.dpadButtons = { up:false, down:false, left:false, right:false };
+        this._setupMobileDpad();
+
         this.gender = saveData?.player?.gender || 'male';
     }
 
-    /** Get current tile position */
-    getTileX() { return Math.floor(this.x / this.map.tileSize); }
-    getTileY() { return Math.floor(this.y / this.map.tileSize); }
+    // === KEYBOARD SETUP ===
 
-    /** Check if a pixel position is walkable */
+    _setupKeyboard() {
+        const kb = this.scene.input.keyboard;
+        if (!kb) return;
+
+        this.cursors = kb.createCursorKeys();
+        this.keyW = kb.addKey('W');
+        this.keyA = kb.addKey('A');
+        this.keyS = kb.addKey('S');
+        this.keyD = kb.addKey('D');
+
+        // Prevent default browser scroll on arrow keys
+        kb.addCapture(['UP','DOWN','LEFT','RIGHT','W','A','S','D']);
+    }
+
+    // === MOBILE D-PAD SETUP ===
+
+    _setupMobileDpad() {
+        const w = this.scene.cameras.main.width;
+        const h = this.scene.cameras.main.height;
+        const isPortrait = h > w;
+
+        this.dpadContainer = this.scene.add.container(0, 0).setDepth(200).setScrollFactor(0);
+
+        const btnSize = 48;
+        const gap = 4;
+        const dpadX = btnSize * 1.8 + 20;
+        const dpadY = h - btnSize * 1.8 - 20;
+
+        const dirs = [
+            { key:'up',    dx:0, dy:-1, x:dpadX, y:dpadY - btnSize - gap, label:'▲' },
+            { key:'down',  dx:0, dy:1,  x:dpadX, y:dpadY + btnSize + gap, label:'▼' },
+            { key:'left',  dx:-1,dy:0,  x:dpadX - btnSize - gap, y:dpadY, label:'◀' },
+            { key:'right', dx:1, dy:0,  x:dpadX + btnSize + gap, y:dpadY, label:'▶' },
+        ];
+
+        for (const d of dirs) {
+            // Background circle
+            const bg = this.scene.add.graphics();
+            bg.fillStyle(0xffffff, 0.12);
+            bg.fillCircle(d.x, d.y, btnSize / 2);
+            bg.lineStyle(2, 0xffffff, 0.25);
+            bg.strokeCircle(d.x, d.y, btnSize / 2);
+            this.dpadContainer.add(bg);
+
+            // Arrow label
+            const label = this.scene.add.text(d.x, d.y, d.label, {
+                fontSize: '18px', fontFamily: 'Arial', color: '#ffffff'
+            }).setOrigin(0.5).setAlpha(0.6);
+            this.dpadContainer.add(label);
+
+            // Hit area
+            const hit = this.scene.add.rectangle(d.x, d.y, btnSize + 10, btnSize + 10, 0x000000, 0)
+                .setInteractive();
+            this.dpadContainer.add(hit);
+
+            // Touch down -> set direction
+            hit.on('pointerdown', () => {
+                this.dpadButtons[d.key] = true;
+                label.setAlpha(1);
+                bg.clear();
+                bg.fillStyle(0xffffff, 0.25);
+                bg.fillCircle(d.x, d.y, btnSize / 2);
+                bg.lineStyle(2, 0xffffff, 0.5);
+                bg.strokeCircle(d.x, d.y, btnSize / 2);
+            });
+
+            // Touch up -> clear direction
+            hit.on('pointerup', () => {
+                this.dpadButtons[d.key] = false;
+                label.setAlpha(0.6);
+                bg.clear();
+                bg.fillStyle(0xffffff, 0.12);
+                bg.fillCircle(d.x, d.y, btnSize / 2);
+                bg.lineStyle(2, 0xffffff, 0.25);
+                bg.strokeCircle(d.x, d.y, btnSize / 2);
+            });
+
+            hit.on('pointerout', () => {
+                this.dpadButtons[d.key] = false;
+                label.setAlpha(0.6);
+                bg.clear();
+                bg.fillStyle(0xffffff, 0.12);
+                bg.fillCircle(d.x, d.y, btnSize / 2);
+                bg.lineStyle(2, 0xffffff, 0.25);
+                bg.strokeCircle(d.x, d.y, btnSize / 2);
+            });
+        }
+
+        // Center circle decoration
+        const centerBg = this.scene.add.graphics();
+        centerBg.fillStyle(0xffffff, 0.08);
+        centerBg.fillCircle(dpadX, dpadY, btnSize * 0.6);
+        this.dpadContainer.add(centerBg);
+    }
+
+    // === COLLISION CHECK ===
+
     _canMoveTo(px, py) {
-        // Check all 4 corners of player body
         const hw = this.bodyW / 2;
         const hh = this.bodyH / 2;
-        const tiles = [
-            [Math.floor((px - hw) / this.map.tileSize), Math.floor((py - hh) / this.map.tileSize)],
-            [Math.floor((px + hw) / this.map.tileSize), Math.floor((py - hh) / this.map.tileSize)],
-            [Math.floor((px - hw) / this.map.tileSize), Math.floor((py + hh) / this.map.tileSize)],
-            [Math.floor((px + hw) / this.map.tileSize), Math.floor((py + hh) / this.map.tileSize)],
+        const S = this.map.tileSize;
+        const corners = [
+            [Math.floor((px - hw) / S), Math.floor((py - hh) / S)],
+            [Math.floor((px + hw) / S), Math.floor((py - hh) / S)],
+            [Math.floor((px - hw) / S), Math.floor((py + hh) / S)],
+            [Math.floor((px + hw) / S), Math.floor((py + hh) / S)],
         ];
-        for (const [tx, ty] of tiles) {
+        for (const [tx, ty] of corners) {
             if (!this.map.isWalkable(tx, ty)) return false;
         }
         return true;
     }
 
-    /** Update movement and animation */
+    // === UPDATE ===
+
     update(delta) {
         let vx = 0;
         let vy = 0;
 
-        // Keyboard input
-        if (this.cursors.left.isDown || this.keys.left.isDown) vx = -1;
-        if (this.cursors.right.isDown || this.keys.right.isDown) vx = 1;
-        if (this.cursors.up.isDown || this.keys.up.isDown) vy = -1;
-        if (this.cursors.down.isDown || this.keys.down.isDown) vy = 1;
+        // --- Keyboard ---
+        if (this.cursors) {
+            if (this.cursors.left.isDown)  vx = -1;
+            if (this.cursors.right.isDown) vx = 1;
+            if (this.cursors.up.isDown)    vy = -1;
+            if (this.cursors.down.isDown)  vy = 1;
+        }
+        if (vx === 0 && vy === 0) {
+            if (this.keyA && this.keyA.isDown) vx = -1;
+            if (this.keyD && this.keyD.isDown) vx = 1;
+            if (this.keyW && this.keyW.isDown) vy = -1;
+            if (this.keyS && this.keyS.isDown) vy = 1;
+        }
 
-        // Joystick input
-        const jsVel = this._getJoystickVelocity();
-        if (Math.abs(jsVel.x) > 0.1 || Math.abs(jsVel.y) > 0.1) {
-            vx = jsVel.x;
-            vy = jsVel.y;
+        // --- Mobile D-Pad ---
+        if (vx === 0 && vy === 0) {
+            if (this.dpadButtons.left)  vx = -1;
+            if (this.dpadButtons.right) vx = 1;
+            if (this.dpadButtons.up)    vy = -1;
+            if (this.dpadButtons.down)  vy = 1;
         }
 
         // Normalize diagonal
@@ -99,21 +194,20 @@ class PlayerController {
             vy *= inv;
         }
 
-        // Apply movement with collision
+        // Apply movement
         const dt = delta / 1000;
         const newX = this.x + vx * this.moveSpeed * dt;
         const newY = this.y + vy * this.moveSpeed * dt;
 
-        // Try X movement
+        // Separate X/Y collision for sliding along walls
         if (vx !== 0 && this._canMoveTo(newX, this.y)) {
             this.x = newX;
         }
-        // Try Y movement
         if (vy !== 0 && this._canMoveTo(this.x, newY)) {
             this.y = newY;
         }
 
-        // Clamp to map bounds
+        // Clamp to map
         this.x = Phaser.Math.Clamp(this.x, this.map.tileSize, this.map.getPixelWidth() - this.map.tileSize);
         this.y = Phaser.Math.Clamp(this.y, this.map.tileSize, this.map.getPixelHeight() - this.map.tileSize);
 
@@ -140,21 +234,14 @@ class PlayerController {
             this.animFrame = 0;
         }
 
-        // Draw player
         this.draw();
-
-        // Update joystick visuals
-        this._updateJoystickVisuals();
-
-        // Handle touch joystick creation
-        this._handleJoystickInput();
     }
 
-    /** Draw player character (pixel art placeholder) */
+    // === DRAW PLAYER ===
+
     draw() {
         const g = this.gfx;
         g.clear();
-
         const x = Math.round(this.x);
         const y = Math.round(this.y);
         const skin = 0xffcc99;
@@ -164,35 +251,28 @@ class PlayerController {
         const boot = 0x3a2a1a;
         const step = this.isMoving ? Math.sin(this.animFrame * Math.PI) * 2 : 0;
 
-        // Shadow
         g.fillStyle(0x000000, 0.2);
         g.fillEllipse(x, y + 12, 14, 5);
 
-        // Boots
         g.fillStyle(boot, 1);
         g.fillRect(x - 3, y + 3 + (this.isMoving && this.facing !== 'up' ? step : 0), 2, 3);
         g.fillRect(x + 1, y + 3 + (this.isMoving && this.facing !== 'up' ? -step : 0), 2, 3);
 
-        // Pants
         g.fillStyle(pants, 1);
         g.fillRect(x - 3, y - 1, 2, 5);
         g.fillRect(x + 1, y - 1, 2, 5);
 
-        // Shirt
         g.fillStyle(shirt, 1);
         g.fillRect(x - 4, y - 6, 8, 6);
 
-        // Arms
         const armSwing = this.isMoving ? Math.sin(this.animFrame * Math.PI) * 2 : 0;
         g.fillStyle(skin, 1);
         g.fillRect(x - 5, y - 4 + armSwing, 2, 5);
         g.fillRect(x + 3, y - 4 - armSwing, 2, 5);
 
-        // Head
         g.fillStyle(skin, 1);
         g.fillRect(x - 3, y - 12, 6, 7);
 
-        // Hair
         g.fillStyle(hair, 1);
         g.fillRect(x - 3, y - 13, 6, 3);
         if (this.facing === 'down') {
@@ -208,7 +288,6 @@ class PlayerController {
             g.fillRect(x + 3, y - 11, 1, 4);
         }
 
-        // Eyes
         if (this.facing !== 'up') {
             g.fillStyle(0xffffff, 1);
             if (this.facing === 'down') {
@@ -229,98 +308,8 @@ class PlayerController {
         }
     }
 
-    // === VIRTUAL JOYSTICK ===
-
-    _handleJoystickInput() {
-        const hasTouch = this.scene.sys.game.device.input.touch;
-        if (!hasTouch) {
-            if (this.joystickActive) this._destroyJoystick();
-            return;
-        }
-
-        const pointers = this.scene.input.manager.pointers;
-        let leftPointer = null;
-        const w = this.scene.cameras.main.width;
-        for (const p of pointers) {
-            if (p.isDown && p.x < w * 0.6) {
-                leftPointer = p;
-                break;
-            }
-        }
-
-        if (leftPointer && !this.joystickActive) {
-            this.joystickActive = true;
-            this.joystickPointer = leftPointer.id;
-            this._createJoystick(leftPointer.x, leftPointer.y);
-            this._updateJoystickData(leftPointer);
-        } else if (leftPointer && this.joystickActive && leftPointer.id === this.joystickPointer) {
-            this._updateJoystickData(leftPointer);
-        } else if (!leftPointer && this.joystickActive) {
-            this._destroyJoystick();
-        }
-    }
-
-    _createJoystick(x, y) {
-        this._destroyJoystick();
-        const baseRadius = 35;
-        const stickRadius = 15;
-
-        this.joystickBase = this.scene.add.graphics().setDepth(150).setScrollFactor(0);
-        this.joystickBase.fillStyle(0xffffff, 0.15);
-        this.joystickBase.fillCircle(x, y, baseRadius);
-        this.joystickBase.lineStyle(2, 0xffffff, 0.3);
-        this.joystickBase.strokeCircle(x, y, baseRadius);
-
-        this.joystickStick = this.scene.add.graphics().setDepth(151).setScrollFactor(0);
-        this.joystickStick.fillStyle(0xffffff, 0.4);
-        this.joystickStick.fillCircle(x, y, stickRadius);
-
-        this.joystickData = { baseX: x, baseY: y, stickX: x, stickY: y, baseRadius, stickRadius, dx: 0, dy: 0 };
-    }
-
-    _updateJoystickData(pointer) {
-        if (!this.joystickData) return;
-        const jd = this.joystickData;
-        const dx = pointer.x - jd.baseX;
-        const dy = pointer.y - jd.baseY;
-        const dist = Math.sqrt(dx*dx + dy*dy);
-
-        if (dist <= jd.baseRadius) {
-            jd.stickX = pointer.x;
-            jd.stickY = pointer.y;
-        } else {
-            jd.stickX = jd.baseX + (dx/dist) * jd.baseRadius;
-            jd.stickY = jd.baseY + (dy/dist) * jd.baseRadius;
-        }
-
-        const normDist = Math.min(dist, jd.baseRadius) / jd.baseRadius;
-        jd.dx = (jd.stickX - jd.baseX) / jd.baseRadius;
-        jd.dy = (jd.stickY - jd.baseY) / jd.baseRadius;
-    }
-
-    _updateJoystickVisuals() {
-        if (!this.joystickData || !this.joystickStick) return;
-        const jd = this.joystickData;
-        this.joystickStick.clear();
-        this.joystickStick.fillStyle(0xffffff, 0.4);
-        this.joystickStick.fillCircle(jd.stickX, jd.stickY, jd.stickRadius);
-    }
-
-    _destroyJoystick() {
-        if (this.joystickBase) { this.joystickBase.destroy(); this.joystickBase = null; }
-        if (this.joystickStick) { this.joystickStick.destroy(); this.joystickStick = null; }
-        this.joystickData = null;
-        this.joystickActive = false;
-        this.joystickPointer = null;
-    }
-
-    _getJoystickVelocity() {
-        if (!this.joystickData) return { x: 0, y: 0 };
-        return { x: this.joystickData.dx, y: this.joystickData.dy };
-    }
-
     destroy() {
         if (this.gfx) this.gfx.destroy();
-        this._destroyJoystick();
+        if (this.dpadContainer) this.dpadContainer.destroy();
     }
 }
