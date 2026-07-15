@@ -1,23 +1,12 @@
 /**
  * ISEKAI WORLD - Main Configuration
- * Responsive: auto-detect portrait/landscape, adjusts viewport & UI.
+ * Phaser handles ALL canvas sizing via Scale.RESIZE.
+ * No manual viewport detection needed.
  */
-
-// Use visual viewport for mobile (accounts for on-screen keyboard, URL bar)
-function getViewport() {
-    const v = window.visualViewport || window;
-    return {
-        width: Math.floor(v.width || window.innerWidth),
-        height: Math.floor(v.height || window.innerHeight)
-    };
-}
-
-const vp = getViewport();
-
 const config = {
     type: Phaser.AUTO,
-    width: vp.width,
-    height: vp.height,
+    width: window.innerWidth,
+    height: window.innerHeight,
     parent: 'game-container',
     scale: {
         mode: Phaser.Scale.RESIZE,
@@ -37,22 +26,4 @@ const config = {
 
 const game = new Phaser.Game(config);
 
-// Resize handler - fires on viewport changes (orientation, URL bar hide, etc.)
-function handleResize() {
-    const v = getViewport();
-    if (game.scale && game.scale.resize) {
-        game.scale.resize(v.width, v.height);
-    }
-}
-
-window.addEventListener('resize', handleResize);
-window.addEventListener('orientationchange', () => {
-    setTimeout(handleResize, 200);
-});
-
-// For mobile browsers that change viewport when scrolling
-if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', handleResize);
-}
-
-console.log('[Isekai World] Game initialized. Viewport:', vp.width, 'x', vp.height);
+console.log('[Isekai World] Game initialized.');
