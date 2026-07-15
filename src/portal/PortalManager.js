@@ -1,69 +1,54 @@
 /**
  * PortalManager - Mengelola logika Portal Monster.
- * Menangani seleksi area, status unlock, dan transisi ke Adventure.
+ * Menggunakan MonsterAreaDatabase (10 area sesuai roadmap).
  */
 class PortalManager {
     constructor(scene) {
         this.scene = scene;
         this.selectedArea = null;
-        this.areas = AreaDatabase.getAllAreas();
+        this.areas = [];
     }
 
-    /** Refresh status unlock berdasarkan level pemain */
+    /** Refresh area list berdasarkan level pemain */
     refreshUnlocks(playerLevel) {
-        AreaDatabase.checkUnlocks(playerLevel);
-        this.areas = AreaDatabase.getAllAreas();
+        this.areas = MonsterAreaDatabase.getAllAreas().map(area => ({
+            ...area,
+            unlocked: playerLevel >= area.levelRequired,
+            status: playerLevel >= area.levelRequired ? 'unlocked' : 'locked'
+        }));
     }
 
     /** Pilih area */
     selectArea(areaId) {
-        const area = AreaDatabase.getArea(areaId);
-        if (area) {
-            this.selectedArea = area;
-        }
+        const area = this.areas.find(a => a.id === areaId);
+        if (area) this.selectedArea = area;
         return this.selectedArea;
     }
 
-    /** Dapatkan area yang dipilih */
-    getSelectedArea() {
-        return this.selectedArea;
-    }
+    getSelectedArea() { return this.selectedArea; }
 
-    /** Cek apakah area bisa dimasuki */
     canEnter(areaId, playerLevel) {
-        return AreaDatabase.isAreaUnlocked(areaId, playerLevel);
+        const area = MonsterAreaDatabase.getArea(areaId);
+        return area ? playerLevel >= area.levelRequired : false;
     }
 
-    /** Dapatkan data untuk masuk ke Adventure */
+    /** Data untuk masuk ke MonsterAreaScene */
     getAdventureData(areaId) {
-        const area = AreaDatabase.getArea(areaId);
-        if (!area) return null;
-
-        return {
-            areaId: area.id,
-            areaName: area.name,
-            startX: 30,
-            startY: 30,
-            mapWidth: 60,
-            mapHeight: 60
-        };
+        return MonsterAreaDatabase.getAreaConfig(areaId);
     }
 
-    /** Dapatkan deskripsi area */
+    /** Info area untuk UI */
     getAreaInfo(areaId) {
-        const area = AreaDatabase.getArea(areaId);
+        const area = MonsterAreaDatabase.getArea(areaId);
         if (!area) return null;
-
         return {
             name: area.name,
             description: area.description,
             levelRequired: area.levelRequired,
             recommendedLevel: area.recommendedLevel,
-            status: area.status,
-            monsterCount: area.monsterCount,
-            monsterTypes: area.monsterTypes,
-            dropTypes: area.dropTypes,
-            difficulty: area.difficulty,
+            monsterCount: area.monsters.length,
+            monsterTypes: area.monsters.map(m => m.name),
+            difficulty: area.levelRequired <= 5 ? 'Mudah' : area.levelRequired <= 15 ? 'Sedang' : 'Sulit',
             icon: area.icon
         };
     }

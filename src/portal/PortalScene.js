@@ -88,7 +88,7 @@ class PortalScene extends Phaser.Scene {
         // Fade out lalu masuk adventure
         this.cameras.main.fadeOut(400, 0, 0, 0);
         this.cameras.main.once('camerafadeoutcomplete', () => {
-            this.scene.start('AdventureScene', adventureData);
+            this.scene.start('MonsterAreaScene', adventureData);
         });
     }
 
