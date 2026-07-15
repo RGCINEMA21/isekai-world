@@ -258,6 +258,8 @@ class MonsterAreaScene extends Phaser.Scene {
 
     onResize(sz) {
         this.areaCamera.onResize(sz.width, sz.height);
+        if (this.areaUI) this.areaUI.destroy();
+        this.areaUI = new MonsterAreaUI(this, this.saveData, this.areaName);
         this.areaUI.create(
             () => this._exitArea(),
             () => this._showNotif('Inventory tersedia setelah sistem selesai.')

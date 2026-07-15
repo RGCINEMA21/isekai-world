@@ -1,7 +1,7 @@
 /**
  * PlayerController - Handles player movement, animation, and collision.
  * Desktop: WASD + Arrow Keys
- * Mobile: D-Pad buttons (always visible) + touch anywhere
+ * Mobile: Large D-Pad buttons (always visible, bottom-left)
  */
 class PlayerController {
     constructor(scene, map, saveData) {
@@ -9,7 +9,6 @@ class PlayerController {
         this.map = map;
         this.saveData = saveData;
 
-        // Position (pixel coords, center of player)
         this.x = map.getSpawnPixelX();
         this.y = map.getSpawnPixelY();
 
@@ -23,20 +22,19 @@ class PlayerController {
         this.animFrame = 0;
         this.animTimer = 0;
         this.moveSpeed = 120;
-
         this.bodyW = 8;
         this.bodyH = 4;
 
         this.gfx = scene.add.graphics().setDepth(10);
 
-        // === INPUT STATE ===
+        // Input state
         this.inputVx = 0;
         this.inputVy = 0;
 
-        // === KEYBOARD ===
+        // Keyboard
         this._setupKeyboard();
 
-        // === MOBILE D-PAD ===
+        // Mobile D-Pad
         this.dpadContainer = null;
         this.dpadButtons = { up:false, down:false, left:false, right:false };
         this._setupMobileDpad();
@@ -44,104 +42,113 @@ class PlayerController {
         this.gender = saveData?.player?.gender || 'male';
     }
 
-    // === KEYBOARD SETUP ===
-
     _setupKeyboard() {
         const kb = this.scene.input.keyboard;
         if (!kb) return;
-
         this.cursors = kb.createCursorKeys();
         this.keyW = kb.addKey('W');
         this.keyA = kb.addKey('A');
         this.keyS = kb.addKey('S');
         this.keyD = kb.addKey('D');
-
-        // Prevent default browser scroll on arrow keys
         kb.addCapture(['UP','DOWN','LEFT','RIGHT','W','A','S','D']);
     }
-
-    // === MOBILE D-PAD SETUP ===
 
     _setupMobileDpad() {
         const w = this.scene.cameras.main.width;
         const h = this.scene.cameras.main.height;
-        const isPortrait = h > w;
 
         this.dpadContainer = this.scene.add.container(0, 0).setDepth(200).setScrollFactor(0);
 
-        const btnSize = 48;
-        const gap = 4;
-        const dpadX = btnSize * 1.8 + 20;
-        const dpadY = h - btnSize * 1.8 - 20;
+        // D-Pad config - big and visible
+        const btnSize = 56;
+        const gap = 6;
+        const cx = btnSize * 1.6 + 16;
+        const cy = h - btnSize * 1.6 - 30;
 
         const dirs = [
-            { key:'up',    dx:0, dy:-1, x:dpadX, y:dpadY - btnSize - gap, label:'▲' },
-            { key:'down',  dx:0, dy:1,  x:dpadX, y:dpadY + btnSize + gap, label:'▼' },
-            { key:'left',  dx:-1,dy:0,  x:dpadX - btnSize - gap, y:dpadY, label:'◀' },
-            { key:'right', dx:1, dy:0,  x:dpadX + btnSize + gap, y:dpadY, label:'▶' },
+            { key:'up',    x:cx, y:cy - btnSize - gap, label:'▲' },
+            { key:'down',  x:cx, y:cy + btnSize + gap, label:'▼' },
+            { key:'left',  x:cx - btnSize - gap, y:cy, label:'◀' },
+            { key:'right', x:cx + btnSize + gap, y:cy, label:'▶' },
         ];
 
         for (const d of dirs) {
-            // Background circle
-            const bg = this.scene.add.graphics();
-            bg.fillStyle(0xffffff, 0.12);
-            bg.fillCircle(d.x, d.y, btnSize / 2);
-            bg.lineStyle(2, 0xffffff, 0.25);
-            bg.strokeCircle(d.x, d.y, btnSize / 2);
-            this.dpadContainer.add(bg);
-
-            // Arrow label
-            const label = this.scene.add.text(d.x, d.y, d.label, {
-                fontSize: '18px', fontFamily: 'Arial', color: '#ffffff'
-            }).setOrigin(0.5).setAlpha(0.6);
-            this.dpadContainer.add(label);
-
-            // Hit area
-            const hit = this.scene.add.rectangle(d.x, d.y, btnSize + 10, btnSize + 10, 0x000000, 0)
-                .setInteractive();
-            this.dpadContainer.add(hit);
-
-            // Touch down -> set direction
-            hit.on('pointerdown', () => {
-                this.dpadButtons[d.key] = true;
-                label.setAlpha(1);
-                bg.clear();
-                bg.fillStyle(0xffffff, 0.25);
-                bg.fillCircle(d.x, d.y, btnSize / 2);
-                bg.lineStyle(2, 0xffffff, 0.5);
-                bg.strokeCircle(d.x, d.y, btnSize / 2);
-            });
-
-            // Touch up -> clear direction
-            hit.on('pointerup', () => {
-                this.dpadButtons[d.key] = false;
-                label.setAlpha(0.6);
-                bg.clear();
-                bg.fillStyle(0xffffff, 0.12);
-                bg.fillCircle(d.x, d.y, btnSize / 2);
-                bg.lineStyle(2, 0xffffff, 0.25);
-                bg.strokeCircle(d.x, d.y, btnSize / 2);
-            });
-
-            hit.on('pointerout', () => {
-                this.dpadButtons[d.key] = false;
-                label.setAlpha(0.6);
-                bg.clear();
-                bg.fillStyle(0xffffff, 0.12);
-                bg.fillCircle(d.x, d.y, btnSize / 2);
-                bg.lineStyle(2, 0xffffff, 0.25);
-                bg.strokeCircle(d.x, d.y, btnSize / 2);
-            });
+            this._createDpadButton(d, btnSize);
         }
 
-        // Center circle decoration
-        const centerBg = this.scene.add.graphics();
-        centerBg.fillStyle(0xffffff, 0.08);
-        centerBg.fillCircle(dpadX, dpadY, btnSize * 0.6);
-        this.dpadContainer.add(centerBg);
+        // Center decoration
+        const center = this.scene.add.graphics();
+        center.fillStyle(0xffffff, 0.1);
+        center.fillCircle(cx, cy, btnSize * 0.5);
+        this.dpadContainer.add(center);
     }
 
-    // === COLLISION CHECK ===
+    _createDpadButton(d, btnSize) {
+        const r = btnSize / 2;
+
+        // Background
+        const bg = this.scene.add.graphics();
+        this._drawBtnBg(bg, d.x, d.y, r, false);
+        this.dpadContainer.add(bg);
+
+        // Arrow text
+        const label = this.scene.add.text(d.x, d.y, d.label, {
+            fontSize: '22px', fontFamily: 'Arial', color: '#ffffff'
+        }).setOrigin(0.5).setAlpha(0.7);
+        this.dpadContainer.add(label);
+
+        // Big invisible hit area (easier to tap)
+        const hitSize = btnSize + 20;
+        const hit = this.scene.add.rectangle(d.x, d.y, hitSize, hitSize, 0x000000, 0);
+
+        // Use scene-level input to avoid conflicts
+        hit.setInteractive({ draggable: false });
+
+        hit.on('pointerdown', (pointer) => {
+            this.dpadButtons[d.key] = true;
+            label.setAlpha(1);
+            this._drawBtnBg(bg, d.x, d.y, r, true);
+        });
+
+        hit.on('pointerup', () => {
+            this.dpadButtons[d.key] = false;
+            label.setAlpha(0.7);
+            this._drawBtnBg(bg, d.x, d.y, r, false);
+        });
+
+        hit.on('pointerout', () => {
+            this.dpadButtons[d.key] = false;
+            label.setAlpha(0.7);
+            this._drawBtnBg(bg, d.x, d.y, r, false);
+        });
+
+        hit.on('pointerover', (pointer) => {
+            if (pointer.isDown) {
+                this.dpadButtons[d.key] = true;
+                label.setAlpha(1);
+                this._drawBtnBg(bg, d.x, d.y, r, true);
+            }
+        });
+
+        this.dpadContainer.add(hit);
+    }
+
+    _drawBtnBg(g, x, y, r, pressed) {
+        g.clear();
+        if (pressed) {
+            g.fillStyle(0xffffff, 0.3);
+            g.fillCircle(x, y, r);
+            g.lineStyle(3, 0xffffff, 0.7);
+            g.strokeCircle(x, y, r);
+        } else {
+            g.fillStyle(0x000000, 0.25);
+            g.fillCircle(x, y, r);
+            g.lineStyle(2, 0xffffff, 0.35);
+            g.strokeCircle(x, y, r);
+        }
+    }
+
+    // === COLLISION ===
 
     _canMoveTo(px, py) {
         const hw = this.bodyW / 2;
@@ -165,7 +172,7 @@ class PlayerController {
         let vx = 0;
         let vy = 0;
 
-        // --- Keyboard ---
+        // Keyboard
         if (this.cursors) {
             if (this.cursors.left.isDown)  vx = -1;
             if (this.cursors.right.isDown) vx = 1;
@@ -179,7 +186,7 @@ class PlayerController {
             if (this.keyS && this.keyS.isDown) vy = 1;
         }
 
-        // --- Mobile D-Pad ---
+        // Mobile D-Pad
         if (vx === 0 && vy === 0) {
             if (this.dpadButtons.left)  vx = -1;
             if (this.dpadButtons.right) vx = 1;
@@ -194,12 +201,11 @@ class PlayerController {
             vy *= inv;
         }
 
-        // Apply movement
+        // Movement with collision
         const dt = delta / 1000;
         const newX = this.x + vx * this.moveSpeed * dt;
         const newY = this.y + vy * this.moveSpeed * dt;
 
-        // Separate X/Y collision for sliding along walls
         if (vx !== 0 && this._canMoveTo(newX, this.y)) {
             this.x = newX;
         }
@@ -211,7 +217,7 @@ class PlayerController {
         this.x = Phaser.Math.Clamp(this.x, this.map.tileSize, this.map.getPixelWidth() - this.map.tileSize);
         this.y = Phaser.Math.Clamp(this.y, this.map.tileSize, this.map.getPixelHeight() - this.map.tileSize);
 
-        // Facing & moving state
+        // Facing & animation
         if (vx !== 0 || vy !== 0) {
             this.isMoving = true;
             if (Math.abs(vx) > Math.abs(vy)) {
@@ -219,18 +225,13 @@ class PlayerController {
             } else {
                 this.facing = vy > 0 ? 'down' : 'up';
             }
-        } else {
-            this.isMoving = false;
-        }
-
-        // Animation
-        if (this.isMoving) {
             this.animTimer += delta;
             if (this.animTimer >= 150) {
                 this.animTimer = 0;
                 this.animFrame = (this.animFrame + 1) % 4;
             }
         } else {
+            this.isMoving = false;
             this.animFrame = 0;
         }
 
