@@ -15,6 +15,7 @@ class MonsterAreaScene extends Phaser.Scene {
         this.mapHeight = data.mapHeight || 80;
         this.spawnX = data.spawnX || 40;
         this.spawnY = data.spawnY || 70;
+        this.theme = data.theme || "grassland";
     }
 
     create() {
@@ -28,7 +29,8 @@ class MonsterAreaScene extends Phaser.Scene {
             mapWidth: this.mapWidth,
             mapHeight: this.mapHeight,
             spawnX: this.spawnX,
-            spawnY: this.spawnY
+            spawnY: this.spawnY,
+            theme: this.theme
         });
 
         // Render map
