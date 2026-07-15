@@ -18,7 +18,12 @@ class NPCInteraction {
                 this._transitionTo('WarehouseScene', saveData);
                 break;
             case 'portal':
-                this._transitionTo('PortalScene', saveData);
+                this._transitionTo('MonsterAreaScene', saveData, {
+                    areaId: 'beginner_grassland',
+                    areaName: 'Beginner Grassland',
+                    mapWidth: 80, mapHeight: 80,
+                    spawnX: 40, spawnY: 70
+                });
                 break;
             case 'blacksmith':
                 this._showNotification('⚒ Blacksmith akan dibuka pada update berikutnya.');
@@ -43,13 +48,13 @@ class NPCInteraction {
         }
     }
 
-    _transitionTo(sceneKey, saveData) {
+    _transitionTo(sceneKey, saveData, data) {
         if (saveData) {
             try { localStorage.setItem('isekai_world_save', JSON.stringify(saveData)); } catch(e) {}
         }
         this.scene.cameras.main.fadeOut(400, 0, 0, 0);
         this.scene.cameras.main.once('camerafadeoutcomplete', () => {
-            this.scene.scene.start(sceneKey);
+            this.scene.scene.start(sceneKey, data || {});
         });
     }
 

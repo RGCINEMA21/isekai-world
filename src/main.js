@@ -18,7 +18,7 @@ const config = {
     },
     backgroundColor: '#1a1a2e',
     fps: { target: 60, forceSetTimeOut: false },
-    scene: [BootScene, MainMenuScene, CharacterCreatorScene, MainVillageScene, VillageScene, HomeScene, WarehouseScene, PortalScene, AdventureScene],
+    scene: [BootScene, MainMenuScene, CharacterCreatorScene, MainVillageScene, VillageScene, MonsterAreaScene, HomeScene, WarehouseScene, PortalScene, AdventureScene],
     antialias: false,
     pixelArt: true,
     roundPixels: true
