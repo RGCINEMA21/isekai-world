@@ -86,7 +86,7 @@ class MonsterAreaUI {
             0x8b2222, 0xcc6644, '🏠', onBack);
 
         // Hint
-        const hint = this.scene.add.text(w / 2, h - 16, '👆 Geser kiri untuk gerak · Klik tombol', {
+        const hint = this.scene.add.text(w / 2, h - 16, '👆 Sentuh & geser layar untuk bergerak · WASD/Arrow di desktop', {
             fontSize: Math.max(8, Math.min(10, w * 0.01)) + 'px',
             fontFamily: 'Arial', color: '#887755', fontStyle: 'italic'
         }).setOrigin(0.5).setDepth(100).setScrollFactor(0);
