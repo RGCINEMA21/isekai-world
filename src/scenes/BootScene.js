@@ -1,9 +1,14 @@
 /**
  * BootScene - Splash screen responsive.
+ * Preloads audio assets, then transitions to MainMenu.
  */
 class BootScene extends Phaser.Scene {
     constructor() {
         super({ key: 'BootScene' });
+    }
+
+    preload() {
+        this.load.audio('bgm', 'assets/audio/bgm.mp3');
     }
 
     create() {
@@ -11,7 +16,6 @@ class BootScene extends Phaser.Scene {
         const h = this.cameras.main.height;
         const cx = w / 2, cy = h / 2;
 
-        // Background
         const bg = this.add.graphics();
         for (let i = 0; i < h; i++) {
             const t = i / h;
@@ -21,7 +25,6 @@ class BootScene extends Phaser.Scene {
             bg.lineBetween(0, i, w, i);
         }
 
-        // Title
         this.add.text(cx, cy - 15, 'ISEKAI WORLD', {
             fontSize: Math.max(28, Math.min(60, w * 0.05)) + 'px',
             fontFamily: 'Arial, sans-serif', color: '#ffffff', fontStyle: 'bold',

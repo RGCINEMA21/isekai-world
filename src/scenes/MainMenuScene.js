@@ -80,6 +80,9 @@ class MainMenuScene extends Phaser.Scene {
 
         this.initAudio();
         this.playEntrance(h);
+
+        // Auto-play BGM
+        audioManager.playBGM(this);
     }
 
     /* =============================================
@@ -515,22 +518,88 @@ class MainMenuScene extends Phaser.Scene {
             fontSize: '24px', fontFamily: 'Arial', color: '#fff', fontStyle: 'bold'
         }).setOrigin(0.5));
 
-        const items = [
-            { l: '🔊  Audio', v: 'ON' }, { l: '🎵  Music', v: 'ON' },
-            { l: '🔈  SFX', v: 'ON' }, { l: '🖥  Fullscreen', v: 'OFF' },
+        // Music toggle
+        const musicMuted = audioManager.isMuted();
+        const musicLabel = this.add.text(-pw/2 + 20, -120, '🎵  Music', {
+            fontSize: '18px', fontFamily: 'Arial', color: '#ccc'
+        }).setOrigin(0, 0.5);
+        this.settingsPopup.add(musicLabel);
+
+        const musicValue = this.add.text(pw/2 - 20, -120, musicMuted ? 'OFF' : 'ON', {
+            fontSize: '16px', fontFamily: 'Arial', color: musicMuted ? '#cc4444' : '#88cc66', fontStyle: 'bold'
+        }).setOrigin(1, 0.5);
+        this.settingsPopup.add(musicValue);
+
+        const musicHit = this.add.rectangle(0, -120, pw - 40, 40, 0x000000, 0)
+            .setInteractive({ useHandCursor: true });
+        this.settingsPopup.add(musicHit);
+        musicHit.on('pointerdown', () => {
+            const muted = audioManager.toggleMute();
+            musicValue.setText(muted ? 'OFF' : 'ON');
+            musicValue.setColor(muted ? '#cc4444' : '#88cc66');
+            this.playClick();
+        });
+
+        bg.lineStyle(1, 0x8b6914, 0.3);
+        bg.lineBetween(-pw/2+20, -98, pw/2-20, -98);
+
+        // Volume slider label
+        this.settingsPopup.add(this.add.text(-pw/2 + 20, -75, '🔊  Volume', {
+            fontSize: '18px', fontFamily: 'Arial', color: '#ccc'
+        }).setOrigin(0, 0.5));
+
+        const volPct = Math.round(audioManager.getVolume() * 100);
+        const volText = this.add.text(pw/2 - 20, -75, volPct + '%', {
+            fontSize: '16px', fontFamily: 'Arial', color: '#88cc66', fontStyle: 'bold'
+        }).setOrigin(1, 0.5);
+        this.settingsPopup.add(volText);
+
+        // Volume bar
+        const barW = pw - 80;
+        const barX = -barW / 2;
+        const barY = -55;
+        const barBg = this.add.graphics();
+        barBg.fillStyle(0x333333, 1);
+        barBg.fillRoundedRect(barX, barY, barW, 10, 5);
+        this.settingsPopup.add(barBg);
+
+        const barFill = this.add.graphics();
+        const drawBar = (pct) => {
+            barFill.clear();
+            barFill.fillStyle(0xc9a84c, 1);
+            barFill.fillRoundedRect(barX, barY, barW * pct, 10, 5);
+        };
+        drawBar(audioManager.getVolume());
+        this.settingsPopup.add(barFill);
+
+        const barHit = this.add.rectangle(0, barY + 5, barW + 20, 30, 0x000000, 0)
+            .setInteractive({ useHandCursor: true });
+        this.settingsPopup.add(barHit);
+        barHit.on('pointerdown', (pointer) => {
+            const localX = pointer.x - this.settingsPopup.x - barX;
+            const pct = Phaser.Math.Clamp(localX / barW, 0, 1);
+            audioManager.setVolume(pct);
+            drawBar(pct);
+            volText.setText(Math.round(pct * 100) + '%');
+        });
+
+        bg.lineStyle(1, 0x8b6914, 0.3);
+        bg.lineBetween(-pw/2+20, -40, pw/2-20, -40);
+
+        // Placeholder items
+        const placeholders = [
+            { l: '🖥  Fullscreen', v: 'OFF' },
             { l: '🌐  Bahasa', v: 'Indonesia' }
         ];
-
-        items.forEach((item, i) => {
-            const yy = -120 + i * 55;
+        placeholders.forEach((item, i) => {
+            const yy = -20 + i * 45;
             this.settingsPopup.add(this.add.text(-pw/2 + 20, yy, item.l, {
                 fontSize: '18px', fontFamily: 'Arial', color: '#ccc'
             }).setOrigin(0, 0.5));
             this.settingsPopup.add(this.add.text(pw/2 - 20, yy, item.v, {
                 fontSize: '16px', fontFamily: 'Arial', color: '#88cc66', fontStyle: 'bold'
             }).setOrigin(1, 0.5));
-
-            if (i < items.length - 1) {
+            if (i < placeholders.length - 1) {
                 bg.lineStyle(1, 0x8b6914, 0.3);
                 bg.lineBetween(-pw/2+20, yy+22, pw/2-20, yy+22);
             }
