@@ -2,7 +2,6 @@
  * VillageCamera - Camera system for Village Mode.
  * Drag to pan, scroll/pinch to zoom.
  * Camera has bounds and cannot leave the map.
- * Responsive: handles portrait & landscape.
  */
 class VillageCamera {
     constructor(scene, villageMap) {
@@ -34,7 +33,7 @@ class VillageCamera {
         this.camera.scrollX = this.PX_W / 2 - w / 2;
         this.camera.scrollY = this.PX_H / 2 - h / 2;
 
-        // Initial zoom - fit village nicely
+        // Initial zoom
         if (this.isPortrait) {
             this.camera.setZoom(Math.min(w / 400, h / 600));
         } else {
@@ -82,6 +81,7 @@ class VillageCamera {
     }
 
     onDragStart(ptr) {
+        // Don't drag if clicking interactive object or pinching
         if (this.isPinching) return;
         this.isDragging = true;
         this.dragStartX = ptr.x;

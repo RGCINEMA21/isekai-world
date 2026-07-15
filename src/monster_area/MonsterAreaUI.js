@@ -1,7 +1,7 @@
 /**
  * MonsterAreaUI - HUD for Monster Area.
- * All elements use percentage-based sizing.
- * Buttons are LARGE and always visible on mobile.
+ * Shows area name, player stats, and action buttons.
+ * Responsive: Mobile Portrait & Desktop Landscape.
  */
 class MonsterAreaUI {
     constructor(scene, saveData, areaName) {
@@ -23,78 +23,90 @@ class MonsterAreaUI {
         const stats = this.saveData?.stats || {};
         const currency = this.saveData?.currency || {};
 
-        // === TOP HUD PANEL ===
-        const panelH = Math.max(70, h * 0.09);
+        // === TOP PANEL ===
+        const panelH = isPortrait ? 85 : 100;
         const bg = this.scene.add.graphics();
-        bg.fillStyle(0x2c1810, 0.9);
-        bg.fillRoundedRect(4, 4, w - 8, panelH, 8);
-        bg.lineStyle(2, 0xc9a84c, 0.6);
-        bg.strokeRoundedRect(4, 4, w - 8, panelH, 8);
+        if (isPortrait) {
+            bg.fillStyle(0x2c1810, 0.88);
+            bg.fillRoundedRect(4, 4, w - 8, panelH, 8);
+            bg.lineStyle(2, 0xc9a84c, 0.5);
+            bg.strokeRoundedRect(4, 4, w - 8, panelH, 8);
+        } else {
+            bg.fillStyle(0x2c1810, 0.85);
+            bg.fillRoundedRect(6, 6, 220, panelH, 8);
+            bg.lineStyle(2, 0xc9a84c, 0.5);
+            bg.strokeRoundedRect(6, 6, 220, panelH, 8);
+        }
         this.container.add(bg);
 
-        // Area name
-        const nameFs = Math.max(12, Math.round(w * 0.03)) + 'px';
-        this.container.add(this.scene.add.text(14, 12, '\u{1F331} ' + this.areaName, {
-            fontSize: nameFs, fontFamily: 'Arial', color: '#ccff88', fontStyle: 'bold'
-        }));
+        // Area name badge
+        const badgeW = Math.min(180, w * 0.3);
+        const badgeBg = this.scene.add.graphics();
+        badgeBg.fillStyle(0x335522, 0.9);
+        badgeBg.fillRoundedRect(w / 2 - badgeW / 2, 8, badgeW, 22, 6);
+        badgeBg.lineStyle(1, 0x66aa44, 0.7);
+        badgeBg.strokeRoundedRect(w / 2 - badgeW / 2, 8, badgeW, 22, 6);
+        this.container.add(badgeBg);
+
+        this.container.add(this.scene.add.text(w / 2, 19, '🌱 ' + this.areaName, {
+            fontSize: '11px', fontFamily: 'Arial', color: '#ccff88', fontStyle: 'bold'
+        }).setOrigin(0.5));
 
         // Stats
-        const statFs = Math.max(10, Math.round(w * 0.025)) + 'px';
-        const statY = 12 + Math.round(w * 0.04);
-        const statsLine = `Lv${stats.level||1}  |  HP ${stats.hp||100}/${stats.maxHp||100}  |  Nrg ${stats.energy||100}/${stats.maxEnergy||100}  |  Gold ${String(currency.gold||0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
-        this.container.add(this.scene.add.text(14, statY, statsLine, {
-            fontSize: statFs, fontFamily: 'Arial', color: '#ccccaa'
-        }));
+        const fs = Math.max(9, Math.min(11, w * 0.011)) + 'px';
+        const sx = isPortrait ? 14 : 14;
+        let sy = 36;
+        const lh = 13;
 
-        // === RIGHT SIDE BUTTONS ===
-        const btnSize = Math.max(50, Math.round(Math.min(w, h) * 0.075));
-        const btnX = w - btnSize / 2 - 10;
-        const btnGap = btnSize + 12;
+        const addStat = (label, val, color) => {
+            this.container.add(this.scene.add.text(sx, sy, label, {
+                fontSize: fs, fontFamily: 'Arial', color: '#aa8844'
+            }));
+            this.container.add(this.scene.add.text(sx + 70, sy, String(val), {
+                fontSize: fs, fontFamily: 'Arial', color: color || '#f0e0c0', fontStyle: 'bold'
+            }));
+            sy += lh;
+        };
 
-        // Back button
-        this._makeBtn(btnX, panelH + 20 + btnSize / 2, btnSize,
-            0x8b2222, 0xcc6644, '\u{1F3E0}', 'Desa', onBack);
+        addStat('HP:', `${stats.hp||100}/${stats.maxHp||100}`, '#44cc44');
+        addStat('Energy:', `${stats.energy||100}/${stats.maxEnergy||100}`, '#ffcc44');
+        addStat('Level:', stats.level || 1, '#44ccff');
+        addStat('Gold:', String(currency.gold || 0).replace(/\B(?=(\d{3})+(?!\d))/g, ','), '#ffaa44');
 
-        // Inventory button
-        this._makeBtn(btnX, panelH + 20 + btnGap + btnSize / 2, btnSize,
-            0x6b3a0a, 0xc9a84c, '\u{1F392}', 'Tas', onInventory);
+        // === BOTTOM BUTTONS ===
+        const btnSize = 40;
+        const btnMargin = 12;
+
+        // Back button (bottom-left)
+        this._createCircleBtn(btnMargin + btnSize/2, h - btnMargin - btnSize/2, btnSize,
+            0x8b2222, 0xcc6644, '🏠', onBack);
+
+        // Inventory button (bottom-right)
+        this._createCircleBtn(w - btnMargin - btnSize/2, h - btnMargin - btnSize/2, btnSize,
+            0x6b3a0a, 0xc9a84c, '🎒', onInventory);
 
         // Hint
-        const hintFs = Math.max(9, Math.round(w * 0.023)) + 'px';
-        const hint = this.scene.add.text(w / 2, h - 20, isPortrait
-            ? 'Sentuh joystick kiri untuk bergerak'
-            : 'WASD / Arrow Keys untuk bergerak', {
-            fontSize: hintFs, fontFamily: 'Arial', color: '#887755', fontStyle: 'italic'
+        const hint = this.scene.add.text(w / 2, h - 16, '👆 Geser kiri untuk gerak · Klik tombol', {
+            fontSize: Math.max(8, Math.min(10, w * 0.01)) + 'px',
+            fontFamily: 'Arial', color: '#887755', fontStyle: 'italic'
         }).setOrigin(0.5).setDepth(100).setScrollFactor(0);
         this.container.add(hint);
-        this.scene.tweens.add({ targets: hint, alpha: 0, duration: 1500, delay: 4000 });
+        this.scene.tweens.add({ targets: hint, alpha: 0, duration: 1000, delay: 3000 });
     }
 
-    _makeBtn(x, y, size, bgColor, borderColor, icon, label, onClick) {
+    _createCircleBtn(x, y, size, bgColor, borderColor, icon, onClick) {
         const bg = this.scene.add.graphics();
-        bg.fillStyle(bgColor, 0.9);
+        bg.fillStyle(bgColor, 0.8);
         bg.fillCircle(x, y, size / 2);
-        bg.lineStyle(3, borderColor, 0.9);
+        bg.lineStyle(2, borderColor, 0.8);
         bg.strokeCircle(x, y, size / 2);
         this.container.add(bg);
 
-        const iconFs = Math.round(size * 0.45) + 'px';
-        this.container.add(this.scene.add.text(x, y - 2, icon, {
-            fontSize: iconFs
-        }).setOrigin(0.5));
+        this.container.add(this.scene.add.text(x, y, icon, { fontSize: '18px' }).setOrigin(0.5));
 
-        const labelFs = Math.max(8, Math.round(size * 0.18)) + 'px';
-        this.container.add(this.scene.add.text(x, y + size / 2 + 10, label, {
-            fontSize: labelFs, fontFamily: 'Arial', color: '#ffffff', fontStyle: 'bold',
-            stroke: '#000000', strokeThickness: 2
-        }).setOrigin(0.5));
-
-        const hit = this.scene.add.rectangle(x, y, size + 12, size + 12, 0x000000, 0)
+        const hit = this.scene.add.rectangle(x, y, size + 8, size + 8, 0x000000, 0)
             .setInteractive({ useHandCursor: true }).setDepth(101).setScrollFactor(0);
-        hit.on('pointerdown', (ptr, lx, ly, ev) => {
-            if (ev && ev.stopPropagation) ev.stopPropagation();
-            onClick();
-        });
+        hit.on('pointerdown', onClick);
         this.container.add(hit);
     }
 

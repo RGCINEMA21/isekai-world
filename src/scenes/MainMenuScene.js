@@ -26,17 +26,18 @@ class MainMenuScene extends Phaser.Scene {
         this.dimOverlay = this.add.rectangle(w/2, h/2, w, h, 0x1a0a00, 0)
             .setDepth(100);
 
-        // Responsive sizing - all percentage based
-        const titleFs = Math.max(20, Math.round(Math.min(w * 0.065, 68)));
-        const subFs = Math.max(10, Math.round(Math.min(w * 0.018, 18)));
-        const btnFontSize = Math.max(12, Math.round(Math.min(w * 0.025, 22))) + 'px';
-        const btnW = Math.max(160, Math.min(w * 0.35, 280));
-        const btnH = Math.max(36, Math.min(h * 0.065, 52));
-        const btnSpacing = Math.max(40, Math.min(h * 0.08, 68));
+        // Responsive detection
+        const isMobile = w < 600;
+        const titleSize = isMobile ? '42px' : '68px';
+        const subSize = isMobile ? '12px' : '18px';
+        const btnFontSize = isMobile ? '18px' : '22px';
+        const btnW = isMobile ? 200 : 280;
+        const btnH = isMobile ? 42 : 52;
+        const btnSpacing = isMobile ? 50 : 68;
 
         // --- TITLE ---
         this.titleText = this.add.text(w/2, h * 0.08, 'ISEKAI WORLD', {
-            fontSize: titleFs + 'px',
+            fontSize: titleSize,
             fontFamily: 'Arial, sans-serif',
             color: '#ffffff',
             fontStyle: 'bold',
@@ -45,8 +46,8 @@ class MainMenuScene extends Phaser.Scene {
         }).setOrigin(0.5).setAlpha(0).setDepth(10);
 
         // --- SUBTITLE ---
-        this.subtitleText = this.add.text(w/2, h * 0.08 + titleFs * 0.75, 'v0.0.1', {
-            fontSize: subFs + 'px',
+        this.subtitleText = this.add.text(w/2, h * 0.08 + (isMobile ? 35 : 50), 'v0.0.1', {
+            fontSize: subSize,
             fontFamily: 'Arial, sans-serif',
             color: '#ccbbee',
             stroke: '#000',

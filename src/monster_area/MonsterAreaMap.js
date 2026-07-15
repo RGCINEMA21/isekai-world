@@ -1,88 +1,35 @@
 /**
- * MonsterAreaMap - Tile-based map generator with theme support.
- * Different themes produce different terrain colors and features.
- * Reusable template for all 10 monster areas.
+ * MonsterAreaMap - Tile-based map generator for monster areas.
+ * Generates terrain, collision data, and decoration.
+ * Reusable template: change theme config to create different areas.
  */
 class MonsterAreaMap {
+    /**
+     * @param {Object} config - Area configuration
+     */
     constructor(config) {
         this.areaId = config.areaId || 'beginner_grassland';
         this.areaName = config.areaName || 'Beginner Grassland';
         this.tileSize = config.tileSize || 16;
-        this.mapWidth = config.mapWidth || 50;
-        this.mapHeight = config.mapHeight || 50;
+        this.mapWidth = config.mapWidth || 80;
+        this.mapHeight = config.mapHeight || 80;
         this.theme = config.theme || 'grassland';
-        this.spawnX = config.spawnX || 25;
-        this.spawnY = config.spawnY || 46;
+        this.spawnX = config.spawnX || 40;
+        this.spawnY = config.spawnY || 70;
 
         // Tile types
         this.T = {
-            GROUND:0, GROUND_DARK:1, PATH:2, WATER:3, BRIDGE:4,
+            GRASS:0, GRASS_DARK:1, PATH:2, WATER:3, BRIDGE:4,
             TREE:5, TREE_SM:6, ROCK:7, ROCK_SM:8, FENCE:9,
-            FLOWERS:10, BUSH:11, HILL:12, SPECIAL:13, SAND:14,
-            BORDER:15
+            FLOWERS:10, SHRUB:11, HILL:12, BUSH:13, SAND:14,
+            WALL:15, SIGN:16
         };
 
-        this.grid = [];
+        // Collision map (true = blocked)
         this.collision = [];
-        this.themeColors = this._getThemeColors();
+        this.grid = [];
 
         this.generate();
-    }
-
-    _getThemeColors() {
-        const themes = {
-            grassland: {
-                ground: 0x5a9a3a, groundDark: 0x4a8a2a, path: 0xc4a86a,
-                tree: 0x2d7a1e, treeTrunk: 0x5a3a1a, rock: 0x888888,
-                water: 0x3388cc, hill: 0x6aaa4a, fence: 0x8b6b4a
-            },
-            valley: {
-                ground: 0x7aaa3a, groundDark: 0x6a9a2a, path: 0xbbaa66,
-                tree: 0x558822, treeTrunk: 0x6a4a1a, rock: 0x998877,
-                water: 0x4499bb, hill: 0x8aaa5a, fence: 0x8b6b4a
-            },
-            forest: {
-                ground: 0x2d6a1e, groundDark: 0x1d5a0e, path: 0x8a7a5a,
-                tree: 0x1a4a0a, treeTrunk: 0x4a2a0a, rock: 0x667766,
-                water: 0x2266aa, hill: 0x3a7a2a, fence: 0x6a5a3a
-            },
-            canyon: {
-                ground: 0x8a7a5a, groundDark: 0x7a6a4a, path: 0xaa9966,
-                tree: 0x665533, treeTrunk: 0x5a3a1a, rock: 0x999988,
-                water: 0x5588aa, hill: 0x9a8a6a, fence: 0x7a6a4a
-            },
-            snow: {
-                ground: 0xccddcc, groundDark: 0xbbccbb, path: 0xaabbcc,
-                tree: 0x446644, treeTrunk: 0x5a3a1a, rock: 0x99aabb,
-                water: 0x6688cc, hill: 0xddddcc, fence: 0x8899aa
-            },
-            volcano: {
-                ground: 0x6a3a1a, groundDark: 0x5a2a0a, path: 0x8a6a4a,
-                tree: 0x443322, treeTrunk: 0x3a2a0a, rock: 0x555555,
-                water: 0xcc4422, hill: 0x7a4a2a, fence: 0x5a4a3a
-            },
-            cave: {
-                ground: 0x4a3a5a, groundDark: 0x3a2a4a, path: 0x6a5a7a,
-                tree: 0x5544aa, treeTrunk: 0x3a2a4a, rock: 0x667788,
-                water: 0x4466aa, hill: 0x5a4a6a, fence: 0x4a4a5a
-            },
-            ruins: {
-                ground: 0x554488, groundDark: 0x443377, path: 0x7766aa,
-                tree: 0x6655bb, treeTrunk: 0x4a3a6a, rock: 0x8888aa,
-                water: 0x5577cc, hill: 0x6655aa, fence: 0x5a5a7a
-            },
-            swamp: {
-                ground: 0x2a3a2a, groundDark: 0x1a2a1a, path: 0x4a5a3a,
-                tree: 0x1a3a1a, treeTrunk: 0x2a1a0a, rock: 0x445544,
-                water: 0x334433, hill: 0x3a4a3a, fence: 0x3a3a2a
-            },
-            dragon: {
-                ground: 0x3a1a2a, groundDark: 0x2a0a1a, path: 0x5a3a4a,
-                tree: 0x4a1a2a, treeTrunk: 0x2a0a0a, rock: 0x554455,
-                water: 0x662244, hill: 0x4a2a3a, fence: 0x4a2a3a
-            }
-        };
-        return themes[this.theme] || themes.grassland;
     }
 
     generate() {
@@ -90,197 +37,275 @@ class MonsterAreaMap {
         const w = this.mapWidth;
         const h = this.mapHeight;
 
+        // Init grid and collision
         for (let y = 0; y < h; y++) {
             this.grid[y] = [];
             this.collision[y] = [];
             for (let x = 0; x < w; x++) {
-                this.grid[y][x] = T.GROUND;
+                this.grid[y][x] = T.GRASS;
                 this.collision[y][x] = false;
             }
         }
 
-        // Ground variation
-        for (let y = 0; y < h; y++) {
-            for (let x = 0; x < w; x++) {
-                if (Math.random() < 0.25) this.grid[y][x] = T.GROUND_DARK;
-            }
-        }
+        // === TERRAIN ===
+        this._generateTerrain(T, w, h);
 
-        // Water features
-        this._addWater(T, w, h);
+        // === WATER FEATURES ===
+        this._generateWater(T, w, h);
 
-        // Paths
-        this._addPaths(T, w, h);
+        // === PATHS ===
+        this._generatePaths(T, w, h);
 
-        // Collision objects
-        this._addCollisionObjects(T, w, h);
+        // === COLLISION OBJECTS ===
+        this._placeCollisionObjects(T, w, h);
 
-        // Decorations
-        this._addDecorations(T, w, h);
+        // === DECORATIONS (no collision) ===
+        this._placeDecorations(T, w, h);
 
-        // Border
-        this._addBorder(T, w, h);
+        // === MAP BORDER ===
+        this._placeBorder(T, w, h);
     }
 
-    _addWater(T, w, h) {
-        const waterType = this.theme === 'swamp' ? 0.08 : 0.04;
-        // River
-        for (let x = 5; x < w * 0.3; x++) {
-            const y = Math.floor(h * 0.2 + Math.sin(x * 0.3) * 3);
+    _generateTerrain(T, w, h) {
+        // Grass variation
+        for (let y = 0; y < h; y++) {
+            for (let x = 0; x < w; x++) {
+                if (Math.random() < 0.25) {
+                    this.grid[y][x] = T.GRASS_DARK;
+                }
+            }
+        }
+
+        // Hills (higher ground)
+        for (let i = 0; i < 8; i++) {
+            const cx = Phaser.Math.Between(10, w - 10);
+            const cy = Phaser.Math.Between(10, h - 10);
+            const r = Phaser.Math.Between(3, 5);
+            for (let dy = -r; dy <= r; dy++) {
+                for (let dx = -r; dx <= r; dx++) {
+                    if (dx*dx + dy*dy <= r*r) {
+                        const x = cx + dx;
+                        const y = cy + dy;
+                        if (x > 0 && x < w - 1 && y > 0 && y < h - 1) {
+                            this.grid[y][x] = T.HILL;
+                            this.collision[y][x] = false; // Hills walkable
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    _generateWater(T, w, h) {
+        // Small river across upper area
+        for (let x = 5; x < 25; x++) {
+            const y = 15 + Math.floor(Math.sin(x * 0.3) * 2);
             if (y >= 0 && y < h) {
-                this.grid[y][x] = T.WATER; this.collision[y][x] = true;
-                if (y+1 < h) { this.grid[y+1][x] = T.WATER; this.collision[y+1][x] = true; }
+                this.grid[y][x] = T.WATER;
+                this.collision[y][x] = true;
+                if (y + 1 < h) { this.grid[y+1][x] = T.WATER; this.collision[y+1][x] = true; }
             }
         }
-        // Bridge
-        for (let x = Math.floor(w*0.15); x < Math.floor(w*0.15)+4; x++) {
-            for (let dy = -1; dy <= 2; dy++) {
-                const y = Math.floor(h*0.2) + dy;
-                if (y >= 0 && y < h) { this.grid[y][x] = T.BRIDGE; this.collision[y][x] = false; }
-            }
-        }
-        // Pond
-        const px = Math.floor(w * 0.75);
-        const py = Math.floor(h * 0.3);
+
+        // Small pond
         for (let dy = -2; dy <= 2; dy++) {
             for (let dx = -3; dx <= 3; dx++) {
                 if (dx*dx + dy*dy <= 7) {
-                    const x = px+dx, y = py+dy;
+                    const x = 65 + dx;
+                    const y = 25 + dy;
                     if (x > 0 && x < w-1 && y > 0 && y < h-1) {
-                        this.grid[y][x] = T.WATER; this.collision[y][x] = true;
+                        this.grid[y][x] = T.WATER;
+                        this.collision[y][x] = true;
                     }
+                }
+            }
+        }
+
+        // Bridge over river
+        for (let x = 13; x < 17; x++) {
+            for (let dy = -1; dy <= 2; dy++) {
+                const y = 15 + dy;
+                if (y >= 0 && y < h) {
+                    this.grid[y][x] = T.BRIDGE;
+                    this.collision[y][x] = false;
                 }
             }
         }
     }
 
-    _addPaths(T, w, h) {
-        // Main horizontal
-        for (let x = 5; x < w-5; x++) {
-            if (this.grid[this.spawnY][x] !== T.WATER && this.grid[this.spawnY][x] !== T.BRIDGE) {
-                this.grid[this.spawnY][x] = T.PATH; this.collision[this.spawnY][x] = false;
+    _generatePaths(T, w, h) {
+        // Main horizontal path
+        for (let x = 5; x < w - 5; x++) {
+            const y = this.spawnY;
+            if (x >= 0 && x < w && y >= 0 && y < h) {
+                this.grid[y][x] = T.PATH;
+                this.collision[y][x] = false;
             }
         }
-        // Main vertical
-        for (let y = 10; y < h-5; y++) {
-            if (this.grid[y][this.spawnX] !== T.WATER && this.grid[y][this.spawnX] !== T.BRIDGE) {
-                this.grid[y][this.spawnX] = T.PATH; this.collision[y][this.spawnX] = false;
+
+        // Main vertical path
+        for (let y = 10; y < h - 5; y++) {
+            const x = this.spawnX;
+            if (x >= 0 && x < w && y >= 0 && y < h) {
+                this.grid[y][x] = T.PATH;
+                this.collision[y][x] = false;
             }
         }
-        // Branches
-        const branchY1 = Math.floor(h * 0.4);
-        const branchY2 = Math.floor(h * 0.6);
-        for (let x = Math.floor(w*0.2); x < Math.floor(w*0.6); x++) {
-            if (this.grid[branchY1][x] === T.GROUND || this.grid[branchY1][x] === T.GROUND_DARK) {
-                this.grid[branchY1][x] = T.PATH;
+
+        // Branch paths
+        for (let x = 15; x < 50; x++) {
+            const y = 40;
+            if (this.grid[y][x] !== T.WATER) {
+                this.grid[y][x] = T.PATH;
+                this.collision[y][x] = false;
             }
         }
-        const branchX1 = Math.floor(w * 0.3);
-        const branchX2 = Math.floor(w * 0.7);
-        for (let y = Math.floor(h*0.25); y < Math.floor(h*0.65); y++) {
-            if (this.grid[y][branchX1] === T.GROUND || this.grid[y][branchX1] === T.GROUND_DARK) {
-                this.grid[y][branchX1] = T.PATH;
+        for (let y = 20; y < 55; y++) {
+            const x = 30;
+            if (this.grid[y][x] !== T.WATER) {
+                this.grid[y][x] = T.PATH;
+                this.collision[y][x] = false;
             }
-            if (this.grid[y][branchX2] === T.GROUND || this.grid[y][branchX2] === T.GROUND_DARK) {
-                this.grid[y][branchX2] = T.PATH;
+        }
+        for (let y = 20; y < 55; y++) {
+            const x = 60;
+            if (this.grid[y][x] !== T.WATER) {
+                this.grid[y][x] = T.PATH;
+                this.collision[y][x] = false;
             }
         }
     }
 
-    _addCollisionObjects(T, w, h) {
-        // Trees
-        for (let i = 0; i < Math.floor(w * h * 0.008); i++) {
-            const tx = Phaser.Math.Between(3, w-4);
-            const ty = Phaser.Math.Between(3, h-4);
-            if (this.grid[ty][tx] === T.GROUND || this.grid[ty][tx] === T.GROUND_DARK) {
-                this.grid[ty][tx] = T.TREE; this.collision[ty][tx] = true;
+    _placeCollisionObjects(T, w, h) {
+        // Trees (big, with collision)
+        const treeSpots = [];
+        for (let i = 0; i < 60; i++) {
+            const tx = Phaser.Math.Between(3, w - 4);
+            const ty = Phaser.Math.Between(3, h - 4);
+            if (this.grid[ty][tx] === T.GRASS || this.grid[ty][tx] === T.GRASS_DARK) {
+                this.grid[ty][tx] = T.TREE;
+                this.collision[ty][tx] = true;
+                treeSpots.push([tx, ty]);
             }
         }
-        // Small trees
-        for (let i = 0; i < Math.floor(w * h * 0.005); i++) {
-            const tx = Phaser.Math.Between(3, w-4);
-            const ty = Phaser.Math.Between(3, h-4);
-            if (this.grid[ty][tx] === T.GROUND || this.grid[ty][tx] === T.GROUND_DARK) {
-                this.grid[ty][tx] = T.TREE_SM; this.collision[ty][tx] = true;
+
+        // Small trees (collision)
+        for (let i = 0; i < 40; i++) {
+            const tx = Phaser.Math.Between(3, w - 4);
+            const ty = Phaser.Math.Between(3, h - 4);
+            if (this.grid[ty][tx] === T.GRASS || this.grid[ty][tx] === T.GRASS_DARK) {
+                this.grid[ty][tx] = T.TREE_SM;
+                this.collision[ty][tx] = true;
             }
         }
-        // Rocks
-        for (let i = 0; i < Math.floor(w * h * 0.003); i++) {
-            const tx = Phaser.Math.Between(3, w-4);
-            const ty = Phaser.Math.Between(3, h-4);
-            if (this.grid[ty][tx] === T.GROUND || this.grid[ty][tx] === T.GROUND_DARK) {
-                this.grid[ty][tx] = T.ROCK; this.collision[ty][tx] = true;
+
+        // Big rocks (collision)
+        for (let i = 0; i < 20; i++) {
+            const tx = Phaser.Math.Between(3, w - 4);
+            const ty = Phaser.Math.Between(3, h - 4);
+            if (this.grid[ty][tx] === T.GRASS || this.grid[ty][tx] === T.GRASS_DARK) {
+                this.grid[ty][tx] = T.ROCK;
+                this.collision[ty][tx] = true;
             }
         }
-        // Fences
-        for (let i = 0; i < 12; i++) {
-            const tx = Phaser.Math.Between(5, w-6);
-            const ty = Phaser.Math.Between(5, h-6);
-            const horiz = Math.random() > 0.5;
+
+        // Fences (collision)
+        for (let i = 0; i < 15; i++) {
+            const tx = Phaser.Math.Between(5, w - 6);
+            const ty = Phaser.Math.Between(5, h - 6);
+            const horizontal = Math.random() > 0.5;
             const len = Phaser.Math.Between(3, 6);
             for (let j = 0; j < len; j++) {
-                const fx = horiz ? tx+j : tx;
-                const fy = horiz ? ty : ty+j;
-                if (fx > 0 && fx < w-1 && fy > 0 && fy < h-1) {
-                    if (this.grid[fy][fx] === T.GROUND || this.grid[fy][fx] === T.GROUND_DARK) {
-                        this.grid[fy][fx] = T.FENCE; this.collision[fy][fx] = true;
+                const fx = horizontal ? tx + j : tx;
+                const fy = horizontal ? ty : ty + j;
+                if (fx > 0 && fx < w - 1 && fy > 0 && fy < h - 1) {
+                    if (this.grid[fy][fx] === T.GRASS || this.grid[fy][fx] === T.GRASS_DARK) {
+                        this.grid[fy][fx] = T.FENCE;
+                        this.collision[fy][fx] = true;
                     }
                 }
             }
         }
-        // Clear spawn
+
+        // Ensure spawn area is clear
         for (let dy = -2; dy <= 2; dy++) {
             for (let dx = -2; dx <= 2; dx++) {
-                const x = this.spawnX+dx, y = this.spawnY+dy;
+                const x = this.spawnX + dx;
+                const y = this.spawnY + dy;
                 if (x >= 0 && x < w && y >= 0 && y < h) {
-                    if (this.collision[y][x]) { this.grid[y][x] = T.GROUND; this.collision[y][x] = false; }
+                    if (this.collision[y][x]) {
+                        this.grid[y][x] = T.GRASS;
+                        this.collision[y][x] = false;
+                    }
                 }
             }
         }
     }
 
-    _addDecorations(T, w, h) {
-        for (let i = 0; i < 50; i++) {
-            const fx = Phaser.Math.Between(2, w-3);
-            const fy = Phaser.Math.Between(2, h-3);
-            if (this.grid[fy][fx] === T.GROUND || this.grid[fy][fx] === T.GROUND_DARK) {
-                this.grid[fy][fx] = T.FLOWERS;
-            }
-        }
-        for (let i = 0; i < 20; i++) {
-            const bx = Phaser.Math.Between(3, w-4);
-            const by = Phaser.Math.Between(3, h-4);
-            if (this.grid[by][bx] === T.GROUND || this.grid[by][bx] === T.GROUND_DARK) {
-                this.grid[by][bx] = T.BUSH;
-            }
-        }
-        for (let i = 0; i < 20; i++) {
-            const rx = Phaser.Math.Between(2, w-3);
-            const ry = Phaser.Math.Between(2, h-3);
-            if (this.grid[ry][rx] === T.GROUND || this.grid[ry][rx] === T.GROUND_DARK) {
+    _placeDecorations(T, w, h) {
+        // Small rocks (no collision)
+        for (let i = 0; i < 30; i++) {
+            const rx = Phaser.Math.Between(2, w - 3);
+            const ry = Phaser.Math.Between(2, h - 3);
+            if (this.grid[ry][rx] === T.GRASS || this.grid[ry][rx] === T.GRASS_DARK) {
                 this.grid[ry][rx] = T.ROCK_SM;
             }
         }
+
+        // Flowers
+        for (let i = 0; i < 60; i++) {
+            const fx = Phaser.Math.Between(2, w - 3);
+            const fy = Phaser.Math.Between(2, h - 3);
+            if (this.grid[fy][fx] === T.GRASS || this.grid[fy][fx] === T.GRASS_DARK) {
+                this.grid[fy][fx] = T.FLOWERS;
+            }
+        }
+
+        // Bushes
+        for (let i = 0; i < 25; i++) {
+            const bx = Phaser.Math.Between(3, w - 4);
+            const by = Phaser.Math.Between(3, h - 4);
+            if (this.grid[by][bx] === T.GRASS || this.grid[by][bx] === T.GRASS_DARK) {
+                this.grid[by][bx] = T.BUSH;
+            }
+        }
+
+        // Shrubs
+        for (let i = 0; i < 20; i++) {
+            const sx = Phaser.Math.Between(3, w - 4);
+            const sy = Phaser.Math.Between(3, h - 4);
+            if (this.grid[sy][sx] === T.GRASS || this.grid[sy][sx] === T.GRASS_DARK) {
+                this.grid[sy][sx] = T.SHRUB;
+            }
+        }
+
+        // Signs
+        this.grid[10][this.spawnX] = T.SIGN;
+        this.collision[10][this.spawnX] = true;
     }
 
-    _addBorder(T, w, h) {
+    _placeBorder(T, w, h) {
         for (let x = 0; x < w; x++) {
-            this.grid[0][x] = T.BORDER; this.collision[0][x] = true;
-            this.grid[h-1][x] = T.BORDER; this.collision[h-1][x] = true;
+            this.grid[0][x] = T.FENCE; this.collision[0][x] = true;
+            this.grid[h-1][x] = T.FENCE; this.collision[h-1][x] = true;
         }
         for (let y = 0; y < h; y++) {
-            this.grid[y][0] = T.BORDER; this.collision[y][0] = true;
-            this.grid[y][w-1] = T.BORDER; this.collision[y][w-1] = true;
+            this.grid[y][0] = T.FENCE; this.collision[y][0] = true;
+            this.grid[y][w-1] = T.FENCE; this.collision[y][w-1] = true;
         }
     }
 
+    /** Check if tile at (tx, ty) is walkable */
     isWalkable(tx, ty) {
         if (tx < 0 || tx >= this.mapWidth || ty < 0 || ty >= this.mapHeight) return false;
         return !this.collision[ty][tx];
     }
 
+    /** Get pixel size of map */
     getPixelWidth() { return this.mapWidth * this.tileSize; }
     getPixelHeight() { return this.mapHeight * this.tileSize; }
+
+    /** Get spawn position in pixels */
     getSpawnPixelX() { return this.spawnX * this.tileSize + this.tileSize / 2; }
     getSpawnPixelY() { return this.spawnY * this.tileSize + this.tileSize / 2; }
 }

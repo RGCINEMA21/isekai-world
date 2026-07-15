@@ -1,15 +1,12 @@
 /**
  * ISEKAI WORLD - Main Configuration
- * Phaser handles canvas sizing via Scale.RESIZE.
+ * Responsive: auto-detect portrait/landscape, adjusts viewport & UI.
  */
-
-const W = window.innerWidth || document.documentElement.clientWidth || 360;
-const H = window.innerHeight || document.documentElement.clientHeight || 640;
 
 const config = {
     type: Phaser.AUTO,
-    width: W,
-    height: H,
+    width: window.innerWidth,
+    height: window.innerHeight,
     parent: 'game-container',
     scale: {
         mode: Phaser.Scale.RESIZE,
@@ -29,9 +26,9 @@ const config = {
 
 const game = new Phaser.Game(config);
 
-// Ensure resize on orientation change and viewport change
+// Resize handler
 window.addEventListener('resize', () => {
-    if (game.scale) game.scale.refresh();
+    game.scale.resize(window.innerWidth, window.innerHeight);
 });
 
-console.log('[Isekai World] Started:', W, 'x', H);
+console.log('[Isekai World] Game initialized. Responsive enabled.');
