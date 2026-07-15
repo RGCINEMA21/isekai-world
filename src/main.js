@@ -1,15 +1,15 @@
 /**
  * ISEKAI WORLD - Main Configuration
- * Phaser handles ALL canvas sizing via Scale.RESIZE.
- * No manual viewport detection needed.
+ * Phaser handles canvas sizing via Scale.RESIZE.
  */
+
 const config = {
     type: Phaser.AUTO,
-    width: window.innerWidth,
-    height: window.innerHeight,
     parent: 'game-container',
     scale: {
         mode: Phaser.Scale.RESIZE,
+        width: '100%',
+        height: '100%',
         autoCenter: Phaser.Scale.CENTER_BOTH
     },
     physics: {
@@ -25,5 +25,4 @@ const config = {
 };
 
 const game = new Phaser.Game(config);
-
-console.log('[Isekai World] Game initialized.');
+console.log('[Isekai World] Game started');
