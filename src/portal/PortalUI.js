@@ -2,6 +2,7 @@
  * PortalUI - UI utama Portal Monster.
  * Responsive: Mobile Portrait & Desktop Landscape.
  * Area cards besar dan mudah disentuh.
+ * Panel adapts to all screen sizes.
  */
 class PortalUI {
     constructor(scene, portalManager) {
@@ -28,18 +29,19 @@ class PortalUI {
         const w = this.scene.cameras.main.width;
         const h = this.scene.cameras.main.height;
         this.isPortrait = h > w;
+        const smaller = Math.min(w, h);
 
         this.container = this.scene.add.container(0, 0).setDepth(500).setScrollFactor(0);
 
-        // Dim overlay - only visual, NO pointer events
+        // Dim overlay
         const dim = this.scene.add.graphics();
         dim.fillStyle(0x000000, 0.6);
         dim.fillRect(0, 0, w, h);
         this.container.add(dim);
 
-        // Panel size - fills most of the screen on mobile
-        const pw = this.isPortrait ? w * 0.95 : Math.min(700, w * 0.65);
-        const ph = this.isPortrait ? h * 0.85 : Math.min(520, h * 0.88);
+        // Panel size - fills most of the screen
+        const pw = this.isPortrait ? w * 0.92 : Math.min(720, w * 0.65);
+        const ph = this.isPortrait ? h * 0.82 : Math.min(520, h * 0.88);
         const px = w / 2;
         const py = h / 2;
 
@@ -56,8 +58,8 @@ class PortalUI {
         this.container.add(bg);
 
         // Title
-        const titleFs = this.isPortrait ? '20px' : '22px';
-        const titleY = py - ph / 2 + 16;
+        const titleFs = Math.max(16, Math.min(24, smaller * 0.032)) + 'px';
+        const titleY = py - ph / 2 + 20;
         this.container.add(this.scene.add.text(px, titleY, '⚔ PORTAL MONSTER', {
             fontSize: titleFs,
             fontFamily: 'Georgia, serif',
@@ -69,7 +71,7 @@ class PortalUI {
 
         // Level info
         const infoY = titleY + 30;
-        const infoFs = this.isPortrait ? '13px' : '14px';
+        const infoFs = Math.max(11, Math.min(14, smaller * 0.018)) + 'px';
         this.container.add(this.scene.add.text(px, infoY,
             'Level Kamu: ' + playerLevel + '  ·  Pilih area untuk bertarung!', {
             fontSize: infoFs,
@@ -83,9 +85,10 @@ class PortalUI {
         sep.lineBetween(px - pw / 2 + 20, infoY + 16, px + pw / 2 - 20, infoY + 16);
         this.container.add(sep);
 
-        // Area list - scrollable on mobile
+        // Area list
         const gridTop = infoY + 24;
-        const gridH = ph * 0.52;
+        const gridBottom = py + ph / 2 - 130;
+        const gridH = Math.max(120, gridBottom - gridTop);
         const gridW = pw - 24;
 
         // Use AreaSelector
@@ -101,11 +104,10 @@ class PortalUI {
         this.areaSelector.create(this.container, px - gridW / 2, gridTop, gridW, gridH);
 
         // Action buttons
-        this.createButtons(px, py, pw, ph);
+        this.createButtons(px, py, pw, ph, smaller);
     }
 
     showAreaDetail(area, px, py, pw, ph, playerLevel) {
-        // Remove old detail
         if (this._detailContainer) {
             this._detailContainer.destroy();
             this._detailContainer = null;
@@ -113,14 +115,13 @@ class PortalUI {
 
         const isUnlocked = area.status === 'unlocked';
         const dw = pw - 32;
-        const dh = 100;
+        const dh = 90;
         const dx = px - dw / 2;
-        const dy = py + ph / 2 - 170;
+        const dy = py + ph / 2 - 160;
 
         this._detailContainer = this.scene.add.container(0, 0);
         this.container.add(this._detailContainer);
 
-        // Detail background
         const dBg = this.scene.add.graphics();
         dBg.fillStyle(0x1a0a00, 0.8);
         dBg.fillRoundedRect(dx, dy, dw, dh, 8);
@@ -128,8 +129,7 @@ class PortalUI {
         dBg.strokeRoundedRect(dx, dy, dw, dh, 8);
         this._detailContainer.add(dBg);
 
-        // Area info
-        const dFs = this.isPortrait ? '12px' : '13px';
+        const dFs = Math.max(11, Math.min(13, Math.min(pw, ph) * 0.02)) + 'px';
         const infoText = area.icon + ' ' + area.name +
             '\nLevel: ' + area.levelRequired + '  ·  ' + (isUnlocked ? 'Terbuka' : 'Tergunci') +
             '\n' + (area.description || '');
@@ -141,11 +141,11 @@ class PortalUI {
         }));
     }
 
-    createButtons(px, py, pw, ph) {
+    createButtons(px, py, pw, ph, smaller) {
         const btnY = py + ph / 2 - 55;
-        const btnFs = this.isPortrait ? '16px' : '15px';
-        const btnW = this.isPortrait ? 180 : 160;
-        const btnH = 44;
+        const btnFs = Math.max(13, Math.min(16, smaller * 0.02)) + 'px';
+        const btnW = Math.max(130, Math.min(180, pw * 0.35));
+        const btnH = Math.max(40, Math.min(48, smaller * 0.06));
 
         // Enter button
         const enterX = px - btnW / 2 - 8;
@@ -164,7 +164,7 @@ class PortalUI {
         }).setOrigin(0.5);
         this.container.add(this.enterBtnText);
 
-        const enterHit = this.scene.add.rectangle(enterX + btnW / 2, btnY + btnH / 2, btnW, btnH, 0x000000, 0)
+        const enterHit = this.scene.add.rectangle(enterX + btnW / 2, btnY + btnH / 2, btnW + 20, btnH + 20, 0x000000, 0)
             .setInteractive({ useHandCursor: true }).setDepth(501).setScrollFactor(0);
         enterHit.on('pointerdown', (ptr) => {
             if (this.selectedArea && this.selectedArea.status === 'unlocked') {
@@ -189,7 +189,7 @@ class PortalUI {
             fontStyle: 'bold'
         }).setOrigin(0.5));
 
-        const backHit = this.scene.add.rectangle(backX + btnW / 2, btnY + btnH / 2, btnW, btnH, 0x000000, 0)
+        const backHit = this.scene.add.rectangle(backX + btnW / 2, btnY + btnH / 2, btnW + 20, btnH + 20, 0x000000, 0)
             .setInteractive({ useHandCursor: true }).setDepth(501).setScrollFactor(0);
         backHit.on('pointerdown', () => this.close());
         this.container.add(backHit);
@@ -199,9 +199,11 @@ class PortalUI {
         if (this.enterBtnBg) {
             this.enterBtnBg.clear();
             this.enterBtnBg.fillStyle(isUnlocked ? 0x228833 : 0x555555, 0.9);
-            this.enterBtnBg.fillRoundedRect(0, 0, 180, 44, 10);
+            const w = Math.max(130, Math.min(180, 600 * 0.35));
+            const h = 44;
+            this.enterBtnBg.fillRoundedRect(0, 0, w, h, 10);
             this.enterBtnBg.lineStyle(2, isUnlocked ? 0x44cc44 : 0x777777, 0.7);
-            this.enterBtnBg.strokeRoundedRect(0, 0, 180, 44, 10);
+            this.enterBtnBg.strokeRoundedRect(0, 0, w, h, 10);
         }
         if (this.enterBtnText) {
             this.enterBtnText.setText(isUnlocked ? '⚔ Masuk Area' : '🔒 Tergunci');

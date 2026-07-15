@@ -19,8 +19,8 @@ class CharacterCreatorScene extends Phaser.Scene {
      *  HELPER - Responsive sizing
      * ============================================= */
     sz(base) {
-        const w = this.cameras.main.width;
-        return Math.max(10, Math.round(base * (w / 1280)));
+        const smaller = Math.min(this.cameras.main.width, this.cameras.main.height);
+        return Math.max(10, Math.round(base * (smaller / 800)));
     }
 
     /* =============================================
@@ -99,7 +99,7 @@ class CharacterCreatorScene extends Phaser.Scene {
      * ============================================= */
     createTitle() {
         this.add.text(this.w / 2, this.h * 0.04, 'CREATE YOUR CHARACTER', {
-            fontSize: this.sz(36) + 'px',
+            fontSize: this.sz(32) + 'px',
             fontFamily: 'Georgia, serif',
             color: '#ffffff',
             fontStyle: 'bold',

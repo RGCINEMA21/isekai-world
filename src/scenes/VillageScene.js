@@ -67,7 +67,9 @@ class VillageScene extends Phaser.Scene {
     shutdown() {
         this.saveGame();
         if (this.deco) this.deco.destroy();
+        if (this.buildingMgr) this.buildingMgr.gfx.destroy();
         if (this.npcMgr) this.npcMgr.destroy();
         if (this.villageUI) this.villageUI.destroy();
+        if (this.npcInteraction) this.npcInteraction = null;
     }
 }

@@ -1,7 +1,8 @@
 /**
  * PlayerController - Movement, animation, collision for Monster Area.
  * Desktop: WASD + Arrow Keys
- * Mobile: Always-visible virtual joystick bottom-left.
+ * Mobile: Virtual joystick (always visible on touch devices).
+ * Joystick auto-positions bottom-left and adapts to screen size.
  */
 class PlayerController {
     constructor(scene, map, saveData) {
@@ -9,6 +10,7 @@ class PlayerController {
         this.map = map;
         this.saveData = saveData;
 
+        // Spawn position
         this.x = map.getSpawnPixelX();
         this.y = map.getSpawnPixelY();
         if (saveData?.progress?.areaX != null && saveData?.progress?.areaY != null) {
@@ -29,6 +31,7 @@ class PlayerController {
         this.bodyH = 4;
         this.gender = saveData?.player?.gender || 'male';
 
+        // Player graphics (world space)
         this.gfx = scene.add.graphics().setDepth(10);
 
         // Keyboard
@@ -54,21 +57,19 @@ class PlayerController {
         this.joystickDX = 0;
         this.joystickDY = 0;
         this.joystickPointerId = -1;
-        this.joystickRadius = 50;
-        this.stickRadius = 22;
+        this.isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || !!window.matchMedia('(pointer: coarse)').matches;
 
-        // Joystick graphics
+        // Joystick size adapts to screen
+        this._recalcJoystickSize();
+
+        // Joystick graphics (UI space, fixed to screen)
         this.joyBaseGfx = scene.add.graphics().setDepth(150).setScrollFactor(0);
         this.joyStickGfx = scene.add.graphics().setDepth(151).setScrollFactor(0);
 
-        this.isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || !!window.matchMedia('(pointer: coarse)').matches;
-
-        // Always show joystick on touch devices
         if (this.isTouchDevice) {
-            this._initJoystickPosition();
+            this._recalcJoystickPosition();
             this._showJoystick();
         } else {
-            // Desktop: joystick hidden until touch
             this.joyBaseGfx.setAlpha(0);
             this.joyStickGfx.setAlpha(0);
         }
@@ -76,11 +77,20 @@ class PlayerController {
         scene.playerController = this;
     }
 
-    _initJoystickPosition() {
+    _recalcJoystickSize() {
         const w = this.scene.cameras.main.width;
         const h = this.scene.cameras.main.height;
-        this.joystickBaseX = 80;
-        this.joystickBaseY = h - 120;
+        // Joystick should be ~20% of the smaller screen dimension
+        const baseSize = Math.min(w, h);
+        this.joystickRadius = Math.max(40, Math.min(70, baseSize * 0.09));
+        this.stickRadius = this.joystickRadius * 0.42;
+    }
+
+    _recalcJoystickPosition() {
+        const w = this.scene.cameras.main.width;
+        const h = this.scene.cameras.main.height;
+        this.joystickBaseX = this.joystickRadius + 20;
+        this.joystickBaseY = h - this.joystickRadius - 30;
         this.joystickStickX = this.joystickBaseX;
         this.joystickStickY = this.joystickBaseY;
     }
@@ -88,13 +98,13 @@ class PlayerController {
     _showJoystick() {
         this._drawBase();
         this._drawStick();
-        this.joyBaseGfx.setAlpha(0.35);
-        this.joyStickGfx.setAlpha(0.55);
+        this.joyBaseGfx.setAlpha(0.3);
+        this.joyStickGfx.setAlpha(0.5);
     }
 
     _drawBase() {
         this.joyBaseGfx.clear();
-        this.joyBaseGfx.fillStyle(0xffffff, 0.12);
+        this.joyBaseGfx.fillStyle(0xffffff, 0.1);
         this.joyBaseGfx.fillCircle(this.joystickBaseX, this.joystickBaseY, this.joystickRadius);
         this.joyBaseGfx.lineStyle(2, 0xffffff, 0.25);
         this.joyBaseGfx.strokeCircle(this.joystickBaseX, this.joystickBaseY, this.joystickRadius);
@@ -102,9 +112,9 @@ class PlayerController {
 
     _drawStick() {
         this.joyStickGfx.clear();
-        this.joyStickGfx.fillStyle(0xffffff, 0.45);
+        this.joyStickGfx.fillStyle(0xffffff, 0.4);
         this.joyStickGfx.fillCircle(this.joystickStickX, this.joystickStickY, this.stickRadius);
-        this.joyStickGfx.lineStyle(2, 0xffffff, 0.55);
+        this.joyStickGfx.lineStyle(2, 0xffffff, 0.5);
         this.joyStickGfx.strokeCircle(this.joystickStickX, this.joystickStickY, this.stickRadius);
     }
 
@@ -138,100 +148,95 @@ class PlayerController {
             if (this.cursors.down.isDown || (this.keys && this.keys.down.isDown)) vy = 1;
         }
 
-        // Touch/pointer joystick input
-        this._processTouchInput();
-
-        if (Math.abs(this.joystickDX) > 0.1 || Math.abs(this.joystickDY) > 0.1) {
+        // Joystick input
+        if (this.joystickActive && (Math.abs(this.joystickDX) > 0.15 || Math.abs(this.joystickDY) > 0.15)) {
             vx = this.joystickDX;
             vy = this.joystickDY;
         }
 
         // Normalize diagonal
-        const len = Math.sqrt(vx * vx + vy * vy);
-        if (len > 1) { vx /= len; vy /= len; }
+        if (vx !== 0 && vy !== 0) {
+            const inv = 1 / Math.sqrt(2);
+            vx *= inv;
+            vy *= inv;
+        }
 
-        // Apply movement
-        const dt = delta / 1000;
-        const dx = vx * this.moveSpeed * dt;
-        const dy = vy * this.moveSpeed * dt;
-
-        this.isMoving = Math.abs(vx) > 0.1 || Math.abs(vy) > 0.1;
-
-        if (this.isMoving) {
-            // Update facing
+        // Determine facing
+        if (Math.abs(vx) > 0.1 || Math.abs(vy) > 0.1) {
             if (Math.abs(vx) > Math.abs(vy)) {
-                this.facing = vx > 0 ? 'right' : 'left';
+                this.facing = vx < 0 ? 'left' : 'right';
             } else {
-                this.facing = vy > 0 ? 'down' : 'up';
-            }
-
-            // Try X movement
-            if (dx !== 0 && this._canMoveTo(this.x + dx, this.y)) {
-                this.x += dx;
-            }
-            // Try Y movement
-            if (dy !== 0 && this._canMoveTo(this.x, this.y + dy)) {
-                this.y += dy;
-            }
-
-            // Clamp to map
-            this.x = Phaser.Math.Clamp(this.x, 16, this.map.getPixelWidth() - 16);
-            this.y = Phaser.Math.Clamp(this.y, 16, this.map.getPixelHeight() - 16);
-
-            // Animation
-            this.animTimer += delta;
-            if (this.animTimer > 150) {
-                this.animFrame = (this.animFrame + 1) % 4;
-                this.animTimer = 0;
+                this.facing = vy < 0 ? 'up' : 'down';
             }
         }
 
+        this.isMoving = (vx !== 0 || vy !== 0);
+
+        // Move with collision
+        if (this.isMoving) {
+            const newX = this.x + vx * this.moveSpeed * (delta / 1000);
+            const newY = this.y + vy * this.moveSpeed * (delta / 1000);
+
+            if (this._canMoveTo(newX, this.y)) this.x = newX;
+            if (this._canMoveTo(this.x, newY)) this.y = newY;
+
+            this.x = Phaser.Math.Clamp(this.x, 16, this.map.getPixelWidth() - 16);
+            this.y = Phaser.Math.Clamp(this.y, 16, this.map.getPixelHeight() - 16);
+        }
+
+        // Animation
+        if (this.isMoving) {
+            this.animTimer += delta * 0.008;
+            this.animFrame = this.animTimer;
+        } else {
+            this.animFrame = 0;
+        }
+
         this.draw();
+        this._handleJoystickInput();
     }
 
-    _processTouchInput() {
+    _handleJoystickInput() {
+        if (!this.isTouchDevice) return;
+
         const pointers = this.scene.input.manager.pointers;
         let foundPointer = false;
 
-        for (let i = 0; i < pointers.length; i++) {
-            const p = pointers[i];
-            if (!p.isDown) continue;
-
-            if (this.joystickPointerId === -1) {
-                // Check if touch is in left half of screen (joystick zone)
-                if (p.x < this.scene.cameras.main.width * 0.5) {
+        for (const p of pointers) {
+            if (p.isDown) {
+                // Start joystick on new touch in left half of screen
+                if (!this.joystickActive && p.x < this.scene.cameras.main.width * 0.55) {
                     this.joystickPointerId = p.id;
                     this.joystickActive = true;
                     this.joystickBaseX = p.x;
                     this.joystickBaseY = p.y;
                     this.joystickStickX = p.x;
                     this.joystickStickY = p.y;
-
                     this._drawBase();
                     this._drawStick();
                     this.joyBaseGfx.setAlpha(0.5);
                     this.joyStickGfx.setAlpha(0.7);
                 }
-            }
 
-            if (p.id === this.joystickPointerId) {
-                foundPointer = true;
-                const dx = p.x - this.joystickBaseX;
-                const dy = p.y - this.joystickBaseY;
-                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (p.id === this.joystickPointerId) {
+                    foundPointer = true;
+                    const dx = p.x - this.joystickBaseX;
+                    const dy = p.y - this.joystickBaseY;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
 
-                if (dist <= this.joystickRadius) {
-                    this.joystickStickX = p.x;
-                    this.joystickStickY = p.y;
-                } else {
-                    this.joystickStickX = this.joystickBaseX + (dx / dist) * this.joystickRadius;
-                    this.joystickStickY = this.joystickBaseY + (dy / dist) * this.joystickRadius;
+                    if (dist <= this.joystickRadius) {
+                        this.joystickStickX = p.x;
+                        this.joystickStickY = p.y;
+                    } else {
+                        this.joystickStickX = this.joystickBaseX + (dx / dist) * this.joystickRadius;
+                        this.joystickStickY = this.joystickBaseY + (dy / dist) * this.joystickRadius;
+                    }
+
+                    this.joystickDX = (this.joystickStickX - this.joystickBaseX) / this.joystickRadius;
+                    this.joystickDY = (this.joystickStickY - this.joystickBaseY) / this.joystickRadius;
+
+                    this._drawStick();
                 }
-
-                this.joystickDX = (this.joystickStickX - this.joystickBaseX) / this.joystickRadius;
-                this.joystickDY = (this.joystickStickY - this.joystickBaseY) / this.joystickRadius;
-
-                this._drawStick();
             }
         }
 
@@ -240,22 +245,13 @@ class PlayerController {
             this.joystickPointerId = -1;
             this.joystickDX = 0;
             this.joystickDY = 0;
-
-            // Reset stick to center
             this.joystickStickX = this.joystickBaseX;
             this.joystickStickY = this.joystickBaseY;
             this._drawStick();
 
-            // Show idle joystick on touch devices
             if (this.isTouchDevice) {
-                this.joyBaseGfx.setAlpha(0.35);
-                this.joyStickGfx.setAlpha(0.55);
-            } else {
-                this.scene.tweens.add({
-                    targets: [this.joyBaseGfx, this.joyStickGfx],
-                    alpha: 0.15,
-                    duration: 300
-                });
+                this.joyBaseGfx.setAlpha(0.3);
+                this.joyStickGfx.setAlpha(0.5);
             }
         }
     }
@@ -333,6 +329,17 @@ class PlayerController {
                 g.fillStyle(0x2244aa, 1);
                 g.fillRect(x + 1, y - 9, 1, 1);
             }
+        }
+    }
+
+    onResize() {
+        this._recalcJoystickSize();
+        if (this.isTouchDevice) {
+            this._recalcJoystickPosition();
+            this._drawBase();
+            this._drawStick();
+            this.joyBaseGfx.setAlpha(this.joystickActive ? 0.5 : 0.3);
+            this.joyStickGfx.setAlpha(this.joystickActive ? 0.7 : 0.5);
         }
     }
 

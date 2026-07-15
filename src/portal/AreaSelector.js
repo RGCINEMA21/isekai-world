@@ -2,6 +2,7 @@
  * AreaSelector - Grid pemilihan area di Portal UI.
  * Responsive: Mobile Portrait & Desktop Landscape.
  * Cards besar untuk touch-friendly.
+ * Adapts to screen size.
  */
 class AreaSelector {
     constructor(scene, portalManager, config) {
@@ -26,18 +27,18 @@ class AreaSelector {
     renderAreaGrid() {
         this.container.removeAll(true);
         const areas = this.portalManager.areas;
-        const gap = this.isPortrait ? 10 : 12;
+        const gap = this.isPortrait ? 8 : 10;
         const padding = 6;
 
-        // Mobile: 1 column (bigger cards). Desktop: 2 columns
+        // Mobile: 1 column with big cards. Desktop: 2 columns
         const cols = this.isPortrait ? 1 : 2;
         const rows = Math.ceil(areas.length / cols);
 
         const slotW = (this.width - padding * 2 - gap * Math.max(0, cols - 1)) / cols;
-        const slotH = Math.min(
-            (this.height - padding * 2 - gap * Math.max(0, rows - 1)) / rows,
-            this.isPortrait ? 90 : 70
-        );
+        // Calculate ideal card height based on available space
+        const idealSlotH = (this.height - padding * 2 - gap * Math.max(0, rows - 1)) / rows;
+        // Clamp to reasonable range - bigger for mobile touch targets
+        const slotH = Math.max(55, Math.min(this.isPortrait ? 80 : 65, idealSlotH));
 
         const totalH = rows * slotH + Math.max(0, rows - 1) * gap;
         const startY = (this.height - totalH) / 2;
@@ -54,6 +55,7 @@ class AreaSelector {
     createAreaSlot(area, x, y, w, h) {
         const isUnlocked = area.status === 'unlocked';
         const isSelected = this.selectedAreaId === area.id;
+        const smaller = Math.min(this.width, this.height);
 
         // Background
         const bg = this.scene.add.graphics();
@@ -67,16 +69,16 @@ class AreaSelector {
         bg.strokeRoundedRect(x, y, w, h, 10);
         this.container.add(bg);
 
-        // Icon
-        const iconSize = this.isPortrait ? 28 : 24;
-        this.container.add(this.scene.add.text(x + (this.isPortrait ? 30 : 28), y + h / 2, area.icon, {
+        // Icon - bigger
+        const iconSize = Math.max(22, Math.min(30, smaller * 0.04));
+        this.container.add(this.scene.add.text(x + iconSize + 6, y + h / 2, area.icon, {
             fontSize: iconSize + 'px'
         }).setOrigin(0.5).setAlpha(isUnlocked ? 1 : 0.4));
 
-        // Name
-        const nameX = this.isPortrait ? x + 70 : x + 60;
-        const nameFs = this.isPortrait ? 16 : 14;
-        this.container.add(this.scene.add.text(nameX, y + h * 0.3, area.name, {
+        // Name - bigger
+        const nameX = x + iconSize * 2 + 10;
+        const nameFs = Math.max(13, Math.min(17, smaller * 0.022));
+        this.container.add(this.scene.add.text(nameX, y + h * 0.25, area.name, {
             fontSize: nameFs + 'px',
             fontFamily: 'Arial',
             color: isUnlocked ? '#ffd700' : '#666666',
@@ -84,10 +86,9 @@ class AreaSelector {
         }));
 
         // Level / status
-        const statusX = this.isPortrait ? x + 70 : x + 60;
-        const statusFs = this.isPortrait ? 12 : 11;
+        const statusFs = Math.max(11, Math.min(13, smaller * 0.017));
         const statusText = isUnlocked ? '✅ Terbuka' : '🔒 Level ' + area.levelRequired;
-        this.container.add(this.scene.add.text(statusX, y + h * 0.62, statusText, {
+        this.container.add(this.scene.add.text(nameX, y + h * 0.6, statusText, {
             fontSize: statusFs + 'px',
             fontFamily: 'Arial',
             color: isUnlocked ? '#44cc44' : '#cc4444',
@@ -96,7 +97,7 @@ class AreaSelector {
 
         // Lock overlay
         if (!isUnlocked) {
-            this.container.add(this.scene.add.text(x + w - 20, y + h / 2, '🔒', {
+            this.container.add(this.scene.add.text(x + w - 22, y + h / 2, '🔒', {
                 fontSize: '20px'
             }).setOrigin(0.5));
         }

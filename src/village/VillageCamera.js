@@ -2,6 +2,7 @@
  * VillageCamera - Camera system for Village Mode.
  * Drag to pan, scroll/pinch to zoom.
  * Camera has bounds and cannot leave the map.
+ * Responsive: zoom adapts to screen size.
  */
 class VillageCamera {
     constructor(scene, villageMap) {
@@ -29,15 +30,22 @@ class VillageCamera {
 
         this.camera.setBounds(0, 0, this.PX_W, this.PX_H);
 
-        // Center on village
-        this.camera.scrollX = this.PX_W / 2 - w / 2;
-        this.camera.scrollY = this.PX_H / 2 - h / 2;
+        // Center on village center (building area)
+        const villageCenterX = 48 * this.map.TILE;
+        const villageCenterY = 48 * this.map.TILE;
+        this.camera.scrollX = villageCenterX - w / 2;
+        this.camera.scrollY = villageCenterY - h / 2;
 
-        // Initial zoom
+        // Initial zoom: show the village nicely
+        // For portrait: show about 30 tiles wide
+        // For landscape: show about 40 tiles wide
+        const tileW = this.map.TILE;
         if (this.isPortrait) {
-            this.camera.setZoom(Math.min(w / 400, h / 600));
+            const tilesVisible = Math.max(25, Math.min(40, w / 16));
+            this.camera.setZoom(w / (tilesVisible * tileW));
         } else {
-            this.camera.setZoom(Math.min(w / 600, h / 400));
+            const tilesVisible = Math.max(30, Math.min(55, w / 16));
+            this.camera.setZoom(w / (tilesVisible * tileW));
         }
 
         this.clampScroll();
@@ -55,7 +63,7 @@ class VillageCamera {
             this.camera.zoom = newZoom;
         });
 
-        // Pinch zoom
+        // Pinch zoom (mobile)
         this.scene.input.on('pointermove', (p) => {
             if (this.scene.input.pointer1.isDown && this.scene.input.pointer2.isDown) {
                 const d = Phaser.Math.Distance.Between(
@@ -81,7 +89,6 @@ class VillageCamera {
     }
 
     onDragStart(ptr) {
-        // Don't drag if clicking interactive object or pinching
         if (this.isPinching) return;
         this.isDragging = true;
         this.dragStartX = ptr.x;
@@ -113,10 +120,13 @@ class VillageCamera {
 
     onResize(w, h) {
         this.isPortrait = h > w;
+        const tileW = this.map.TILE;
         if (this.isPortrait) {
-            this.camera.setZoom(Math.min(w / 400, h / 600));
+            const tilesVisible = Math.max(25, Math.min(40, w / 16));
+            this.camera.setZoom(w / (tilesVisible * tileW));
         } else {
-            this.camera.setZoom(Math.min(w / 600, h / 400));
+            const tilesVisible = Math.max(30, Math.min(55, w / 16));
+            this.camera.setZoom(w / (tilesVisible * tileW));
         }
         this.clampScroll();
     }

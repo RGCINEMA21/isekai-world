@@ -26,14 +26,15 @@ class MainMenuScene extends Phaser.Scene {
         this.dimOverlay = this.add.rectangle(w/2, h/2, w, h, 0x1a0a00, 0)
             .setDepth(100);
 
-        // Responsive detection
+        // Responsive detection - adapt to any screen size
+        const smaller = Math.min(w, h);
         const isMobile = w < 600;
-        const titleSize = isMobile ? '42px' : '68px';
-        const subSize = isMobile ? '12px' : '18px';
-        const btnFontSize = isMobile ? '18px' : '22px';
-        const btnW = isMobile ? 200 : 280;
-        const btnH = isMobile ? 42 : 52;
-        const btnSpacing = isMobile ? 50 : 68;
+        const titleSize = Math.max(28, Math.min(68, smaller * 0.085)) + 'px';
+        const subSize = Math.max(10, Math.min(18, smaller * 0.022)) + 'px';
+        const btnFontSize = Math.max(14, Math.min(22, smaller * 0.028)) + 'px';
+        const btnW = Math.max(170, Math.min(280, w * 0.35));
+        const btnH = Math.max(38, Math.min(52, smaller * 0.065));
+        const btnSpacing = Math.max(42, Math.min(68, smaller * 0.085));
 
         // --- TITLE ---
         this.titleText = this.add.text(w/2, h * 0.08, 'ISEKAI WORLD', {
@@ -42,11 +43,11 @@ class MainMenuScene extends Phaser.Scene {
             color: '#ffffff',
             fontStyle: 'bold',
             stroke: '#1a0033',
-            strokeThickness: 6
+            strokeThickness: Math.max(4, Math.min(6, smaller * 0.008))
         }).setOrigin(0.5).setAlpha(0).setDepth(10);
 
         // --- SUBTITLE ---
-        this.subtitleText = this.add.text(w/2, h * 0.08 + (isMobile ? 35 : 50), 'v0.0.1', {
+        this.subtitleText = this.add.text(w/2, h * 0.08 + parseFloat(titleSize) * 0.9, 'v0.0.1', {
             fontSize: subSize,
             fontFamily: 'Arial, sans-serif',
             color: '#ccbbee',
@@ -69,8 +70,9 @@ class MainMenuScene extends Phaser.Scene {
             { label: '✕  Exit',       action: 'exit',      enabled: true }
         ];
 
-        // Position buttons in lower third of screen
-        const btnStartY = h * 0.55;
+        // Position buttons - ensure they fit on screen
+        const totalBtnsHeight = buttonData.length * btnSpacing;
+        const btnStartY = Math.max(h * 0.35, h - totalBtnsHeight - 30);
         buttonData.forEach((data, i) => {
             const by = btnStartY + i * btnSpacing;
             this.menuButtons.push(
