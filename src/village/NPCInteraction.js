@@ -18,30 +18,25 @@ class NPCInteraction {
                 this._transitionTo('WarehouseScene', saveData);
                 break;
             case 'portal':
-                this._transitionTo('MonsterAreaScene', saveData, {
-                    areaId: 'beginner_grassland',
-                    areaName: 'Beginner Grassland',
-                    mapWidth: 80, mapHeight: 80,
-                    spawnX: 40, spawnY: 70
-                });
+                this._transitionTo('PortalScene', saveData);
                 break;
             case 'blacksmith':
-                this._showNotification('⚒ Blacksmith akan dibuka pada update berikutnya.');
+                this._showNotification('\u2692 Blacksmith akan dibuka pada update berikutnya.');
                 break;
             case 'laboratorium':
-                this._showNotification('🧪 Laboratorium akan dibuka pada update berikutnya.');
+                this._showNotification('\u{1F9EA} Laboratorium akan dibuka pada update berikutnya.');
                 break;
             case 'pertanian':
-                this._showNotification('🌾 Pertanian akan dibuka pada update berikutnya.');
+                this._showNotification('\u{1F33E} Pertanian akan dibuka pada update berikutnya.');
                 break;
             case 'dapur':
-                this._showNotification('🍳 Dapur akan dibuka pada update berikutnya.');
+                this._showNotification('\u{1F373} Dapur akan dibuka pada update berikutnya.');
                 break;
             case 'marketplace':
-                this._showNotification('🛒 Marketplace akan dibuka pada update berikutnya.');
+                this._showNotification('\u{1F6D2} Marketplace akan dibuka pada update berikutnya.');
                 break;
             case 'portal_quest':
-                this._showNotification('📜 Portal Quest akan dibuka pada update berikutnya.');
+                this._showNotification('\u{1F4DC} Portal Quest akan dibuka pada update berikutnya.');
                 break;
             default:
                 this._showNotification('Fitur belum tersedia.');
@@ -61,7 +56,6 @@ class NPCInteraction {
     _showNotification(msg) {
         const w = this.scene.cameras.main.width;
         const h = this.scene.cameras.main.height;
-        const isPortrait = h > w;
 
         const notif = this.scene.add.container(w / 2, h * 0.85).setDepth(500).setScrollFactor(0).setAlpha(0);
 

@@ -1,7 +1,6 @@
 /**
- * PortalScene - Scene utama Portal Monster.
- * Dibuka dari MainVillageScene saat klik Portal/NPC.
- * Menampilkan daftar area, info, dan masuk ke Adventure Mode.
+ * PortalScene - Portal Monster UI.
+ * Shows all 10 areas with lock/unlock status based on player level.
  */
 class PortalScene extends Phaser.Scene {
     constructor() {
@@ -9,121 +8,178 @@ class PortalScene extends Phaser.Scene {
     }
 
     create() {
-        this.saveData = this.loadSave();
-        this.portalManager = new PortalManager(this);
-        this.portalUI = null;
+        this.saveData = this._loadSave();
+        this.playerLevel = this.saveData?.stats?.level || 1;
 
         this.drawBackground();
-        this.openPortal();
+        this.buildUI();
 
-        // Keyboard shortcuts
         this.input.keyboard.on('keydown-ESC', () => this.exitPortal());
-        this.input.keyboard.on('keydown-B', () => this.exitPortal());
-
-        // Fade in
         this.cameras.main.fadeIn(300, 0, 0, 0);
     }
 
-    /** Gambar background portal */
     drawBackground() {
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
         const g = this.add.graphics();
-
-        // Dark red/purple background
         for (let i = 0; i < h; i++) {
             const t = i / h;
-            const r = Math.floor(Phaser.Math.Linear(20, 40, t));
-            const gr = Math.floor(Phaser.Math.Linear(5, 15, t));
-            const b = Math.floor(Phaser.Math.Linear(25, 50, t));
-            g.lineStyle(1, Phaser.Display.Color.GetColor(r, gr, b));
+            g.lineStyle(1, Phaser.Display.Color.GetColor(
+                Math.floor(20 + t * 30), Math.floor(5 + t * 10), Math.floor(30 + t * 30)
+            ));
             g.lineBetween(0, i, w, i);
         }
-
-        // Floating particles
-        for (let i = 0; i < 30; i++) {
-            const px = Phaser.Math.Between(0, w);
-            const py = Phaser.Math.Between(0, h);
-            g.fillStyle(0xff4444, Phaser.Math.FloatBetween(0.1, 0.3));
-            g.fillCircle(px, py, Phaser.Math.Between(1, 3));
-        }
-
-        // Portal swirl effect
-        const cx = w / 2;
-        const cy = h / 2;
-        for (let i = 0; i < 20; i++) {
-            const angle = (i / 20) * Math.PI * 2;
-            const radius = 60 + i * 3;
-            g.fillStyle(0xff4444, 0.05);
-            g.fillCircle(cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius, 20);
-        }
-
-        // Overlay gelap
-        g.fillStyle(0x000000, 0.4);
-        g.fillRect(0, 0, w, h);
     }
 
-    /** Buka portal UI */
-    openPortal() {
-        this.portalUI = new PortalUI(this, this.portalManager);
-        this.portalUI.open(this.saveData, {
-            onEnterArea: (area) => this.enterArea(area),
-            onBack: () => this.exitPortal()
+    buildUI() {
+        const w = this.cameras.main.width;
+        const h = this.cameras.main.height;
+        const isPortrait = h > w;
+
+        // Main panel
+        const pw = isPortrait ? w * 0.94 : Math.min(700, w * 0.65);
+        const ph = isPortrait ? h * 0.85 : Math.min(520, h * 0.88);
+        const px = w / 2;
+        const py = h / 2;
+
+        const bg = this.add.graphics();
+        bg.fillStyle(0x1a0a00, 0.3); bg.fillRoundedRect(px-pw/2+4, py-ph/2+4, pw, ph, 14);
+        bg.fillStyle(0x2c1810, 0.95); bg.fillRoundedRect(px-pw/2, py-ph/2, pw, ph, 12);
+        bg.fillStyle(0x3a2415, 0.5); bg.fillRoundedRect(px-pw/2+6, py-ph/2+6, pw-12, ph-12, 10);
+        bg.lineStyle(3, 0xc9a84c, 0.9); bg.strokeRoundedRect(px-pw/2, py-ph/2, pw, ph, 12);
+
+        // Title
+        const titleFs = Math.max(14, Math.min(20, w*0.022)) + 'px';
+        this.add.text(px, py - ph/2 + 28, '⚔ Portal Monster', {
+            fontSize: titleFs, fontFamily: 'Georgia, serif',
+            color: '#ffd700', fontStyle: 'bold', stroke: '#2c1810', strokeThickness: 2
+        }).setOrigin(0.5);
+
+        // Player level
+        this.add.text(px, py - ph/2 + 52, 'Level Kamu: ' + this.playerLevel, {
+            fontSize: Math.max(11, Math.min(13, w*0.014)) + 'px',
+            fontFamily: 'Arial', color: '#44ccff', fontStyle: 'bold'
+        }).setOrigin(0.5);
+
+        // Area grid
+        const areas = MonsterAreaDatabase.getAllAreas();
+        const cols = isPortrait ? 2 : 3;
+        const gap = 10;
+        const slotW = (pw - 40 - gap * (cols-1)) / cols;
+        const slotH = (ph - 120) / Math.ceil(areas.length / cols) - gap;
+        const gridTop = py - ph/2 + 70;
+        const gridLeft = px - (cols * (slotW + gap) - gap) / 2;
+
+        areas.forEach((area, i) => {
+            const col = i % cols;
+            const row = Math.floor(i / cols);
+            const sx = gridLeft + col * (slotW + gap);
+            const sy = gridTop + row * (slotH + gap);
+            this._createAreaSlot(area, sx, sy, slotW, slotH);
         });
+
+        // Back button
+        const backFs = Math.max(12, Math.min(15, w*0.016)) + 'px';
+        const backBg = this.add.graphics();
+        backBg.fillStyle(0x8b3a0a, 0.9);
+        backBg.fillRoundedRect(px-50, py+ph/2-42, 100, 30, 8);
+        backBg.lineStyle(2, 0xc9a84c, 0.7);
+        backBg.strokeRoundedRect(px-50, py+ph/2-42, 100, 30, 8);
+
+        this.add.text(px, py+ph/2-27, '← Kembali', {
+            fontSize: backFs, fontFamily: 'Arial', color: '#ffd700', fontStyle: 'bold'
+        }).setOrigin(0.5);
+
+        const backHit = this.add.rectangle(px, py+ph/2-27, 100, 30, 0, 0)
+            .setInteractive({ useHandCursor: true });
+        backHit.on('pointerdown', () => this.exitPortal());
     }
 
-    /** Masuk ke area monster */
-    enterArea(area) {
-        if (!area) return;
+    _createAreaSlot(area, x, y, w, h) {
+        const unlocked = this.playerLevel >= area.levelRequired;
+        const color = unlocked ? 0x2a4a2a : 0x2a2a2a;
+        const borderColor = unlocked ? 0x44aa44 : 0x555555;
 
-        const adventureData = this.portalManager.getAdventureData(area.id);
-        if (!adventureData) return;
+        const slotBg = this.add.graphics();
+        slotBg.fillStyle(color, 0.9);
+        slotBg.fillRoundedRect(x, y, w, h, 8);
+        slotBg.lineStyle(2, borderColor, 0.7);
+        slotBg.strokeRoundedRect(x, y, w, h, 8);
 
-        // Tutup UI dulu
-        if (this.portalUI) {
-            this.portalUI.destroy();
-            this.portalUI = null;
+        // Icon
+        const iconFs = Math.max(16, Math.min(22, w*0.12)) + 'px';
+        this.add.text(x + w/2, y + h*0.25, area.icon, {
+            fontSize: iconFs
+        }).setOrigin(0.5).setAlpha(unlocked ? 1 : 0.4);
+
+        // Name
+        const nameFs = Math.max(9, Math.min(11, w*0.06)) + 'px';
+        this.add.text(x + w/2, y + h*0.5, area.name, {
+            fontSize: nameFs, fontFamily: 'Arial',
+            color: unlocked ? '#ccffaa' : '#888888',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+
+        // Level requirement
+        const lvlFs = Math.max(8, Math.min(10, w*0.05)) + 'px';
+        const lvlText = unlocked ? '✅ Level ' + area.levelRequired + '+' : '🔒 Level ' + area.levelRequired + '+';
+        this.add.text(x + w/2, y + h*0.72, lvlText, {
+            fontSize: lvlFs, fontFamily: 'Arial',
+            color: unlocked ? '#44cc44' : '#cc4444'
+        }).setOrigin(0.5);
+
+        // Monster count
+        this.add.text(x + w/2, y + h*0.88, area.monsters.length + ' monster', {
+            fontSize: Math.max(7, Math.min(9, w*0.04)) + 'px',
+            fontFamily: 'Arial', color: unlocked ? '#aabbcc' : '#666666'
+        }).setOrigin(0.5);
+
+        // Click handler
+        if (unlocked) {
+            const hit = this.add.rectangle(x + w/2, y + h/2, w, h, 0, 0)
+                .setInteractive({ useHandCursor: true });
+            hit.on('pointerdown', () => this._enterArea(area));
+            hit.on('pointerover', () => {
+                slotBg.clear();
+                slotBg.fillStyle(0x3a6a3a, 0.95);
+                slotBg.fillRoundedRect(x, y, w, h, 8);
+                slotBg.lineStyle(2, 0x66cc66, 0.9);
+                slotBg.strokeRoundedRect(x, y, w, h, 8);
+            });
+            hit.on('pointerout', () => {
+                slotBg.clear();
+                slotBg.fillStyle(color, 0.9);
+                slotBg.fillRoundedRect(x, y, w, h, 8);
+                slotBg.lineStyle(2, borderColor, 0.7);
+                slotBg.strokeRoundedRect(x, y, w, h, 8);
+            });
         }
+    }
 
-        // Fade out lalu masuk adventure
+    _enterArea(area) {
+        const config = MonsterAreaDatabase.getAreaConfig(area.id);
+        if (!config) return;
+
+        try { localStorage.setItem('isekai_world_save', JSON.stringify(this.saveData)); } catch(e) {}
+
         this.cameras.main.fadeOut(400, 0, 0, 0);
         this.cameras.main.once('camerafadeoutcomplete', () => {
-            this.scene.start('AdventureScene', adventureData);
+            this.scene.start('MonsterAreaScene', config);
         });
     }
 
-    /** Keluar dari portal */
     exitPortal() {
-        if (this.portalUI) {
-            this.portalUI.destroy();
-            this.portalUI = null;
-        }
-
         this.cameras.main.fadeOut(300, 0, 0, 0);
         this.cameras.main.once('camerafadeoutcomplete', () => {
             this.scene.start('VillageScene');
         });
     }
 
-    /** Load save data */
-    loadSave() {
-        try {
-            const raw = localStorage.getItem('isekai_world_save');
-            return raw ? JSON.parse(raw) : null;
-        } catch (e) {
-            return null;
-        }
-    }
-
-    /** Save game */
-    saveGame() {
-        if (!this.saveData) return;
-        try {
-            localStorage.setItem('isekai_world_save', JSON.stringify(this.saveData));
-        } catch (e) {}
+    _loadSave() {
+        try { const r = localStorage.getItem('isekai_world_save'); return r ? JSON.parse(r) : null; } catch(e) { return null; }
     }
 
     shutdown() {
-        this.saveGame();
+        try { localStorage.setItem('isekai_world_save', JSON.stringify(this.saveData)); } catch(e) {}
     }
 }

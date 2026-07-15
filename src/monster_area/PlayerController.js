@@ -1,7 +1,8 @@
 /**
  * PlayerController - Movement, animation, collision.
  * Desktop: WASD + Arrow Keys
- * Mobile: Virtual Analog Joystick (touch anywhere on screen)
+ * Mobile: Fixed-position analog joystick (bottom-left)
+ * The joystick is ALWAYS visible on mobile, positioned at bottom-left.
  */
 class PlayerController {
     constructor(scene, map, saveData) {
@@ -11,7 +12,7 @@ class PlayerController {
 
         this.x = map.getSpawnPixelX();
         this.y = map.getSpawnPixelY();
-        if (saveData?.progress?.areaX != null) {
+        if (saveData?.progress?.areaX != null && saveData.progress.areaX !== 0) {
             this.x = saveData.progress.areaX;
             this.y = saveData.progress.areaY;
         }
@@ -34,7 +35,7 @@ class PlayerController {
         // === KEYBOARD ===
         this._setupKeyboard();
 
-        // === VIRTUAL ANALOG JOYSTICK ===
+        // === VIRTUAL ANALOG JOYSTICK (fixed position, bottom-left) ===
         this.joyBase = null;
         this.joyStick = null;
         this.joyActive = false;
@@ -44,15 +45,15 @@ class PlayerController {
         this.joyStickY = 0;
         this.joyDx = 0;
         this.joyDy = 0;
-        this.joyRadius = 50;
-        this.joyStickRadius = 20;
+        this.joyRadius = 55;
+        this.joyStickRadius = 22;
         this.joyPointerId = -1;
+        this.isMobile = !scene.sys.game.device.os.desktop;
 
-        this._setupTouchJoystick();
+        this._setupJoystick();
     }
 
     // === KEYBOARD ===
-
     _setupKeyboard() {
         const kb = this.scene.input.keyboard;
         if (!kb) return;
@@ -65,100 +66,113 @@ class PlayerController {
     }
 
     // === VIRTUAL ANALOG JOYSTICK ===
-    // Touch ANYWHERE on screen to create joystick at that position
-    // Drag to move, release to stop
-
-    _setupTouchJoystick() {
+    // Fixed position at bottom-left of screen.
+    // Always visible on mobile, hidden on desktop.
+    _setupJoystick() {
         const scene = this.scene;
+        const w = scene.cameras.main.width;
+        const h = scene.cameras.main.height;
 
-        // Use scene-level input on the entire canvas
-        scene.input.on('pointerdown', (pointer) => {
-            if (this.joyActive) return; // Already using a pointer
-            // Don't create joystick if touching UI buttons
-            if (pointer.y < 120) return; // Top HUD area
-            const w = scene.cameras.main.width;
-            const h = scene.cameras.main.height;
-            // Don't create if touching bottom-right buttons
-            if (pointer.x > w - 70 && pointer.y > h - 130) return;
+        // Position: bottom-left, with margin
+        this.joyBaseX = 80;
+        this.joyBaseY = h - 100;
+        this.joyStickX = this.joyBaseX;
+        this.joyStickY = this.joyBaseY;
 
+        // Create graphics layers
+        this.joyBase = scene.add.graphics().setDepth(200).setScrollFactor(0);
+        this.joyStick = scene.add.graphics().setDepth(201).setScrollFactor(0);
+
+        // Draw static base
+        this._drawBase();
+
+        // Create invisible interactive zone for joystick
+        // This is a large circle that captures touches for movement
+        this.joyZone = scene.add.circle(this.joyBaseX, this.joyBaseY, this.joyRadius + 30, 0x000000, 0)
+            .setInteractive({ useHandCursor: false })
+            .setDepth(202)
+            .setScrollFactor(0);
+
+        this.joyZone.on('pointerdown', (pointer) => {
             this.joyActive = true;
             this.joyPointerId = pointer.id;
-            this.joyBaseX = pointer.x;
-            this.joyBaseY = pointer.y;
-            this.joyStickX = pointer.x;
-            this.joyStickY = pointer.y;
-            this.joyDx = 0;
-            this.joyDy = 0;
-
-            this._drawJoystick();
+            this._updateStickPosition(pointer.x, pointer.y);
+            this._drawStick();
         });
 
         scene.input.on('pointermove', (pointer) => {
             if (!this.joyActive || pointer.id !== this.joyPointerId) return;
-
-            const dx = pointer.x - this.joyBaseX;
-            const dy = pointer.y - this.joyBaseY;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-
-            if (dist <= this.joyRadius) {
-                this.joyStickX = pointer.x;
-                this.joyStickY = pointer.y;
-            } else {
-                this.joyStickX = this.joyBaseX + (dx / dist) * this.joyRadius;
-                this.joyStickY = this.joyBaseY + (dy / dist) * this.joyRadius;
-            }
-
-            // Normalize -1 to 1
-            this.joyDx = (this.joyStickX - this.joyBaseX) / this.joyRadius;
-            this.joyDy = (this.joyStickY - this.joyBaseY) / this.joyRadius;
-
-            this._drawJoystick();
+            this._updateStickPosition(pointer.x, pointer.y);
+            this._drawStick();
         });
 
         scene.input.on('pointerup', (pointer) => {
             if (pointer.id !== this.joyPointerId) return;
-            this._destroyJoystick();
+            this._resetJoystick();
         });
     }
 
-    _drawJoystick() {
-        if (!this.joyBase) {
-            this.joyBase = this.scene.add.graphics().setDepth(180).setScrollFactor(0);
+    _updateStickPosition(px, py) {
+        const dx = px - this.joyBaseX;
+        const dy = py - this.joyBaseY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist <= this.joyRadius) {
+            this.joyStickX = px;
+            this.joyStickY = py;
+        } else {
+            this.joyStickX = this.joyBaseX + (dx / dist) * this.joyRadius;
+            this.joyStickY = this.joyBaseY + (dy / dist) * this.joyRadius;
         }
-        if (!this.joyStick) {
-            this.joyStick = this.scene.add.graphics().setDepth(181).setScrollFactor(0);
-        }
 
-        // Base circle
-        this.joyBase.clear();
-        this.joyBase.fillStyle(0xffffff, 0.12);
-        this.joyBase.fillCircle(this.joyBaseX, this.joyBaseY, this.joyRadius);
-        this.joyBase.lineStyle(2, 0xffffff, 0.25);
-        this.joyBase.strokeCircle(this.joyBaseX, this.joyBaseY, this.joyRadius);
-
-        // Inner ring
-        this.joyBase.lineStyle(1, 0xffffff, 0.1);
-        this.joyBase.strokeCircle(this.joyBaseX, this.joyBaseY, this.joyRadius * 0.5);
-
-        // Stick
-        this.joyStick.clear();
-        this.joyStick.fillStyle(0xffffff, 0.4);
-        this.joyStick.fillCircle(this.joyStickX, this.joyStickY, this.joyStickRadius);
-        this.joyStick.lineStyle(2, 0xffffff, 0.6);
-        this.joyStick.strokeCircle(this.joyStickX, this.joyStickY, this.joyStickRadius);
+        // Normalize -1 to 1
+        this.joyDx = (this.joyStickX - this.joyBaseX) / this.joyRadius;
+        this.joyDy = (this.joyStickY - this.joyBaseY) / this.joyRadius;
     }
 
-    _destroyJoystick() {
+    _drawBase() {
+        const g = this.joyBase;
+        g.clear();
+        // Outer ring
+        g.lineStyle(3, 0xffffff, 0.3);
+        g.strokeCircle(this.joyBaseX, this.joyBaseY, this.joyRadius);
+        // Inner circle fill
+        g.fillStyle(0xffffff, 0.08);
+        g.fillCircle(this.joyBaseX, this.joyBaseY, this.joyRadius);
+        // Crosshair lines
+        g.lineStyle(1, 0xffffff, 0.1);
+        g.lineBetween(this.joyBaseX - this.joyRadius, this.joyBaseY, this.joyBaseX + this.joyRadius, this.joyBaseY);
+        g.lineBetween(this.joyBaseX, this.joyBaseY - this.joyRadius, this.joyBaseX, this.joyBaseY + this.joyRadius);
+    }
+
+    _drawStick() {
+        const g = this.joyStick;
+        g.clear();
+        // Stick glow
+        g.fillStyle(0xffffff, 0.15);
+        g.fillCircle(this.joyStickX, this.joyStickY, this.joyStickRadius + 4);
+        // Stick body
+        g.fillStyle(0xffffff, 0.45);
+        g.fillCircle(this.joyStickX, this.joyStickY, this.joyStickRadius);
+        // Stick border
+        g.lineStyle(2, 0xffffff, 0.7);
+        g.strokeCircle(this.joyStickX, this.joyStickY, this.joyStickRadius);
+        // Inner dot
+        g.fillStyle(0xffffff, 0.6);
+        g.fillCircle(this.joyStickX, this.joyStickY, 4);
+    }
+
+    _resetJoystick() {
         this.joyActive = false;
         this.joyPointerId = -1;
         this.joyDx = 0;
         this.joyDy = 0;
-        if (this.joyBase) { this.joyBase.clear(); }
-        if (this.joyStick) { this.joyStick.clear(); }
+        this.joyStickX = this.joyBaseX;
+        this.joyStickY = this.joyBaseY;
+        this._drawStick();
     }
 
     // === COLLISION ===
-
     _canMoveTo(px, py) {
         const hw = this.bodyW / 2;
         const hh = this.bodyH / 2;
@@ -176,7 +190,6 @@ class PlayerController {
     }
 
     // === UPDATE ===
-
     update(delta) {
         let vx = 0;
         let vy = 0;
@@ -196,12 +209,14 @@ class PlayerController {
         }
 
         // Analog joystick
-        if (vx === 0 && vy === 0) {
-            if (this.joyActive) {
-                vx = this.joyDx;
-                vy = this.joyDy;
-            }
+        if (vx === 0 && vy === 0 && this.joyActive) {
+            vx = this.joyDx;
+            vy = this.joyDy;
         }
+
+        // Threshold to avoid micro-drift
+        if (Math.abs(vx) < 0.1) vx = 0;
+        if (Math.abs(vy) < 0.1) vy = 0;
 
         // Normalize diagonal
         if (vx !== 0 && vy !== 0) {
@@ -211,9 +226,11 @@ class PlayerController {
 
         // Movement
         const dt = delta / 1000;
-        const newX = this.x + vx * this.moveSpeed * dt;
-        const newY = this.y + vy * this.moveSpeed * dt;
+        const speed = this.moveSpeed;
+        const newX = this.x + vx * speed * dt;
+        const newY = this.y + vy * speed * dt;
 
+        // Separate X/Y collision for smoother wall sliding
         if (vx !== 0 && this._canMoveTo(newX, this.y)) {
             this.x = newX;
         }
@@ -247,7 +264,6 @@ class PlayerController {
     }
 
     // === DRAW PLAYER ===
-
     draw() {
         const g = this.gfx;
         g.clear();
@@ -260,22 +276,29 @@ class PlayerController {
         const boot = 0x3a2a1a;
         const step = this.isMoving ? Math.sin(this.animFrame * Math.PI) * 2 : 0;
 
+        // Shadow
         g.fillStyle(0x000000, 0.2);
         g.fillEllipse(x, y + 12, 14, 5);
+        // Boots
         g.fillStyle(boot, 1);
         g.fillRect(x - 3, y + 3 + (this.isMoving && this.facing !== 'up' ? step : 0), 2, 3);
         g.fillRect(x + 1, y + 3 + (this.isMoving && this.facing !== 'up' ? -step : 0), 2, 3);
+        // Pants
         g.fillStyle(pants, 1);
         g.fillRect(x - 3, y - 1, 2, 5);
         g.fillRect(x + 1, y - 1, 2, 5);
+        // Shirt
         g.fillStyle(shirt, 1);
         g.fillRect(x - 4, y - 6, 8, 6);
+        // Arms
         const armSwing = this.isMoving ? Math.sin(this.animFrame * Math.PI) * 2 : 0;
         g.fillStyle(skin, 1);
         g.fillRect(x - 5, y - 4 + armSwing, 2, 5);
         g.fillRect(x + 3, y - 4 - armSwing, 2, 5);
+        // Head
         g.fillStyle(skin, 1);
         g.fillRect(x - 3, y - 12, 6, 7);
+        // Hair
         g.fillStyle(hair, 1);
         g.fillRect(x - 3, y - 13, 6, 3);
         if (this.facing === 'down') {
@@ -290,6 +313,7 @@ class PlayerController {
             g.fillRect(x - 2, y - 13, 6, 3);
             g.fillRect(x + 3, y - 11, 1, 4);
         }
+        // Eyes
         if (this.facing !== 'up') {
             g.fillStyle(0xffffff, 1);
             if (this.facing === 'down') {
@@ -314,5 +338,6 @@ class PlayerController {
         if (this.gfx) this.gfx.destroy();
         if (this.joyBase) this.joyBase.destroy();
         if (this.joyStick) this.joyStick.destroy();
+        if (this.joyZone) this.joyZone.destroy();
     }
 }

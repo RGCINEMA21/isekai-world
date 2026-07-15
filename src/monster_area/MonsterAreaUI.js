@@ -2,6 +2,7 @@
  * MonsterAreaUI - HUD for Monster Area.
  * Shows area name, player stats, and action buttons.
  * Responsive: Mobile Portrait & Desktop Landscape.
+ * Buttons on RIGHT side only. Joystick is on LEFT side (bottom-left).
  */
 class MonsterAreaUI {
     constructor(scene, saveData, areaName) {
@@ -9,10 +10,12 @@ class MonsterAreaUI {
         this.saveData = saveData;
         this.areaName = areaName;
         this.container = null;
+        this.buttons = [];
     }
 
     create(onBack, onInventory) {
         if (this.container) this.container.destroy();
+        this.buttons = [];
 
         const w = this.scene.cameras.main.width;
         const h = this.scene.cameras.main.height;
@@ -24,7 +27,7 @@ class MonsterAreaUI {
         const currency = this.saveData?.currency || {};
 
         // === TOP PANEL ===
-        const panelH = isPortrait ? 85 : 100;
+        const panelH = isPortrait ? 80 : 90;
         const bg = this.scene.add.graphics();
         if (isPortrait) {
             bg.fillStyle(0x2c1810, 0.88);
@@ -40,7 +43,7 @@ class MonsterAreaUI {
         this.container.add(bg);
 
         // Area name badge
-        const badgeW = Math.min(180, w * 0.3);
+        const badgeW = Math.min(180, w * 0.35);
         const badgeBg = this.scene.add.graphics();
         badgeBg.fillStyle(0x335522, 0.9);
         badgeBg.fillRoundedRect(w / 2 - badgeW / 2, 8, badgeW, 22, 6);
@@ -48,7 +51,7 @@ class MonsterAreaUI {
         badgeBg.strokeRoundedRect(w / 2 - badgeW / 2, 8, badgeW, 22, 6);
         this.container.add(badgeBg);
 
-        this.container.add(this.scene.add.text(w / 2, 19, '🌱 ' + this.areaName, {
+        this.container.add(this.scene.add.text(w / 2, 19, '\u{1F331} ' + this.areaName, {
             fontSize: '11px', fontFamily: 'Arial', color: '#ccff88', fontStyle: 'bold'
         }).setOrigin(0.5));
 
@@ -73,20 +76,23 @@ class MonsterAreaUI {
         addStat('Level:', stats.level || 1, '#44ccff');
         addStat('Gold:', String(currency.gold || 0).replace(/\B(?=(\d{3})+(?!\d))/g, ','), '#ffaa44');
 
-        // === BOTTOM BUTTONS (right side, away from D-pad) ===
-        const btnSize = 40;
-        const btnMargin = 14;
+        // === RIGHT SIDE BUTTONS ===
+        const btnSize = 44;
+        const btnMargin = 16;
+        const btnX = w - btnMargin - btnSize / 2;
 
-        // Inventory button (right side, above back)
-        this._createCircleBtn(w - btnMargin - btnSize/2, h - btnMargin - btnSize/2 - btnSize - 10, btnSize,
-            0x6b3a0a, 0xc9a84c, '🎒', onInventory);
+        // Back button (top-right, below HUD)
+        this._createBtn(btnX, panelH + 30, btnSize,
+            0x8b2222, 0xcc6644, '\u{1F3E0}', onBack);
 
-        // Back button (bottom-right)
-        this._createCircleBtn(w - btnMargin - btnSize/2, h - btnMargin - btnSize/2, btnSize,
-            0x8b2222, 0xcc6644, '🏠', onBack);
+        // Inventory button (below back)
+        this._createBtn(btnX, panelH + 30 + btnSize + 16, btnSize,
+            0x6b3a0a, 0xc9a84c, '\u{1F392}', onInventory);
 
-        // Hint
-        const hint = this.scene.add.text(w / 2, h - 16, '👆 Sentuh & geser layar untuk bergerak · WASD/Arrow di desktop', {
+        // Hint text
+        const hint = this.scene.add.text(w / 2, h - 16, isPortrait
+            ? '\u{1F449} Sentuh joystick kiri untuk bergerak'
+            : 'WASD / Arrow Keys untuk bergerak', {
             fontSize: Math.max(8, Math.min(10, w * 0.01)) + 'px',
             fontFamily: 'Arial', color: '#887755', fontStyle: 'italic'
         }).setOrigin(0.5).setDepth(100).setScrollFactor(0);
@@ -94,23 +100,28 @@ class MonsterAreaUI {
         this.scene.tweens.add({ targets: hint, alpha: 0, duration: 1000, delay: 3000 });
     }
 
-    _createCircleBtn(x, y, size, bgColor, borderColor, icon, onClick) {
+    _createBtn(x, y, size, bgColor, borderColor, icon, onClick) {
         const bg = this.scene.add.graphics();
-        bg.fillStyle(bgColor, 0.8);
-        bg.fillCircle(x, y, size / 2);
+        bg.fillStyle(bgColor, 0.85);
+        bg.fillRoundedRect(x - size/2, y - size/2, size, size, 8);
         bg.lineStyle(2, borderColor, 0.8);
-        bg.strokeCircle(x, y, size / 2);
+        bg.strokeRoundedRect(x - size/2, y - size/2, size, size, 8);
         this.container.add(bg);
 
-        this.container.add(this.scene.add.text(x, y, icon, { fontSize: '18px' }).setOrigin(0.5));
+        this.container.add(this.scene.add.text(x, y, icon, { fontSize: '20px' }).setOrigin(0.5));
 
         const hit = this.scene.add.rectangle(x, y, size + 8, size + 8, 0x000000, 0)
             .setInteractive({ useHandCursor: true }).setDepth(101).setScrollFactor(0);
-        hit.on('pointerdown', onClick);
+        hit.on('pointerdown', (pointer, localX, localY, event) => {
+            if (event && event.stopPropagation) event.stopPropagation();
+            onClick();
+        });
         this.container.add(hit);
+        this.buttons.push(hit);
     }
 
     destroy() {
         if (this.container) { this.container.destroy(); this.container = null; }
+        this.buttons = [];
     }
 }

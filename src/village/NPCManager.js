@@ -1,6 +1,6 @@
 /**
  * NPCManager - Creates and manages all village NPCs.
- * Each NPC stands in front of its building's door.
+ * Each NPC stands in front of its building's door (1 tile below).
  * NPCs have idle animations (blink, head turn, hand wave).
  */
 class NPCManager {
@@ -16,6 +16,10 @@ class NPCManager {
             const building = this.map.getBuilding(def.buildingId);
             if (!building) continue;
 
+            // Place NPC 1 tile below the door so they stand in front
+            const npcTileX = building.doorTileX;
+            const npcTileY = building.doorTileY + 1;
+
             const npc = new VillageNPC(this.scene, {
                 id: def.id,
                 name: def.name,
@@ -23,8 +27,8 @@ class NPCManager {
                 shirtColor: def.shirtColor,
                 hairColor: def.hairColor,
                 role: def.role,
-                tileX: building.doorTileX,
-                tileY: building.doorTileY
+                tileX: npcTileX,
+                tileY: npcTileY
             }, this.map.TILE);
 
             npc.onTap = def.onInteract;
