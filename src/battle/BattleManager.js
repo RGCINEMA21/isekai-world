@@ -1,35 +1,23 @@
 /**
  * BattleManager - Controller utama Auto Battle System.
- * Menghubungkan AdventureScene dengan BattleSystem, BattleUI, BattleResult.
- * Menangani: klik monster, auto-walk ke monster, mulai battle, hasil battle.
  */
 class BattleManager {
-    /**
-     * @param {Phaser.Scene} scene - AdventureScene instance
-     * @param {AdventureManager} manager - Adventure manager
-     * @param {MonsterSpawner} spawner - Monster spawner
-     */
     constructor(scene, manager, spawner, rewardManager) {
         this.scene = scene;
         this.manager = manager;
         this.spawner = spawner;
         this.rewardManager = rewardManager;
 
-        // Sub-systems
         this.battleSystem = new BattleSystem(scene);
         this.battleUI = new BattleUI(scene);
         this.battleResult = new BattleResult(scene);
         this.battleAnim = new BattleAnimation(scene);
 
-        // State
         this.isInBattle = false;
         this.targetMonster = null;
         this.isAutoWalking = false;
-
-        // Attack range (pixel)
         this.attackRange = 30;
 
-        // Player base stats (dari save data)
         this.playerStats = {
             attack: scene.saveData?.stats?.attack || 10,
             defense: scene.saveData?.stats?.defense || 5,
@@ -37,19 +25,13 @@ class BattleManager {
             hp: scene.saveData?.stats?.hp || 100
         };
 
-        // Setup callbacks
         this.battleSystem.onMonsterDefeated = () => this._onMonsterDefeated();
         this.battleSystem.onPlayerDefeated = () => this._onPlayerDefeated();
     }
 
-    /**
-     * Handle klik/sentuh pada monster
-     * @param {MonsterEntity} entity - Monster yang diklik
-     */
     onMonsterClicked(entity) {
         if (this.isInBattle) return;
         if (!entity || !entity.active) return;
-
         this.targetMonster = entity;
 
         const dist = Phaser.Math.Distance.Between(
@@ -64,23 +46,14 @@ class BattleManager {
         }
     }
 
-    /** Mulai auto-walk ke target monster */
     _startAutoWalk(entity) {
         this.isAutoWalking = true;
     }
 
-    /** Update auto-walk ke monster */
     _updateAutoWalk(delta) {
         if (!this.isAutoWalking || !this.targetMonster) return;
-        if (this.isInBattle) {
-            this.isAutoWalking = false;
-            return;
-        }
-        if (!this.targetMonster.active) {
-            this.isAutoWalking = false;
-            this.targetMonster = null;
-            return;
-        }
+        if (this.isInBattle) { this.isAutoWalking = false; return; }
+        if (!this.targetMonster.active) { this.isAutoWalking = false; this.targetMonster = null; return; }
 
         const target = this.targetMonster;
         const px = this.manager.playerX;
@@ -98,23 +71,11 @@ class BattleManager {
         const dx = tx - px;
         const dy = ty - py;
         const len = Math.sqrt(dx * dx + dy * dy) || 1;
-        const speed = this.manager.moveSpeed;
+        const speed = this.manager.moveSpeed || 120;
         const dt = delta / 1000;
 
         this.manager.playerX += (dx / len) * speed * dt;
         this.manager.playerY += (dy / len) * speed * dt;
-
-        // Clamp to bounds
-        this.manager.playerX = Phaser.Math.Clamp(
-            this.manager.playerX,
-            this.manager.bounds.left + 16,
-            this.manager.bounds.right - 16
-        );
-        this.manager.playerY = Phaser.Math.Clamp(
-            this.manager.playerY,
-            this.manager.bounds.top + 16,
-            this.manager.bounds.bottom - 16
-        );
 
         if (Math.abs(dx) > Math.abs(dy)) {
             this.manager.facing = dx > 0 ? 'right' : 'left';
@@ -124,7 +85,6 @@ class BattleManager {
         this.manager.isMoving = true;
     }
 
-    /** Mulai pertarungan */
     _startBattle() {
         if (!this.targetMonster) return;
         this.isInBattle = true;
@@ -181,7 +141,6 @@ class BattleManager {
         };
     }
 
-    /** Monster dikalahkan */
     _onMonsterDefeated() {
         this.battleSystem.stop();
         this.isInBattle = false;
@@ -189,7 +148,6 @@ class BattleManager {
         const monsterEntity = this.targetMonster;
         
         this.battleAnim.deathFade(monsterEntity.gfx, 400).then(() => {
-            // Kembalikan monster ke spawn point
             if (this.spawner && this.spawner.spawnManager) {
                 for (const sp of this.spawner.spawnManager.spawnPoints) {
                     const idx = sp.monsters.indexOf(monsterEntity);
@@ -206,19 +164,16 @@ class BattleManager {
             const mData = monsterEntity.monsterData;
             this.battleUI.hideMonsterInfo();
 
-            // Proses hadiah pertarungan
             let rewardResult = null;
             if (this.rewardManager) {
                 rewardResult = this.rewardManager.processBattleReward(mData);
             }
 
-            // Tampilkan panel kemenangan
             this.battleResult.showVictory(mData.name, {
                 onContinue: () => {
                     if (this.scene.saveData && this.scene.saveData.stats) {
                         this.scene.saveData.stats.hp = this.scene.saveData.stats.maxHp;
                     }
-                    // Perbarui UI jika ada
                     if (this.scene.onRewardProcessed) {
                         this.scene.onRewardProcessed(rewardResult);
                     }
@@ -228,7 +183,6 @@ class BattleManager {
         });
     }
 
-    /** Player kalah */
     _onPlayerDefeated() {
         this.battleSystem.stop();
         this.isInBattle = false;
@@ -252,16 +206,13 @@ class BattleManager {
         });
     }
 
-    /** Update tiap frame */
     update(delta) {
         this._updateAutoWalk(delta);
-
         if (this.isInBattle) {
             this.battleSystem.update(delta);
         }
     }
 
-    /** Cleanup */
     destroy() {
         this.battleSystem.stop();
         this.battleUI.destroy();

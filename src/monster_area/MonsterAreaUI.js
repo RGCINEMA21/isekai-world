@@ -24,7 +24,7 @@ class MonsterAreaUI {
         const currency = this.saveData?.currency || {};
 
         // === TOP HUD BAR ===
-        const panelH = isPortrait ? 72 : 80;
+        const panelH = isPortrait ? 76 : 82;
         const bg = this.scene.add.graphics();
         bg.fillStyle(0x2c1810, 0.88);
         bg.fillRoundedRect(4, 4, w - 8, panelH, 8);
@@ -33,23 +33,23 @@ class MonsterAreaUI {
         this.container.add(bg);
 
         // Area badge
-        const badgeW = Math.min(160, w * 0.35);
+        const badgeW = Math.min(180, w * 0.4);
         const badgeBg = this.scene.add.graphics();
         badgeBg.fillStyle(0x335522, 0.9);
-        badgeBg.fillRoundedRect(w / 2 - badgeW / 2, 8, badgeW, 20, 6);
+        badgeBg.fillRoundedRect(w / 2 - badgeW / 2, 8, badgeW, 22, 6);
         badgeBg.lineStyle(1, 0x66aa44, 0.7);
-        badgeBg.strokeRoundedRect(w / 2 - badgeW / 2, 8, badgeW, 20, 6);
+        badgeBg.strokeRoundedRect(w / 2 - badgeW / 2, 8, badgeW, 22, 6);
         this.container.add(badgeBg);
-        this.container.add(this.scene.add.text(w / 2, 18, '\u{1F331} ' + this.areaName, {
-            fontSize: '10px', fontFamily: 'Arial', color: '#ccff88', fontStyle: 'bold'
+        this.container.add(this.scene.add.text(w / 2, 19, '\u{1F331} ' + this.areaName, {
+            fontSize: '11px', fontFamily: 'Arial', color: '#ccff88', fontStyle: 'bold'
         }).setOrigin(0.5));
 
-        // Stats rows
-        const fs = Math.max(9, Math.min(11, w * 0.011)) + 'px';
+        // Stats
+        const fs = Math.max(10, Math.min(12, w * 0.012)) + 'px';
         const col1X = 14;
         const col2X = w / 2;
-        let sy = 34;
-        const lh = 11;
+        let sy = 36;
+        const lh = 12;
 
         const addStat = (x, label, val, color) => {
             this.container.add(this.scene.add.text(x, sy, label, { fontSize: fs, fontFamily: 'Arial', color: '#aa8844' }));
@@ -64,21 +64,24 @@ class MonsterAreaUI {
         sy += lh;
         addStat(col1X, 'Dmd:', String(currency.diamond || 0), '#cc66ff');
 
-        // === BOTTOM BUTTONS (right side, easy to reach on mobile) ===
-        const btnSize = 50;
-        const btnPad = 14;
+        // === BOTTOM BUTTONS (right side, big and easy to reach) ===
+        const btnSize = isPortrait ? 60 : 55;
+        const btnPad = 16;
         const btnX = w - btnSize / 2 - btnPad;
         const btnBottomY = h - btnSize / 2 - btnPad;
 
         // Back button (bottom-right)
         this._makeBtn(btnX, btnBottomY, btnSize, 0x8b2222, 0xcc6644, '\u{1F3E0}', onBack, 'Desa');
 
-        // Inventory button (above back button)
-        this._makeBtn(btnX, btnBottomY - btnSize - 12, btnSize, 0x6b3a0a, 0xc9a84c, '\u{1F392}', onInventory, 'Tas');
+        // Inventory button (above back)
+        this._makeBtn(btnX, btnBottomY - btnSize - 16, btnSize, 0x6b3a0a, 0xc9a84c, '\u{1F392}', onInventory, 'Tas');
 
-        // Hint text (fades out)
-        const hint = this.scene.add.text(w / 2, h - 12, isPortrait ? 'Joystick kiri untuk gerak' : 'WASD / Arrow untuk gerak', {
-            fontSize: Math.max(8, Math.min(10, w * 0.01)) + 'px',
+        // Hint text
+        const hintText = this.scene.isTouchDevice || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0)
+            ? 'Joystick kiri untuk gerak'
+            : 'WASD / Arrow untuk gerak';
+        const hint = this.scene.add.text(w / 2, h - 14, hintText, {
+            fontSize: Math.max(9, Math.min(11, w * 0.011)) + 'px',
             fontFamily: 'Arial', color: '#887755', fontStyle: 'italic'
         }).setOrigin(0.5).setDepth(100).setScrollFactor(0);
         this.container.add(hint);
@@ -89,19 +92,20 @@ class MonsterAreaUI {
         const bg = this.scene.add.graphics();
         bg.fillStyle(bgColor, 0.85);
         bg.fillCircle(x, y, size / 2);
-        bg.lineStyle(2, borderColor, 0.8);
+        bg.lineStyle(3, borderColor, 0.8);
         bg.strokeCircle(x, y, size / 2);
         this.container.add(bg);
 
-        this.container.add(this.scene.add.text(x, y - 4, icon, { fontSize: '18px' }).setOrigin(0.5));
+        this.container.add(this.scene.add.text(x, y - 6, icon, { fontSize: (size * 0.4) + 'px' }).setOrigin(0.5));
 
         if (label) {
-            this.container.add(this.scene.add.text(x, y + 14, label, {
-                fontSize: '8px', fontFamily: 'Arial', color: '#ffffff', fontStyle: 'bold'
+            this.container.add(this.scene.add.text(x, y + size * 0.3, label, {
+                fontSize: '9px', fontFamily: 'Arial', color: '#ffffff', fontStyle: 'bold'
             }).setOrigin(0.5));
         }
 
-        const hit = this.scene.add.rectangle(x, y, size + 12, size + 12, 0x000000, 0)
+        // Big hit area for easy touch
+        const hit = this.scene.add.rectangle(x, y, size + 20, size + 20, 0x000000, 0)
             .setInteractive({ useHandCursor: true }).setDepth(101).setScrollFactor(0);
         hit.on('pointerdown', (ptr, lx, ly, ev) => {
             if (ev && ev.stopPropagation) ev.stopPropagation();

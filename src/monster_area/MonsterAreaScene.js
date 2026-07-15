@@ -21,6 +21,11 @@ class MonsterAreaScene extends Phaser.Scene {
         this.saveData = this._loadSave();
         this.playerGfx = null;
 
+        // Set background color EARLY so screen is never black
+        const areaData = MonsterAreaDatabase.getArea(this.areaId);
+        const bgColor = (areaData && areaData.bgColor) ? areaData.bgColor : 0x5a9a3a;
+        this.cameras.main.setBackgroundColor(bgColor);
+
         try {
             // Map
             this.areaMap = new MonsterAreaMap({
@@ -64,9 +69,21 @@ class MonsterAreaScene extends Phaser.Scene {
             });
             this.monsterSpawner.init();
 
+            // Reward Manager
+            try {
+                this.rewardManager = new RewardManager(this, this.saveData);
+            } catch (e) {
+                console.warn('[MonsterAreaScene] RewardManager init failed:', e);
+                this.rewardManager = null;
+            }
+
             // Battle Manager
-            this.rewardManager = new RewardManager(this, this.saveData);
-            this.battleManager = new BattleManager(this, this.monsterSpawner.manager, this.monsterSpawner, this.rewardManager);
+            try {
+                this.battleManager = new BattleManager(this, this.monsterSpawner.manager, this.monsterSpawner, this.rewardManager);
+            } catch (e) {
+                console.warn('[MonsterAreaScene] BattleManager init failed:', e);
+                this.battleManager = null;
+            }
 
             // UI
             this.areaUI = new MonsterAreaUI(this, this.saveData, this.areaName);
@@ -78,24 +95,19 @@ class MonsterAreaScene extends Phaser.Scene {
             // Setup monster click handlers
             this._setupMonsterClicks();
 
-            // Background color
-            const areaData = MonsterAreaDatabase.getArea(this.areaId);
-            if (areaData && areaData.bgColor) {
-                this.cameras.main.setBackgroundColor(areaData.bgColor);
-            }
-
         } catch (e) {
             console.error('[MonsterAreaScene] Create error:', e);
             const w = this.cameras.main.width;
             const h = this.cameras.main.height;
-            this.add.text(w / 2, h / 2, 'Error: ' + e.message, {
-                fontSize: '14px', color: '#ff4444', fontFamily: 'Arial'
+            this.add.text(w / 2, h / 2 - 20, '⚠️ Error: ' + e.message, {
+                fontSize: '14px', color: '#ff4444', fontFamily: 'Arial',
+                stroke: '#000000', strokeThickness: 3,
+                wordWrap: { width: w * 0.8 }
             }).setOrigin(0.5);
-            this.add.text(w / 2, h / 2 + 30, 'Tap to return', {
+            this.add.text(w / 2, h / 2 + 20, 'Tap untuk kembali ke desa', {
                 fontSize: '12px', color: '#ffffff', fontFamily: 'Arial'
             }).setOrigin(0.5);
             this.input.once('pointerdown', () => this._exitArea());
-            return;
         }
 
         this.cameras.main.fadeIn(400, 0, 0, 0);
@@ -106,7 +118,6 @@ class MonsterAreaScene extends Phaser.Scene {
     update(time, delta) {
         if (this.player) {
             this.player.update(delta);
-            // Sync player position to spawner manager
             if (this.monsterSpawner && this.monsterSpawner.manager) {
                 this.monsterSpawner.manager.playerX = this.player.x;
                 this.monsterSpawner.manager.playerY = this.player.y;
@@ -124,12 +135,8 @@ class MonsterAreaScene extends Phaser.Scene {
         }
     }
 
-    /** Setup click/touch on monsters */
     _setupMonsterClicks() {
         if (!this.monsterSpawner || !this.monsterSpawner.spawnManager) return;
-
-        // Each MonsterEntity has a hitArea. We need to add click handler after spawn.
-        // Use a delayed check to find new monsters
         this.time.addEvent({
             delay: 500,
             loop: true,
@@ -138,14 +145,13 @@ class MonsterAreaScene extends Phaser.Scene {
                 const pool = this.monsterSpawner.spawnManager.pool;
                 if (!pool) return;
                 for (const entity of pool.active) {
-                    if (!entity.active || entity._clickSetup) continue;
-                    entity._clickSetup = true;
-                    if (entity.hitArea) {
-                        entity.hitArea.on('pointerdown', () => {
-                            if (this.battleManager && !this.battleManager.isInBattle) {
-                                this.battleManager.onMonsterClicked(entity);
+                    if (entity.active && entity.hitArea && !entity._clickSetup) {
+                        entity._clickSetup = true;
+                        entity.onMonsterClick = (ent) => {
+                            if (this.battleManager) {
+                                this.battleManager.onMonsterClicked(ent);
                             }
-                        });
+                        };
                     }
                 }
             }
@@ -153,37 +159,39 @@ class MonsterAreaScene extends Phaser.Scene {
     }
 
     _renderMap() {
+        const map = this.areaMap;
         const g = this.mapGfx;
-        const T = this.areaMap.T;
-        const S = this.areaMap.tileSize;
-        const grid = this.areaMap.grid;
+        const S = map.tileSize;
+        const T = map.T;
 
-        for (let y = 0; y < this.areaMap.mapHeight; y++) {
-            for (let x = 0; x < this.areaMap.mapWidth; x++) {
+        // Fill background first
+        g.fillStyle(0x5a9a3a, 1);
+        g.fillRect(0, 0, map.getPixelWidth(), map.getPixelHeight());
+
+        for (let y = 0; y < map.mapHeight; y++) {
+            for (let x = 0; x < map.mapWidth; x++) {
+                const tile = map.grid[y][x];
                 const px = x * S;
                 const py = y * S;
-                const tile = grid[y][x];
 
                 switch (tile) {
                     case T.GRASS:
-                        g.fillStyle(0x5a9a3a, 1); g.fillRect(px, py, S, S);
-                        if (Math.random() < 0.1) { g.fillStyle(0x4a8a2a, 0.4); g.fillRect(px + 2, py + 4, 2, 5); }
-                        break;
+                        g.fillStyle(0x5a9a3a, 1); g.fillRect(px, py, S, S); break;
                     case T.GRASS_DARK:
                         g.fillStyle(0x4a8a2a, 1); g.fillRect(px, py, S, S); break;
                     case T.PATH:
-                        g.fillStyle(0xc4a86a, 1); g.fillRect(px, py, S, S); break;
+                        g.fillStyle(0xc4a87a, 1); g.fillRect(px, py, S, S); break;
                     case T.WATER:
-                        g.fillStyle(0x3388cc, 1); g.fillRect(px, py, S, S); break;
+                        g.fillStyle(0x4488cc, 1); g.fillRect(px, py, S, S); break;
                     case T.BRIDGE:
                         g.fillStyle(0x8b6b4a, 1); g.fillRect(px, py, S, S); break;
                     case T.TREE:
                         g.fillStyle(0x5a9a3a, 1); g.fillRect(px, py, S, S);
-                        g.fillStyle(0x5a3a1a, 1); g.fillRect(px + 6, py + 10, 4, 6);
-                        g.fillStyle(0x2d7a1e, 1); g.fillCircle(px + 8, py + 7, 7); break;
+                        g.fillStyle(0x3a7a1a, 1); g.fillCircle(px + 8, py + 6, 7);
+                        g.fillStyle(0x5a3a1a, 1); g.fillRect(px + 6, py + 10, 4, 5); break;
                     case T.TREE_SM:
                         g.fillStyle(0x5a9a3a, 1); g.fillRect(px, py, S, S);
-                        g.fillStyle(0x3a8a2a, 1); g.fillCircle(px + 8, py + 8, 5); break;
+                        g.fillStyle(0x4a8a2a, 1); g.fillCircle(px + 8, py + 8, 5); break;
                     case T.ROCK:
                         g.fillStyle(0x5a9a3a, 1); g.fillRect(px, py, S, S);
                         g.fillStyle(0x888888, 1); g.fillCircle(px + 8, py + 9, 6); break;
@@ -219,7 +227,6 @@ class MonsterAreaScene extends Phaser.Scene {
         }
     }
 
-    /** Exit adventure and return to village */
     exitAdventure() {
         this._exitArea();
     }
@@ -265,9 +272,7 @@ class MonsterAreaScene extends Phaser.Scene {
         try { const r = localStorage.getItem('isekai_world_save'); return r ? JSON.parse(r) : null; } catch (e) { return null; }
     }
 
-    /** Called by BattleManager after reward processed */
     onRewardProcessed(rewardResult) {
-        // Update save data UI
         if (this.areaUI) {
             this.areaUI.create(
                 () => this._exitArea(),
@@ -276,7 +281,6 @@ class MonsterAreaScene extends Phaser.Scene {
         }
     }
 
-    /** Called to sync player position with adventureManager for battle system */
     get playerX() { return this.player ? this.player.x : 0; }
     get playerY() { return this.player ? this.player.y : 0; }
     set playerX(v) { if (this.player) this.player.x = v; }
