@@ -2,7 +2,7 @@
  * PlayerController - Movement, animation, collision.
  * Desktop: WASD + Arrow Keys
  * Mobile: Fixed-position analog joystick (bottom-left)
- * The joystick is ALWAYS visible on mobile, positioned at bottom-left.
+ * All sizing is percentage-based for any screen size.
  */
 class PlayerController {
     constructor(scene, map, saveData) {
@@ -45,10 +45,9 @@ class PlayerController {
         this.joyStickY = 0;
         this.joyDx = 0;
         this.joyDy = 0;
-        this.joyRadius = 55;
-        this.joyStickRadius = 22;
+        this.joyRadius = 0;
+        this.joyStickRadius = 0;
         this.joyPointerId = -1;
-        this.isMobile = !scene.sys.game.device.os.desktop;
 
         this._setupJoystick();
     }
@@ -66,16 +65,18 @@ class PlayerController {
     }
 
     // === VIRTUAL ANALOG JOYSTICK ===
-    // Fixed position at bottom-left of screen.
-    // Always visible on mobile, hidden on desktop.
     _setupJoystick() {
         const scene = this.scene;
         const w = scene.cameras.main.width;
         const h = scene.cameras.main.height;
 
-        // Position: bottom-left, with margin
-        this.joyBaseX = 80;
-        this.joyBaseY = h - 100;
+        // Size joystick relative to screen
+        this.joyRadius = Math.max(40, Math.min(65, Math.min(w, h) * 0.08));
+        this.joyStickRadius = Math.round(this.joyRadius * 0.4);
+
+        // Position: bottom-left with margin
+        this.joyBaseX = Math.max(70, w * 0.1);
+        this.joyBaseY = h - Math.max(90, h * 0.12);
         this.joyStickX = this.joyBaseX;
         this.joyStickY = this.joyBaseY;
 
@@ -86,9 +87,8 @@ class PlayerController {
         // Draw static base
         this._drawBase();
 
-        // Create invisible interactive zone for joystick
-        // This is a large circle that captures touches for movement
-        this.joyZone = scene.add.circle(this.joyBaseX, this.joyBaseY, this.joyRadius + 30, 0x000000, 0)
+        // Invisible interactive zone for joystick
+        this.joyZone = scene.add.circle(this.joyBaseX, this.joyBaseY, this.joyRadius + 40, 0x000000, 0)
             .setInteractive({ useHandCursor: false })
             .setDepth(202)
             .setScrollFactor(0);
@@ -125,7 +125,6 @@ class PlayerController {
             this.joyStickY = this.joyBaseY + (dy / dist) * this.joyRadius;
         }
 
-        // Normalize -1 to 1
         this.joyDx = (this.joyStickX - this.joyBaseX) / this.joyRadius;
         this.joyDy = (this.joyStickY - this.joyBaseY) / this.joyRadius;
     }
@@ -133,13 +132,10 @@ class PlayerController {
     _drawBase() {
         const g = this.joyBase;
         g.clear();
-        // Outer ring
         g.lineStyle(3, 0xffffff, 0.3);
         g.strokeCircle(this.joyBaseX, this.joyBaseY, this.joyRadius);
-        // Inner circle fill
         g.fillStyle(0xffffff, 0.08);
         g.fillCircle(this.joyBaseX, this.joyBaseY, this.joyRadius);
-        // Crosshair lines
         g.lineStyle(1, 0xffffff, 0.1);
         g.lineBetween(this.joyBaseX - this.joyRadius, this.joyBaseY, this.joyBaseX + this.joyRadius, this.joyBaseY);
         g.lineBetween(this.joyBaseX, this.joyBaseY - this.joyRadius, this.joyBaseX, this.joyBaseY + this.joyRadius);
@@ -148,16 +144,12 @@ class PlayerController {
     _drawStick() {
         const g = this.joyStick;
         g.clear();
-        // Stick glow
         g.fillStyle(0xffffff, 0.15);
         g.fillCircle(this.joyStickX, this.joyStickY, this.joyStickRadius + 4);
-        // Stick body
         g.fillStyle(0xffffff, 0.45);
         g.fillCircle(this.joyStickX, this.joyStickY, this.joyStickRadius);
-        // Stick border
         g.lineStyle(2, 0xffffff, 0.7);
         g.strokeCircle(this.joyStickX, this.joyStickY, this.joyStickRadius);
-        // Inner dot
         g.fillStyle(0xffffff, 0.6);
         g.fillCircle(this.joyStickX, this.joyStickY, 4);
     }
@@ -170,6 +162,24 @@ class PlayerController {
         this.joyStickX = this.joyBaseX;
         this.joyStickY = this.joyBaseY;
         this._drawStick();
+    }
+
+    /** Reposition joystick on resize */
+    reposition(w, h) {
+        this.joyRadius = Math.max(40, Math.min(65, Math.min(w, h) * 0.08));
+        this.joyStickRadius = Math.round(this.joyRadius * 0.4);
+        this.joyBaseX = Math.max(70, w * 0.1);
+        this.joyBaseY = h - Math.max(90, h * 0.12);
+        this.joyStickX = this.joyBaseX;
+        this.joyStickY = this.joyBaseY;
+        this.joyDx = 0;
+        this.joyDy = 0;
+        this._drawBase();
+        this._drawStick();
+        if (this.joyZone) {
+            this.joyZone.setPosition(this.joyBaseX, this.joyBaseY);
+            this.joyZone.setRadius(this.joyRadius + 40);
+        }
     }
 
     // === COLLISION ===
@@ -214,7 +224,7 @@ class PlayerController {
             vy = this.joyDy;
         }
 
-        // Threshold to avoid micro-drift
+        // Threshold
         if (Math.abs(vx) < 0.1) vx = 0;
         if (Math.abs(vy) < 0.1) vy = 0;
 
@@ -226,11 +236,9 @@ class PlayerController {
 
         // Movement
         const dt = delta / 1000;
-        const speed = this.moveSpeed;
-        const newX = this.x + vx * speed * dt;
-        const newY = this.y + vy * speed * dt;
+        const newX = this.x + vx * this.moveSpeed * dt;
+        const newY = this.y + vy * this.moveSpeed * dt;
 
-        // Separate X/Y collision for smoother wall sliding
         if (vx !== 0 && this._canMoveTo(newX, this.y)) {
             this.x = newX;
         }
@@ -276,29 +284,22 @@ class PlayerController {
         const boot = 0x3a2a1a;
         const step = this.isMoving ? Math.sin(this.animFrame * Math.PI) * 2 : 0;
 
-        // Shadow
         g.fillStyle(0x000000, 0.2);
         g.fillEllipse(x, y + 12, 14, 5);
-        // Boots
         g.fillStyle(boot, 1);
         g.fillRect(x - 3, y + 3 + (this.isMoving && this.facing !== 'up' ? step : 0), 2, 3);
         g.fillRect(x + 1, y + 3 + (this.isMoving && this.facing !== 'up' ? -step : 0), 2, 3);
-        // Pants
         g.fillStyle(pants, 1);
         g.fillRect(x - 3, y - 1, 2, 5);
         g.fillRect(x + 1, y - 1, 2, 5);
-        // Shirt
         g.fillStyle(shirt, 1);
         g.fillRect(x - 4, y - 6, 8, 6);
-        // Arms
         const armSwing = this.isMoving ? Math.sin(this.animFrame * Math.PI) * 2 : 0;
         g.fillStyle(skin, 1);
         g.fillRect(x - 5, y - 4 + armSwing, 2, 5);
         g.fillRect(x + 3, y - 4 - armSwing, 2, 5);
-        // Head
         g.fillStyle(skin, 1);
         g.fillRect(x - 3, y - 12, 6, 7);
-        // Hair
         g.fillStyle(hair, 1);
         g.fillRect(x - 3, y - 13, 6, 3);
         if (this.facing === 'down') {
@@ -313,7 +314,6 @@ class PlayerController {
             g.fillRect(x - 2, y - 13, 6, 3);
             g.fillRect(x + 3, y - 11, 1, 4);
         }
-        // Eyes
         if (this.facing !== 'up') {
             g.fillStyle(0xffffff, 1);
             if (this.facing === 'down') {

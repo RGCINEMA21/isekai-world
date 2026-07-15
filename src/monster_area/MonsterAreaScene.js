@@ -1,7 +1,6 @@
 /**
  * MonsterAreaScene - Main scene for all monster areas.
  * Template scene reusable for all 10 areas.
- * Different themes = different colors, same code.
  */
 class MonsterAreaScene extends Phaser.Scene {
     constructor() {
@@ -21,7 +20,6 @@ class MonsterAreaScene extends Phaser.Scene {
     create() {
         this.saveData = this._loadSave();
 
-        // Generate map with theme
         this.areaMap = new MonsterAreaMap({
             areaId: this.areaId,
             areaName: this.areaName,
@@ -33,18 +31,14 @@ class MonsterAreaScene extends Phaser.Scene {
             theme: this.theme
         });
 
-        // Render map with theme colors
         this.mapGfx = this.add.graphics().setDepth(0);
         this._renderMap();
 
-        // Player
         this.player = new PlayerController(this, this.areaMap, this.saveData);
 
-        // Camera
         this.areaCamera = new MonsterAreaCamera(this, this.player, this.areaMap);
         this.areaCamera.init();
 
-        // UI
         this.areaUI = new MonsterAreaUI(this, this.saveData, this.areaName);
         this.areaUI.create(
             () => this._exitArea(),
@@ -168,8 +162,8 @@ class MonsterAreaScene extends Phaser.Scene {
     _showNotif(msg) {
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
-        const notif = this.add.container(w / 2, h * 0.85).setDepth(500).setScrollFactor(0).setAlpha(0);
-        notif.add(this.add.text(0, 0, msg, {
+        const notif = this.scene.add.container(w / 2, h * 0.85).setDepth(500).setScrollFactor(0).setAlpha(0);
+        notif.add(this.scene.add.text(0, 0, msg, {
             fontSize: Math.max(11, Math.min(14, w * 0.014)) + 'px',
             fontFamily: 'Arial', color: '#ffffff', fontStyle: 'bold',
             stroke: '#000000', strokeThickness: 3,
@@ -199,25 +193,16 @@ class MonsterAreaScene extends Phaser.Scene {
     }
 
     onResize(sz) {
-        if (this.areaCamera) this.areaCamera.onResize(sz.width, sz.height);
+        const w = sz.width;
+        const h = sz.height;
+        if (this.areaCamera) this.areaCamera.onResize(w, h);
+        if (this.player) this.player.reposition(w, h);
         if (this.areaUI) this.areaUI.destroy();
         this.areaUI = new MonsterAreaUI(this, this.saveData, this.areaName);
         this.areaUI.create(
             () => this._exitArea(),
             () => this._showNotif('Inventory tersedia setelah sistem selesai.')
         );
-
-        // Recreate joystick at new position
-        if (this.player) {
-            this.player.joyBaseX = 80;
-            this.player.joyBaseY = sz.height - 100;
-            this.player.joyStickX = this.player.joyBaseX;
-            this.player.joyStickY = this.player.joyBaseY;
-            this.player._drawBase();
-            if (this.player.joyZone) {
-                this.player.joyZone.setPosition(this.player.joyBaseX, this.player.joyBaseY);
-            }
-        }
     }
 
     shutdown() {

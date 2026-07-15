@@ -4,18 +4,18 @@ html, body {
     background-color: #000;
     touch-action: none;
     overscroll-behavior: none;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none;
 }
 #game-container {
-    width: 100%; height: 100%;
+    width: 100vw; height: 100vh;
     position: fixed; top: 0; left: 0;
+    overflow: hidden;
 }
 #game-container canvas {
-    display: block; width: 100% !important; height: 100% !important;
-}
-@media (max-width: 768px) {
-    html, body {
-        -webkit-user-select: none; user-select: none;
-        -webkit-touch-callout: none;
-        padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-    }
+    display: block;
+    width: 100vw !important;
+    height: 100vh !important;
+    position: absolute;
+    top: 0; left: 0;
 }

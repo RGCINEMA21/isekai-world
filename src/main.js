@@ -3,10 +3,21 @@
  * Responsive: auto-detect portrait/landscape, adjusts viewport & UI.
  */
 
+// Use visual viewport for mobile (accounts for on-screen keyboard, URL bar)
+function getViewport() {
+    const v = window.visualViewport || window;
+    return {
+        width: Math.floor(v.width || window.innerWidth),
+        height: Math.floor(v.height || window.innerHeight)
+    };
+}
+
+const vp = getViewport();
+
 const config = {
     type: Phaser.AUTO,
-    width: window.innerWidth,
-    height: window.innerHeight,
+    width: vp.width,
+    height: vp.height,
     parent: 'game-container',
     scale: {
         mode: Phaser.Scale.RESIZE,
@@ -26,9 +37,22 @@ const config = {
 
 const game = new Phaser.Game(config);
 
-// Resize handler
-window.addEventListener('resize', () => {
-    game.scale.resize(window.innerWidth, window.innerHeight);
+// Resize handler - fires on viewport changes (orientation, URL bar hide, etc.)
+function handleResize() {
+    const v = getViewport();
+    if (game.scale && game.scale.resize) {
+        game.scale.resize(v.width, v.height);
+    }
+}
+
+window.addEventListener('resize', handleResize);
+window.addEventListener('orientationchange', () => {
+    setTimeout(handleResize, 200);
 });
 
-console.log('[Isekai World] Game initialized. Responsive enabled.');
+// For mobile browsers that change viewport when scrolling
+if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', handleResize);
+}
+
+console.log('[Isekai World] Game initialized. Viewport:', vp.width, 'x', vp.height);

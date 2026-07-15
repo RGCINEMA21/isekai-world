@@ -53,8 +53,8 @@ class VillageScene extends Phaser.Scene {
     }
 
     onResize(sz) {
-        this.villageCamera.onResize(sz.width, sz.height);
-        this.villageUI.create();
+        if (this.villageCamera) this.villageCamera.onResize(sz.width, sz.height);
+        if (this.villageUI) this.villageUI.create();
     }
 
     saveGame() {
