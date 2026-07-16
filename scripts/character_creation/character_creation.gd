@@ -90,7 +90,6 @@ func _build_options_panel(parent: Control) -> void:
 	title.add_theme_font_size_override("font_size", 28)
 	panel.add_child(title)
 	
-	# Separator
 	panel.add_child(_make_separator())
 	
 	# Name section
@@ -114,7 +113,6 @@ func _build_options_panel(parent: Control) -> void:
 	# Clothes section
 	_build_option_section(panel, "Pakaian Awal", "clothes", clothes_count, func(i): return CharacterData.CLOTHES_STYLES[i]["name"])
 	
-	# Separator
 	panel.add_child(_make_separator())
 	
 	# Error label
@@ -139,21 +137,18 @@ func _build_preview_panel(parent: Control) -> void:
 	panel.add_theme_constant_override("separation", 10)
 	parent.add_child(panel)
 	
-	# Preview title
 	var preview_title := Label.new()
 	preview_title.text = "Preview"
 	preview_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	preview_title.add_theme_font_size_override("font_size", 22)
 	panel.add_child(preview_title)
 	
-	# Preview character container
 	preview_container = Control.new()
 	preview_container.name = "PreviewContainer"
 	preview_container.custom_minimum_size = Vector2(240, 320)
 	preview_container.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	panel.add_child(preview_container)
 	
-	# Summary
 	summary_label = Label.new()
 	summary_label.name = "SummaryLabel"
 	summary_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -163,7 +158,7 @@ func _build_preview_panel(parent: Control) -> void:
 	panel.add_child(summary_label)
 
 
-## Membangir section nama
+## Membangun section nama
 func _build_name_section(parent: Control) -> void:
 	var label := Label.new()
 	label.text = "Nama Karakter:"
@@ -179,7 +174,7 @@ func _build_name_section(parent: Control) -> void:
 	parent.add_child(name_input)
 
 
-## Membangir section gender
+## Membangun section gender
 func _build_gender_section(parent: Control) -> void:
 	var label := Label.new()
 	label.text = "Gender:"
@@ -206,7 +201,7 @@ func _build_gender_section(parent: Control) -> void:
 	hbox.add_child(gender_female_btn)
 
 
-## Membangir section opsi dengan navigasi < >
+## Membangun section opsi dengan navigasi < >
 func _build_option_section(parent: Control, section_title: String, key: String, count: int, label_func: Callable) -> void:
 	var label := Label.new()
 	label.text = section_title + ":"
@@ -236,7 +231,6 @@ func _build_option_section(parent: Control, section_title: String, key: String, 
 	next_btn.pressed.connect(func(): _navigate_option(key, 1, count))
 	hbox.add_child(next_btn)
 	
-	# Simpan referensi label
 	match key:
 		"skin_color": skin_label = value_label
 		"hair_style": hair_style_label = value_label
@@ -245,7 +239,7 @@ func _build_option_section(parent: Control, section_title: String, key: String, 
 		"clothes": clothes_label = value_label
 
 
-## Membangir tombol aksi
+## Membangun tombol aksi
 func _build_buttons(parent: Control) -> void:
 	var hbox := HBoxContainer.new()
 	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -277,7 +271,6 @@ func _build_buttons(parent: Control) -> void:
 	hbox.add_child(back_btn)
 
 
-## Helper: buat separator
 func _make_separator() -> HSeparator:
 	var sep := HSeparator.new()
 	sep.custom_minimum_size.y = 4
@@ -287,7 +280,6 @@ func _make_separator() -> HSeparator:
 ## ==================== LOGIC ====================
 
 
-## Set gender
 func _set_gender(gender: String) -> void:
 	char_state["gender"] = gender
 	gender_male_btn.button_pressed = (gender == "male")
@@ -296,7 +288,6 @@ func _set_gender(gender: String) -> void:
 	_update_summary()
 
 
-## Navigasi opsi (< >)
 func _navigate_option(key: String, direction: int, count: int) -> void:
 	var current: int = char_state[key]
 	current += direction
@@ -310,7 +301,6 @@ func _navigate_option(key: String, direction: int, count: int) -> void:
 	_update_summary()
 
 
-## Update semua label opsi
 func _update_all_labels() -> void:
 	if skin_label:
 		skin_label.text = CharacterData.SKIN_COLORS[char_state["skin_color"]]["name"]
@@ -324,7 +314,6 @@ func _update_all_labels() -> void:
 		clothes_label.text = CharacterData.CLOTHES_STYLES[char_state["clothes"]]["name"]
 
 
-## Update summary
 func _update_summary() -> void:
 	if not summary_label:
 		return
@@ -343,9 +332,7 @@ func _update_summary() -> void:
 	)
 
 
-## Input nama berubah
 func _on_name_changed(new_text: String) -> void:
-	# Filter: hanya huruf, angka, spasi
 	var clean := ""
 	for c in new_text:
 		if c.is_valid_identifier() or c == " ":
@@ -354,7 +341,6 @@ func _on_name_changed(new_text: String) -> void:
 	_update_summary()
 
 
-## Random karakter
 func _random_character() -> void:
 	char_state["gender"] = ["male", "female"].pick_random()
 	char_state["skin_color"] = randi() % skin_count
@@ -363,7 +349,6 @@ func _random_character() -> void:
 	char_state["eyes"] = randi() % eyes_count
 	char_state["clothes"] = randi() % clothes_count
 	
-	# Random name
 	var names := ["Arlen", "Kael", "Rin", "Lyra", "Eren", "Aira", "Leon",
 		"Nova", "Zara", "Finn", "Mira", "Orin", "Sera", "Dex"]
 	char_state["name"] = names.pick_random()
@@ -378,7 +363,6 @@ func _random_character() -> void:
 	error_label.visible = false
 
 
-## Reset karakter
 func _reset_character() -> void:
 	char_state = {
 		"name": "",
@@ -398,7 +382,7 @@ func _reset_character() -> void:
 	error_label.visible = false
 
 
-## Konfirmasi karakter
+## Konfirmasi - simpan semua data via PlayerManager
 func _confirm_character() -> void:
 	var player_name: String = char_state["name"].strip_edges()
 	
@@ -413,30 +397,35 @@ func _confirm_character() -> void:
 		_show_error("Nama maksimal 16 karakter!")
 		return
 	
-	# Simpan data
-	var save_data: Dictionary = CharacterData.DEFAULT_PLAYER_DATA.duplicate(true)
-	save_data["character"]["name"] = player_name
-	save_data["character"]["gender"] = char_state["gender"]
-	save_data["character"]["skin_color"] = char_state["skin_color"]
-	save_data["character"]["hair_style"] = char_state["hair_style"]
-	save_data["character"]["hair_color"] = char_state["hair_color"]
-	save_data["character"]["eyes"] = char_state["eyes"]
-	save_data["character"]["clothes"] = char_state["clothes"]
+	# Buat data lengkap
+	var save_data: Dictionary = PlayerData.DEFAULT_DATA.duplicate(true)
+	save_data["identity"]["id"] = PlayerData.generate_id()
+	save_data["identity"]["name"] = player_name
+	save_data["identity"]["gender"] = char_state["gender"]
+	save_data["identity"]["skin_color"] = char_state["skin_color"]
+	save_data["identity"]["hair_style"] = char_state["hair_style"]
+	save_data["identity"]["hair_color"] = char_state["hair_color"]
+	save_data["identity"]["eyes"] = char_state["eyes"]
+	save_data["identity"]["clothes"] = char_state["clothes"]
+	save_data["equipment"]["weapon"] = PlayerData.WOODEN_SWORD
+	save_data["equipment"]["armor"] = PlayerData.BEGINNER_ARMOR
 	save_data["progress"]["created_at"] = Time.get_datetime_string_from_system()
 	
+	# Simpan via SaveManager
 	SaveManager.current_data = save_data
 	SaveManager.save_game()
 	
-	print("[CharacterCreation] Character saved: %s" % player_name)
+	# Inisialisasi PlayerManager
+	PlayerManager.initialize()
+	
+	print("[CharacterCreation] Character created: %s (ID: %s)" % [player_name, save_data["identity"]["id"]])
 	SceneManager.change_scene("main_village")
 
 
-## Kembali ke menu
 func _on_back() -> void:
 	SceneManager.change_scene("main_menu")
 
 
-## Tampilkan pesan error
 func _show_error(message: String) -> void:
 	error_label.text = message
 	error_label.visible = true
@@ -445,13 +434,10 @@ func _show_error(message: String) -> void:
 ## ==================== PREVIEW ====================
 
 
-## Update preview karakter
 func _update_preview() -> void:
-	# Hapus preview lama
 	for child in preview_container.get_children():
 		child.queue_free()
 	
-	# Ambil data warna
 	var skin_color: Color = CharacterData.SKIN_COLORS[char_state["skin_color"]]["color"]
 	var hair_color: Color = CharacterData.HAIR_COLORS[char_state["hair_color"]]["color"]
 	var eye_color: Color = CharacterData.EYE_STYLES[char_state["eyes"]]["color"]
@@ -459,13 +445,13 @@ func _update_preview() -> void:
 	var cloth_bottom: Color = CharacterData.CLOTHES_STYLES[char_state["clothes"]]["bottom"]
 	var is_male: bool = char_state["gender"] == "male"
 	
-	# Background preview
+	# Background
 	var preview_bg := ColorRect.new()
 	preview_bg.color = Color(0.12, 0.14, 0.22)
 	preview_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	preview_container.add_child(preview_bg)
 	
-	# Container untuk karakter
+	# Char body container
 	var char_body := Control.new()
 	char_body.name = "CharBody"
 	char_body.custom_minimum_size = Vector2(120, 200)
@@ -474,50 +460,44 @@ func _update_preview() -> void:
 	char_body.set_anchors_preset(Control.PRESET_CENTER)
 	preview_container.add_child(char_body)
 	
-	# -- RAMBUT (di atas kepala) --
+	# Rambut
 	var hair := ColorRect.new()
-	hair.name = "Hair"
 	hair.color = hair_color
-	# Bentuk rambut berdasarkan style
-	var hair_style_idx: int = char_state["hair_style"]
-	if hair_style_idx in [1, 6, 9]:  # Panjang, Pigtails, Braided
+	var hair_idx: int = char_state["hair_style"]
+	if hair_idx in [1, 6, 9]:
 		hair.position = Vector2(30, -5)
 		hair.size = Vector2(60, 28)
-	elif hair_style_idx in [3, 4]:  # Ponytail, Mohawk
+	elif hair_idx in [3, 4]:
 		hair.position = Vector2(38, -10)
 		hair.size = Vector2(44, 22)
-	elif hair_style_idx == 7:  # Spiky
+	elif hair_idx == 7:
 		hair.position = Vector2(28, -12)
 		hair.size = Vector2(64, 24)
-	else:  # Pendek, Kriting, Bob, Flowing
+	else:
 		hair.position = Vector2(30, -2)
 		hair.size = Vector2(60, 20)
 	char_body.add_child(hair)
 	
-	# -- KEPALA --
+	# Kepala
 	var head := ColorRect.new()
-	head.name = "Head"
 	head.color = skin_color
 	head.position = Vector2(35, 10)
 	head.size = Vector2(50, 50)
 	char_body.add_child(head)
 	
-	# -- MATA --
-	# Mata kiri
+	# Mata
 	var eye_l := ColorRect.new()
 	eye_l.color = eye_color
 	eye_l.position = Vector2(43, 28)
 	eye_l.size = Vector2(8, 8)
 	char_body.add_child(eye_l)
 	
-	# Mata kanan
 	var eye_r := ColorRect.new()
 	eye_r.color = eye_color
 	eye_r.position = Vector2(63, 28)
 	eye_r.size = Vector2(8, 8)
 	char_body.add_child(eye_r)
 	
-	# Pupil
 	var pupil_l := ColorRect.new()
 	pupil_l.color = Color.BLACK
 	pupil_l.position = Vector2(45, 30)
@@ -530,22 +510,21 @@ func _update_preview() -> void:
 	pupil_r.size = Vector2(4, 4)
 	char_body.add_child(pupil_r)
 	
-	# -- MULUT --
+	# Mulut
 	var mouth := ColorRect.new()
 	mouth.color = Color(0.7, 0.35, 0.30)
 	mouth.position = Vector2(53, 45)
 	mouth.size = Vector2(14, 4)
 	char_body.add_child(mouth)
 	
-	# -- TUBUH / PAKAIAN --
+	# Tubuh
 	var body := ColorRect.new()
-	body.name = "Body"
 	body.color = cloth_top
 	body.position = Vector2(30, 62)
 	body.size = Vector2(60, 55)
 	char_body.add_child(body)
 	
-	# -- LENGAN --
+	# Lengan
 	var arm_l := ColorRect.new()
 	arm_l.color = cloth_top
 	arm_l.position = Vector2(15, 65)
@@ -571,14 +550,14 @@ func _update_preview() -> void:
 	hand_r.size = Vector2(14, 14)
 	char_body.add_child(hand_r)
 	
-	# -- CELANA /BAWAH --
+	# Bawah
 	var legs := ColorRect.new()
 	legs.color = cloth_bottom
 	legs.position = Vector2(30, 118)
 	legs.size = Vector2(60, 40)
 	char_body.add_child(legs)
 	
-	# -- KAKI --
+	# Kaki
 	var foot_l := ColorRect.new()
 	foot_l.color = Color(0.30, 0.22, 0.15)
 	foot_l.position = Vector2(30, 158)
@@ -591,11 +570,9 @@ func _update_preview() -> void:
 	foot_r.size = Vector2(26, 16)
 	char_body.add_child(foot_r)
 	
-	# -- GENDER INDICATOR --
+	# Female adjustments
 	if not is_male:
-		# Rambut lebih panjang untuk female
 		hair.size.y = 35
 		hair.position.y = -5
-		# Bentuk tubuh sedikit berbeda
 		body.size = Vector2(56, 50)
 		body.position = Vector2(32, 65)

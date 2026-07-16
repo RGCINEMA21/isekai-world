@@ -1,9 +1,9 @@
 ## CharacterData - Database opsi kustomisasi karakter
-## Semua opsi character creation didefinisikan di sini.
+## Hanya berisi opsi visual untuk Character Creation.
 class_name CharacterData
 
 
-## Opsi warna kulit: [nama, hex_color]
+## Opsi warna kulit
 const SKIN_COLORS: Array[Dictionary] = [
 	{"name": "Cerah", "color": Color(1.0, 0.87, 0.77)},
 	{"name": "Kuning", "color": Color(0.96, 0.87, 0.70)},
@@ -13,7 +13,7 @@ const SKIN_COLORS: Array[Dictionary] = [
 ]
 
 
-## Opsi gaya rambut: [nama, deskripsi bentuk]
+## Opsi gaya rambut
 const HAIR_STYLES: Array[Dictionary] = [
 	{"name": "Pendek", "desc": "Rambut pendek rapi"},
 	{"name": "Panjang", "desc": "Rambut panjang lurus"},
@@ -28,7 +28,7 @@ const HAIR_STYLES: Array[Dictionary] = [
 ]
 
 
-## Opsi warna rambut: [nama, hex_color]
+## Opsi warna rambut
 const HAIR_COLORS: Array[Dictionary] = [
 	{"name": "Hitam", "color": Color(0.15, 0.12, 0.12)},
 	{"name": "Cokelat Tua", "color": Color(0.35, 0.20, 0.10)},
@@ -43,7 +43,7 @@ const HAIR_COLORS: Array[Dictionary] = [
 ]
 
 
-## Opsi gaya mata: [nama, warna mata]
+## Opsi gaya mata
 const EYE_STYLES: Array[Dictionary] = [
 	{"name": "Cokelat", "color": Color(0.45, 0.30, 0.15)},
 	{"name": "Biru", "color": Color(0.20, 0.45, 0.85)},
@@ -56,7 +56,7 @@ const EYE_STYLES: Array[Dictionary] = [
 ]
 
 
-## Opsi pakaian awal: [nama, warna_atas, warna_bawah]
+## Opsi pakaian awal
 const CLOTHES_STYLES: Array[Dictionary] = [
 	{"name": "Petualang", "top": Color(0.30, 0.50, 0.70), "bottom": Color(0.35, 0.28, 0.20)},
 	{"name": "Petani", "top": Color(0.55, 0.70, 0.35), "bottom": Color(0.40, 0.30, 0.18)},
@@ -65,50 +65,3 @@ const CLOTHES_STYLES: Array[Dictionary] = [
 	{"name": "Pedagang", "top": Color(0.75, 0.60, 0.30), "bottom": Color(0.45, 0.35, 0.22)},
 	{"name": "Tabib", "top": Color(0.90, 0.90, 0.90), "bottom": Color(0.30, 0.45, 0.60)},
 ]
-
-
-## Struktur data player default
-const DEFAULT_PLAYER_DATA: Dictionary = {
-	"character": {
-		"name": "",
-		"gender": "male",
-		"skin_color": 0,
-		"hair_style": 0,
-		"hair_color": 0,
-		"eyes": 0,
-		"clothes": 0,
-	},
-	"stats": {
-		"level": 1,
-		"exp": 0,
-		"exp_to_next": 100,
-		"hp": 100,
-		"max_hp": 100,
-		"energy": 100,
-		"max_energy": 100,
-		"attack": 10,
-		"defense": 5,
-	},
-	"currency": {
-		"gold": 1000,
-		"diamond": 0,
-	},
-	"equipment": {
-		"weapon": "wooden_sword",
-		"armor": "beginner_armor",
-		"accessory": "",
-	},
-	"inventory": [],
-	"warehouse": [],
-	"progress": {
-		"map_level": 0,
-		"location": "Main Village",
-		"play_time": 0.0,
-		"created_at": "",
-	},
-	"settings": {
-		"volume_music": 0.7,
-		"volume_sfx": 0.8,
-		"language": "id",
-	},
-}

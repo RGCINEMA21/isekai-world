@@ -14,6 +14,7 @@ config/icon="res://icon.svg"
 
 GameManager="*res://scripts/autoload/game_manager.gd"
 SaveManager="*res://scripts/autoload/save_manager.gd"
+PlayerManager="*res://scripts/autoload/player_manager.gd"
 AudioManager="*res://scripts/autoload/audio_manager.gd"
 SceneManager="*res://scripts/autoload/scene_manager.gd"
 UIManager="*res://scripts/autoload/ui_manager.gd"
