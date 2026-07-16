@@ -22,9 +22,9 @@ class MainMenuScene extends Phaser.Scene {
 
         this.createIsekaiBackground(w, h);
 
-        // Dim overlay for popups
-        this.dimOverlay = this.add.rectangle(w/2, h/2, w, h, 0x1a0a00, 0)
-            .setDepth(100);
+        // Dim overlay for popups — depth 200, starts invisible
+        this.dimOverlay = this.add.rectangle(w/2, h/2, w, h, 0x000000, 0)
+            .setDepth(200).setVisible(false);
 
         // Responsive detection using ResponsiveLayout
         const rl = new ResponsiveLayout(this);
@@ -411,15 +411,17 @@ class MainMenuScene extends Phaser.Scene {
         const label = this.add.text(0, 0, data.label, {
             fontSize: fontSize,
             fontFamily: 'Arial, sans-serif',
-            color: data.enabled ? '#e8e0ff' : '#555555',
-            fontStyle: 'bold'
+            color: data.enabled ? '#ffffff' : '#666666',
+            fontStyle: 'bold',
+            stroke: data.enabled ? '#2a1555' : '#000000',
+            strokeThickness: data.enabled ? 2 : 1
         }).setOrigin(0.5);
         container.add(label);
 
         if (!data.enabled) {
-            const note = this.add.text(0, btnH/2 + 8, 'Belum ada Save Game.', {
-                fontSize: '10px', fontFamily: 'Arial, sans-serif',
-                color: '#777', fontStyle: 'italic'
+            const note = this.add.text(0, btnH/2 + 10, 'Belum ada Save Game.', {
+                fontSize: '12px', fontFamily: 'Arial, sans-serif',
+                color: '#999999', fontStyle: 'italic'
             }).setOrigin(0.5);
             container.add(note);
         }
@@ -433,14 +435,14 @@ class MainMenuScene extends Phaser.Scene {
                 this.tweens.add({ targets: container, scaleX: 1.06, scaleY: 1.06, duration: 100 });
                 bg.clear();
                 this.drawBtnBg(bg, btnW, btnH, true, true);
-                label.setColor('#ffdd88');
+                label.setColor('#ffeecc');
             });
 
             hit.on('pointerout', () => {
                 this.tweens.add({ targets: container, scaleX: 1, scaleY: 1, duration: 100 });
                 bg.clear();
                 this.drawBtnBg(bg, btnW, btnH, true, false);
-                label.setColor('#e8e0ff');
+                label.setColor('#ffffff');
             });
 
             hit.on('pointerdown', () => {
@@ -457,20 +459,30 @@ class MainMenuScene extends Phaser.Scene {
     }
 
     drawBtnBg(g, w, h, enabled, hovered) {
-        const r = 10;
-        const bg = enabled ? (hovered ? 0x3a2a5a : 0x1a1030) : 0x1a1a1a;
-        const border = enabled ? (hovered ? 0xaa88ee : 0x5544aa) : 0x333333;
-        const a = enabled ? 0.9 : 0.5;
-
-        g.fillStyle(border, a);
-        g.fillRoundedRect(-w/2-2, -h/2-2, w+4, h+4, r+2);
-        g.fillStyle(bg, a);
-        g.fillRoundedRect(-w/2, -h/2, w, h, r);
-
-        if (enabled) {
-            g.fillStyle(0xffffff, 0.04);
-            g.fillRoundedRect(-w/2+2, -h/2+2, w-4, h/2, r-1);
+        const r = 12;
+        if (!enabled) {
+            g.fillStyle(0x2a2a2a, 0.7);
+            g.fillRoundedRect(-w/2, -h/2, w, h, r);
+            g.lineStyle(2, 0x555555, 0.5);
+            g.strokeRoundedRect(-w/2, -h/2, w, h, r);
+            return;
         }
+        // Enabled: bright, high-contrast buttons
+        const bgColor = hovered ? 0x6b45cc : 0x4a2d8a;
+        const borderColor = hovered ? 0xddbbff : 0x9977ee;
+        const bgAlpha = 0.95;
+        // Outer glow
+        g.fillStyle(borderColor, 0.3);
+        g.fillRoundedRect(-w/2-3, -h/2-3, w+6, h+6, r+3);
+        // Border
+        g.fillStyle(borderColor, 0.9);
+        g.fillRoundedRect(-w/2-2, -h/2-2, w+4, h+4, r+2);
+        // Background
+        g.fillStyle(bgColor, bgAlpha);
+        g.fillRoundedRect(-w/2, -h/2, w, h, r);
+        // Highlight shine at top
+        g.fillStyle(0xffffff, 0.12);
+        g.fillRoundedRect(-w/2+3, -h/2+2, w-6, h/2-1, r-1);
     }
 
     /* =============================================
@@ -506,9 +518,8 @@ class MainMenuScene extends Phaser.Scene {
         const cy = this.cameras.main.centerY;
         const pw = Math.min(480, this.cameras.main.width - 20);
 
-        this.dimOverlay.setAlpha(0.6);
-        this.dimOverlay.setInteractive();
-        this.settingsPopup = this.add.container(cx, cy).setDepth(200).setAlpha(0);
+        this.dimOverlay.setVisible(true).setAlpha(0.6).setInteractive();
+        this.settingsPopup = this.add.container(cx, cy).setDepth(210).setAlpha(0);
 
         const bg = this.add.graphics();
         bg.fillStyle(0x2c1810, 0.95);
@@ -627,7 +638,7 @@ class MainMenuScene extends Phaser.Scene {
     closeSettings() {
         if (!this.settingsPopup) return;
         this.tweens.add({ targets: this.settingsPopup, alpha: 0, duration: 200,
-            onComplete: () => { this.settingsPopup.destroy(); this.settingsPopup = null; this.dimOverlay.setAlpha(0); this.dimOverlay.disableInteractive(); }
+            onComplete: () => { this.settingsPopup.destroy(); this.settingsPopup = null; this.dimOverlay.setVisible(false).setAlpha(0).disableInteractive(); }
         });
     }
 
@@ -638,9 +649,8 @@ class MainMenuScene extends Phaser.Scene {
         const cy = this.cameras.main.centerY;
         const pw = Math.min(440, this.cameras.main.width - 30);
 
-        this.dimOverlay.setAlpha(0.6);
-        this.dimOverlay.setInteractive();
-        this.exitPopup = this.add.container(cx, cy).setDepth(200).setAlpha(0);
+        this.dimOverlay.setVisible(true).setAlpha(0.6).setInteractive();
+        this.exitPopup = this.add.container(cx, cy).setDepth(210).setAlpha(0);
 
         const bg = this.add.graphics();
         bg.fillStyle(0x2c1810, 0.95);
@@ -673,7 +683,7 @@ class MainMenuScene extends Phaser.Scene {
     closeExit() {
         if (!this.exitPopup) return;
         this.tweens.add({ targets: this.exitPopup, alpha: 0, duration: 200,
-            onComplete: () => { this.exitPopup.destroy(); this.exitPopup = null; this.dimOverlay.setAlpha(0); this.dimOverlay.disableInteractive(); }
+            onComplete: () => { this.exitPopup.destroy(); this.exitPopup = null; this.dimOverlay.setVisible(false).setAlpha(0).disableInteractive(); }
         });
     }
 
