@@ -5,7 +5,7 @@
  */
 class RewardManager {
     /**
-     * @param {Phaser.Scene} scene - AdventureScene
+     * @param {Phaser.Scene} scene - MonsterAreaScene
      * @param {Object} saveData - Data save player
      */
     constructor(scene, saveData) {

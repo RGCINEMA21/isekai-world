@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Isekai World</title>
-    <link rel="stylesheet" href="style/style.css?v=1784166126">
+    <link rel="stylesheet" href="style/style.css">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -13,125 +13,97 @@
     <div id="game-container"></div>
     <script src="assets/js/phaser.min.js"></script>
 
-    <!-- Core Scenes -->
-    <script src="src/scenes/BootScene.js?v=1784166126"></script>
-    <script src="src/scenes/MainMenuScene.js?v=1784166126"></script>
-    <script src="src/scenes/CharacterCreatorScene.js?v=1784166126"></script>
+    <!-- Utility -->
+    <script src="src/utils/ResponsiveLayout.js"></script>
 
-    <!-- Responsive Layout Utility -->
-    <script src="src/utils/ResponsiveLayout.js?v=1784166126"></script>
+    <!-- Audio -->
+    <script src="src/audio/AudioManager.js"></script>
 
-    <!-- Interaction System -->
-    <script src="src/interactions/InteractionData.js?v=1784166126"></script>
-    <script src="src/interactions/InteractionObject.js?v=1784166126"></script>
-    <script src="src/interactions/InteractionDetector.js?v=1784166126"></script>
-    <script src="src/interactions/InteractionUI.js?v=1784166126"></script>
-    <script src="src/interactions/InteractionManager.js?v=1784166126"></script>
+    <!-- Scenes (order matters: BootScene first, then Menu, then others) -->
+    <script src="src/scenes/BootScene.js"></script>
+    <script src="src/scenes/MainMenuScene.js"></script>
+    <script src="src/scenes/CharacterCreatorScene.js"></script>
+    <script src="src/scenes/VillageScene.js"></script>
+    <script src="src/home/HomeScene.js"></script>
+    <script src="src/portal/PortalScene.js"></script>
+    <script src="src/monster_area/MonsterAreaScene.js"></script>
+    <script src="src/warehouse/WarehouseScene.js"></script>
 
-    <!-- Home System -->
-    <script src="src/home/HomeData.js?v=1784166126"></script>
-    <script src="src/home/HomeScene.js?v=1784166126"></script>
+    <!-- Data / Config -->
+    <script src="src/monsters/MonsterConfig.js"></script>
+    <script src="src/monsters/MonsterData.js"></script>
+    <script src="src/monsters/DropTable.js"></script>
+    <script src="src/monsters/MonsterDatabase.js"></script>
+    <script src="src/monsters/AreaMonsterDatabase.js"></script>
+    <script src="src/monsters/MonsterAreaDatabase.js"></script>
+    <script src="src/monsters/SpawnDatabase.js"></script>
+    <script src="src/inventory/ItemDatabase.js"></script>
+    <script src="src/warehouse/WarehouseData.js"></script>
+    <script src="src/storage/StorageManager.js"></script>
 
-    <!-- Inventory System -->
-    <script src="src/inventory/ItemDatabase.js?v=1784166126"></script>
-    <script src="src/inventory/Item.js?v=1784166126"></script>
-    <script src="src/inventory/InventorySlot.js?v=1784166126"></script>
-    <script src="src/inventory/InventoryManager.js?v=1784166126"></script>
-    <script src="src/inventory/InventoryUI.js?v=1784166126"></script>
-    <script src="src/inventory/InventorySave.js?v=1784166126"></script>
+    <!-- NPC -->
+    <script src="src/npc/VillageNPC.js"></script>
 
-    <!-- Warehouse System -->
-    <script src="src/warehouse/WarehouseData.js?v=1784166126"></script>
-    <script src="src/warehouse/WarehouseSlot.js?v=1784166126"></script>
-    <script src="src/warehouse/WarehouseManager.js?v=1784166126"></script>
-    <script src="src/warehouse/WarehouseSave.js?v=1784166126"></script>
-    <script src="src/warehouse/WarehouseUI.js?v=1784166126"></script>
-    <script src="src/warehouse/WarehouseScene.js?v=1784166126"></script>
+    <!-- Player -->
+    <script src="src/player/PlayerController.js"></script>
 
-    <!-- Storage Manager -->
-    <script src="src/storage/StorageManager.js?v=1784166126"></script>
+    <!-- Buildings & Village -->
+    <script src="src/buildings/VillageMap.js"></script>
+    <script src="src/buildings/BuildingManager.js"></script>
+    <script src="src/buildings/VillageDecoration.js"></script>
+    <script src="src/village/VillageCamera.js"></script>
+    <script src="src/village/NPCManager.js"></script>
+    <script src="src/village/NPCInteraction.js"></script>
 
-    <!-- NPC System -->
-    <script src="src/npc/NPCData.js?v=1784166126"></script>
-    <script src="src/npc/VillageNPC.js?v=1784166126"></script>
+    <!-- UI -->
+    <script src="src/ui/VillageUI.js"></script>
+    <script src="src/ui/PortalUI.js"></script>
+    <script src="src/ui/PortalManager.js"></script>
+    <script src="src/ui/AreaSelector.js"></script>
+    <script src="src/ui/MonsterAreaUI.js"></script>
 
-    <!-- Village System -->
-    <script src="src/village/VillageMap.js?v=1784166126"></script>
-    <script src="src/village/BuildingManager.js?v=1784166126"></script>
-    <script src="src/village/NPCManager.js?v=1784166126"></script>
-    <script src="src/village/NPCInteraction.js?v=1784166126"></script>
-    <script src="src/village/VillageDecoration.js?v=1784166126"></script>
-    <script src="src/village/VillageCamera.js?v=1784166126"></script>
-    <script src="src/village/VillageUI.js?v=1784166126"></script>
-    <script src="src/scenes/VillageScene.js?v=1784166126"></script>
+    <!-- Monster Area -->
+    <script src="src/monster_area/MonsterAreaMap.js"></script>
+    <script src="src/monster_area/MonsterAreaCamera.js"></script>
 
-    <!-- Main Village (legacy) -->
-    <script src="src/scenes/MainVillageScene.js?v=1784166126"></script>
+    <!-- Inventory -->
+    <script src="src/inventory/Item.js"></script>
+    <script src="src/inventory/InventorySlot.js"></script>
+    <script src="src/inventory/InventoryManager.js"></script>
+    <script src="src/inventory/InventorySave.js"></script>
+    <script src="src/inventory/InventoryUI.js"></script>
 
-    <!-- Monster Database System -->
-    <script src="src/monster/MonsterConfig.js?v=1784166126"></script>
-    <script src="src/monster/DropTable.js?v=1784166126"></script>
-    <script src="src/monster/MonsterData.js?v=1784166126"></script>
-    <script src="src/monster/AreaMonsterDatabase.js?v=1784166126"></script>
-    <script src="src/monster/MonsterDatabase.js?v=1784166126"></script>
-    <script src="src/monster/MonsterLoader.js?v=1784166126"></script>
+    <!-- Warehouse -->
+    <script src="src/warehouse/WarehouseSlot.js"></script>
+    <script src="src/warehouse/WarehouseManager.js"></script>
+    <script src="src/warehouse/WarehouseSave.js"></script>
+    <script src="src/warehouse/WarehouseUI.js"></script>
 
-    <!-- Monster Spawn System -->
-    <script src="src/spawn/SpawnDatabase.js?v=1784166126"></script>
-    <script src="src/spawn/MonsterEntity.js?v=1784166126"></script>
-    <script src="src/spawn/MonsterPool.js?v=1784166126"></script>
-    <script src="src/spawn/SpawnPoint.js?v=1784166126"></script>
-    <script src="src/spawn/SpawnManager.js?v=1784166126"></script>
-    <script src="src/spawn/MonsterSpawner.js?v=1784166126"></script>
-    <script src="src/spawn/SpawnDebugger.js?v=1784166126"></script>
+    <!-- Monsters & Spawn -->
+    <script src="src/monsters/MonsterEntity.js"></script>
+    <script src="src/monsters/MonsterPool.js"></script>
+    <script src="src/monsters/SpawnPoint.js"></script>
+    <script src="src/monsters/SpawnManager.js"></script>
+    <script src="src/monsters/MonsterSpawner.js"></script>
 
-    <!-- Auto Battle System -->
-    <script src="src/battle/DamageCalculator.js?v=1784166126"></script>
-    <script src="src/battle/HealthSystem.js?v=1784166126"></script>
-    <script src="src/battle/BattleAnimation.js?v=1784166126"></script>
-    <script src="src/battle/BattleUI.js?v=1784166126"></script>
-    <script src="src/battle/BattleResult.js?v=1784166126"></script>
-    <script src="src/battle/BattleSystem.js?v=1784166126"></script>
-    <script src="src/battle/BattleManager.js?v=1784166126"></script>
+    <!-- Battle -->
+    <script src="src/battle/DamageCalculator.js"></script>
+    <script src="src/battle/HealthSystem.js"></script>
+    <script src="src/battle/BattleAnimation.js"></script>
+    <script src="src/battle/BattleUI.js"></script>
+    <script src="src/battle/BattleResult.js"></script>
+    <script src="src/battle/BattleSystem.js"></script>
+    <script src="src/battle/BattleManager.js"></script>
 
-    <!-- Monster Area Database (BEFORE MonsterAreaScene) -->
-    <script src="src/monster_area/MonsterAreaDatabase.js?v=1784166126"></script>
+    <!-- Reward -->
+    <script src="src/reward/LevelManager.js"></script>
+    <script src="src/reward/ExperienceManager.js"></script>
+    <script src="src/reward/GoldManager.js"></script>
+    <script src="src/reward/DropManager.js"></script>
+    <script src="src/reward/RewardPopup.js"></script>
+    <script src="src/reward/RewardManager.js"></script>
 
-    <!-- Portal Monster System -->
-    <script src="src/portal/AreaDatabase.js?v=1784166126"></script>
-    <script src="src/portal/PortalManager.js?v=1784166126"></script>
-    <script src="src/portal/AreaSelector.js?v=1784166126"></script>
-    <script src="src/portal/PortalUI.js?v=1784166126"></script>
-    <script src="src/portal/PortalScene.js?v=1784166126"></script>
-
-    <!-- Reward System -->
-    <script src="src/reward/LevelManager.js?v=1784166126"></script>
-    <script src="src/reward/ExperienceManager.js?v=1784166126"></script>
-    <script src="src/reward/GoldManager.js?v=1784166126"></script>
-    <script src="src/reward/DropManager.js?v=1784166126"></script>
-    <script src="src/reward/RewardPopup.js?v=1784166126"></script>
-    <script src="src/reward/RewardManager.js?v=1784166126"></script>
-
-    <!-- Monster Area System -->
-    <script src="src/monster_area/MonsterAreaMap.js?v=1784166126"></script>
-    <script src="src/monster_area/PlayerController.js?v=1784166126"></script>
-    <script src="src/monster_area/MonsterAreaCamera.js?v=1784166126"></script>
-    <script src="src/monster_area/MonsterAreaUI.js?v=1784166126"></script>
-    <script src="src/monster_area/MonsterAreaScene.js?v=1784166126"></script>
-
-    <!-- Adventure System -->
-    <script src="src/adventure/AdventureManager.js?v=1784166126"></script>
-    <script src="src/adventure/AdventureCamera.js?v=1784166126"></script>
-    <script src="src/adventure/AdventureUI.js?v=1784166126"></script>
-    <script src="src/adventure/AdventureSave.js?v=1784166126"></script>
-    <script src="src/adventure/TransitionManager.js?v=1784166126"></script>
-    <script src="src/adventure/AdventureScene.js?v=1784166126"></script>
-
-    <!-- Main Config -->
-    <!-- Audio System -->
-    <script src="src/audio/AudioManager.js?v=1784166126"></script>
-
-    <!-- Main Config -->
-    <script src="src/main.js?v=1784166126"></script>
+    <!-- Main Config (last) -->
+    <script src="src/config/main.js"></script>
 </body>
 </html>

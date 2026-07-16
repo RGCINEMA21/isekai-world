@@ -1,6 +1,6 @@
 /**
  * WarehouseScene - Scene gudang pemain.
- * Dibuka dari MainVillageScene saat klik gudang/NPC.
+ * Dibuka dari VillageScene saat klik gudang/NPC.
  * Responsive portrait & landscape.
  */
 class WarehouseScene extends Phaser.Scene {

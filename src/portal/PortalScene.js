@@ -1,6 +1,6 @@
 /**
  * PortalScene - Scene utama Portal Monster.
- * Dibuka dari MainVillageScene saat klik Portal/NPC.
+ * Dibuka dari VillageScene saat klik Portal/NPC.
  * Menampilkan daftar area, info, dan masuk ke Adventure Mode.
  */
 class PortalScene extends Phaser.Scene {

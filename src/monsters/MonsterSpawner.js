@@ -1,11 +1,11 @@
 /**
- * MonsterSpawner - Bridge antara AdventureScene dan SpawnManager.
- * Dipasang ke AdventureScene untuk mengaktifkan monster spawn di area.
+ * MonsterSpawner - Bridge antara MonsterAreaScene dan SpawnManager.
+ * Dipasang ke MonsterAreaScene untuk mengaktifkan monster spawn di area.
  * Menyediakan tombol debug toggle di UI.
  */
 class MonsterSpawner {
     /**
-     * @param {Phaser.Scene} scene - AdventureScene instance
+     * @param {Phaser.Scene} scene - MonsterAreaScene instance
      * @param {AdventureManager} manager
      */
     constructor(scene, manager) {

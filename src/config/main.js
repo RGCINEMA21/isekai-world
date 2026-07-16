@@ -19,8 +19,8 @@ const game = new Phaser.Game({
     fps: { target: 60, forceSetTimeOut: false },
     scene: [
         BootScene, MainMenuScene, CharacterCreatorScene,
-        MainVillageScene, VillageScene, MonsterAreaScene,
-        HomeScene, WarehouseScene, PortalScene, AdventureScene
+        VillageScene, MonsterAreaScene,
+        HomeScene, WarehouseScene, PortalScene
     ],
     antialias: false,
     pixelArt: true,
