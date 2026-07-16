@@ -32,10 +32,10 @@ class MainMenuScene extends Phaser.Scene {
         const isMobile = rl.w < 600;
         const titleSize = rl.titleSize(52) + 'px';
         const subSize = rl.labelSize(14) + 'px';
-        const btnFontSize = rl.fontSize(16) + 'px';
-        const btnW = Math.max(180, Math.min(300, w * 0.38));
-        const btnH = Math.max(40, Math.min(55, smaller * 0.07));
-        const btnSpacing = Math.max(46, Math.min(68, smaller * 0.09));
+        const btnFontSize = rl.fontSize(18) + 'px';
+        const btnW = isMobile ? Math.max(200, Math.min(280, w * 0.65)) : Math.max(260, Math.min(360, w * 0.3));
+        const btnH = isMobile ? Math.max(44, Math.min(52, smaller * 0.065)) : Math.max(52, Math.min(64, smaller * 0.06));
+        const btnSpacing = isMobile ? Math.max(50, Math.min(60, smaller * 0.075)) : Math.max(60, Math.min(80, smaller * 0.075));
 
         // --- TITLE ---
         this.titleText = this.add.text(w/2, h * 0.08, 'ISEKAI WORLD', {
@@ -71,12 +71,9 @@ class MainMenuScene extends Phaser.Scene {
             { label: '✕  Exit',       action: 'exit',      enabled: true }
         ];
 
-        // Position buttons - center them vertically in available space
+        // Position buttons — center-lower area, always comfortably visible
         const totalBtnsHeight = buttonData.length * btnSpacing;
-        const titleArea = h * 0.25; // space for title
-        const copyrightArea = 40;
-        const availableH = h - titleArea - copyrightArea;
-        const btnStartY = titleArea + (availableH - totalBtnsHeight) / 2;
+        const btnStartY = Math.round(h * 0.48);
         buttonData.forEach((data, i) => {
             const by = btnStartY + i * btnSpacing;
             this.menuButtons.push(
@@ -686,16 +683,16 @@ class MainMenuScene extends Phaser.Scene {
     playEntrance(h) {
         const slide = h < 500 ? 220 : 280;
         this.tweens.add({
-            targets: this.titleText, alpha: 1, duration: 800, ease: 'Power2',
+            targets: this.titleText, alpha: 1, duration: 600, ease: 'Power2',
             onComplete: () => {
-                this.tweens.add({ targets: this.subtitleText, alpha: 1, duration: 400, ease: 'Power2' });
+                this.tweens.add({ targets: this.subtitleText, alpha: 1, duration: 300, ease: 'Power2' });
                 this.menuButtons.forEach((btn, i) => {
                     this.tweens.add({
-                        targets: btn, alpha: 1, y: btn.y - slide,
-                        duration: 450, delay: i * 120, ease: 'Back.easeOut'
+                        targets: btn, alpha: 1, y: btn.y - 300,
+                        duration: 500, delay: i * 100, ease: 'Back.easeOut'
                     });
                 });
-                this.tweens.add({ targets: this.copyrightText, alpha: 1, duration: 600, delay: 800, ease: 'Power2' });
+                this.tweens.add({ targets: this.copyrightText, alpha: 1, duration: 500, delay: 600, ease: 'Power2' });
             }
         });
     }
