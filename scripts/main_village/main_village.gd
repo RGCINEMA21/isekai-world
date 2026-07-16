@@ -331,6 +331,7 @@ func _create_buildings() -> void:
 		add_child(building)
 
 
+
 ## ==================== NPC ====================
 
 func _create_npcs() -> void:
@@ -339,21 +340,23 @@ func _create_npcs() -> void:
 		lookup[b["id"]] = b
 	
 	for n: Dictionary in VillageData.NPCs:
-		var bdata: Dictionary = lookup.get(n["building_id"], {})
+		var npc_id: String = n["npc_id"]
+		var bid: String = n["building_id"]
+		var bdata: Dictionary = lookup.get(bid, {})
 		if bdata.is_empty():
 			continue
+		
+		# Posisi NPC: 2 tile di bawah bangunan (depan pintu)
 		var npc_x: float = bdata["tile_x"] * ts + ts / 2.0
 		var npc_y: float = (bdata["tile_y"] + 2) * ts + ts / 2.0
 		
 		var npc := Area2D.new()
 		npc.set_script(load("res://scripts/npc/village_npc.gd"))
 		npc.position = Vector2(npc_x, npc_y)
-		npc.set("npc_name", n["name"])
-		npc.set("building_id", n["building_id"])
+		npc.set("npc_id", npc_id)
 		npc.collision_layer = 2
 		npc.collision_mask = 0
 		add_child(npc)
-
 
 ## ==================== PORTAL ====================
 

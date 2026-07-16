@@ -19,6 +19,7 @@ AudioManager="*res://scripts/autoload/audio_manager.gd"
 SceneManager="*res://scripts/autoload/scene_manager.gd"
 UIManager="*res://scripts/autoload/ui_manager.gd"
 ResourceManager="*res://scripts/autoload/resource_manager.gd"
+NPCInteractionManager="*res://scripts/npc/npc_interaction_manager.gd"
 
 [display]
 
