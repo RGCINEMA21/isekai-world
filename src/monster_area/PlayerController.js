@@ -1,16 +1,17 @@
 /**
- * PlayerController - Movement, animation, collision for Monster Area.
- * Desktop: WASD + Arrow Keys
+ * PlayerController — movement, animation, collision, joystick.
+ * Desktop: WASD + Arrow Keys.
  * Mobile: Virtual joystick (always visible on touch devices).
- * Joystick auto-positions bottom-left and adapts to screen size.
+ * All sizes derived from ResponsiveLayout so they fit any screen.
  */
 class PlayerController {
     constructor(scene, map, saveData) {
         this.scene = scene;
         this.map = map;
         this.saveData = saveData;
+        this.rl = new ResponsiveLayout(scene);
 
-        // Spawn position
+        // Position
         this.x = map.getSpawnPixelX();
         this.y = map.getSpawnPixelY();
         if (saveData?.progress?.areaX != null && saveData?.progress?.areaY != null) {
@@ -40,12 +41,8 @@ class PlayerController {
         if (scene.input.keyboard) {
             try {
                 this.cursors = scene.input.keyboard.createCursorKeys();
-                this.keys = scene.input.keyboard.addKeys({
-                    up: 'W', down: 'S', left: 'A', right: 'D'
-                });
-            } catch (e) {
-                console.warn('[PlayerController] Keyboard init failed:', e);
-            }
+                this.keys = scene.input.keyboard.addKeys({ up: 'W', down: 'S', left: 'A', right: 'D' });
+            } catch (e) { console.warn('[PlayerController] Keyboard init failed:', e); }
         }
 
         // Joystick state
@@ -57,18 +54,18 @@ class PlayerController {
         this.joystickDX = 0;
         this.joystickDY = 0;
         this.joystickPointerId = -1;
-        this.isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || !!window.matchMedia('(pointer: coarse)').matches;
 
-        // Joystick size adapts to screen
-        this._recalcJoystickSize();
+        this.isTouchDevice = ('ontouchstart' in window)
+            || (navigator.maxTouchPoints > 0)
+            || !!window.matchMedia('(pointer: coarse)').matches;
 
-        // Joystick graphics (UI space, fixed to screen)
+        // Joystick graphics (UI layer, fixed to screen)
         this.joyBaseGfx = scene.add.graphics().setDepth(150).setScrollFactor(0);
         this.joyStickGfx = scene.add.graphics().setDepth(151).setScrollFactor(0);
 
+        this._positionJoystick();
         if (this.isTouchDevice) {
-            this._recalcJoystickPosition();
-            this._showJoystick();
+            this._drawJoystick(0.3, 0.5);
         } else {
             this.joyBaseGfx.setAlpha(0);
             this.joyStickGfx.setAlpha(0);
@@ -77,46 +74,40 @@ class PlayerController {
         scene.playerController = this;
     }
 
-    _recalcJoystickSize() {
-        const w = this.scene.cameras.main.width;
-        const h = this.scene.cameras.main.height;
-        // Joystick should be ~20% of the smaller screen dimension
-        const baseSize = Math.min(w, h);
-        this.joystickRadius = Math.max(40, Math.min(70, baseSize * 0.09));
-        this.stickRadius = this.joystickRadius * 0.42;
-    }
+    /* ── Joystick helpers ────────────────────────── */
 
-    _recalcJoystickPosition() {
-        const w = this.scene.cameras.main.width;
-        const h = this.scene.cameras.main.height;
-        this.joystickBaseX = this.joystickRadius + 20;
-        this.joystickBaseY = h - this.joystickRadius - 30;
+    _positionJoystick() {
+        this.rl.recalculate();
+        const r = this.rl.joystickRadius();
+        this._jr = r;
+        this._sr = this.rl.stickRadius();
+        this.joystickBaseX = r + this.rl.pad() + 4;
+        this.joystickBaseY = this.rl.h - r - this.rl.pad() - 16;
         this.joystickStickX = this.joystickBaseX;
         this.joystickStickY = this.joystickBaseY;
     }
 
-    _showJoystick() {
-        this._drawBase();
-        this._drawStick();
-        this.joyBaseGfx.setAlpha(0.3);
-        this.joyStickGfx.setAlpha(0.5);
-    }
+    _drawJoystick(baseAlpha, stickAlpha) {
+        const { joystickBaseX: bx, joystickBaseY: by, _jr: r, _sr: sr,
+                joystickStickX: sx, joystickStickY: sy } = this;
 
-    _drawBase() {
         this.joyBaseGfx.clear();
-        this.joyBaseGfx.fillStyle(0xffffff, 0.1);
-        this.joyBaseGfx.fillCircle(this.joystickBaseX, this.joystickBaseY, this.joystickRadius);
-        this.joyBaseGfx.lineStyle(2, 0xffffff, 0.25);
-        this.joyBaseGfx.strokeCircle(this.joystickBaseX, this.joystickBaseY, this.joystickRadius);
+        this.joyBaseGfx.fillStyle(0xffffff, 0.12);
+        this.joyBaseGfx.fillCircle(bx, by, r);
+        this.joyBaseGfx.lineStyle(2, 0xffffff, 0.28);
+        this.joyBaseGfx.strokeCircle(bx, by, r);
+
+        this.joyStickGfx.clear();
+        this.joyStickGfx.fillStyle(0xffffff, 0.42);
+        this.joyStickGfx.fillCircle(sx, sy, sr);
+        this.joyStickGfx.lineStyle(2, 0xffffff, 0.52);
+        this.joyStickGfx.strokeCircle(sx, sy, sr);
+
+        this.joyBaseGfx.setAlpha(baseAlpha);
+        this.joyStickGfx.setAlpha(stickAlpha);
     }
 
-    _drawStick() {
-        this.joyStickGfx.clear();
-        this.joyStickGfx.fillStyle(0xffffff, 0.4);
-        this.joyStickGfx.fillCircle(this.joystickStickX, this.joystickStickY, this.stickRadius);
-        this.joyStickGfx.lineStyle(2, 0xffffff, 0.5);
-        this.joyStickGfx.strokeCircle(this.joystickStickX, this.joystickStickY, this.stickRadius);
-    }
+    /* ── Tile helpers ────────────────────────────── */
 
     getTileX() { return Math.floor(this.x / this.map.tileSize); }
     getTileY() { return Math.floor(this.y / this.map.tileSize); }
@@ -124,23 +115,25 @@ class PlayerController {
     _canMoveTo(px, py) {
         const hw = this.bodyW / 2;
         const hh = this.bodyH / 2;
-        const tiles = [
+        const corners = [
             [Math.floor((px - hw) / this.map.tileSize), Math.floor((py - hh) / this.map.tileSize)],
             [Math.floor((px + hw) / this.map.tileSize), Math.floor((py - hh) / this.map.tileSize)],
             [Math.floor((px - hw) / this.map.tileSize), Math.floor((py + hh) / this.map.tileSize)],
             [Math.floor((px + hw) / this.map.tileSize), Math.floor((py + hh) / this.map.tileSize)],
         ];
-        for (const [tx, ty] of tiles) {
+        for (const [tx, ty] of corners) {
             if (!this.map.isWalkable(tx, ty)) return false;
         }
         return true;
     }
 
+    /* ── Main update ─────────────────────────────── */
+
     update(delta) {
         let vx = 0;
         let vy = 0;
 
-        // Keyboard input
+        // Keyboard
         if (this.cursors) {
             if (this.cursors.left.isDown || (this.keys && this.keys.left.isDown)) vx = -1;
             if (this.cursors.right.isDown || (this.keys && this.keys.right.isDown)) vx = 1;
@@ -148,8 +141,8 @@ class PlayerController {
             if (this.cursors.down.isDown || (this.keys && this.keys.down.isDown)) vy = 1;
         }
 
-        // Joystick input
-        if (this.joystickActive && (Math.abs(this.joystickDX) > 0.15 || Math.abs(this.joystickDY) > 0.15)) {
+        // Joystick
+        if (this.joystickActive && (Math.abs(this.joystickDX) > 0.12 || Math.abs(this.joystickDY) > 0.12)) {
             vx = this.joystickDX;
             vy = this.joystickDY;
         }
@@ -161,7 +154,7 @@ class PlayerController {
             vy *= inv;
         }
 
-        // Determine facing
+        // Facing
         if (Math.abs(vx) > 0.1 || Math.abs(vy) > 0.1) {
             if (Math.abs(vx) > Math.abs(vy)) {
                 this.facing = vx < 0 ? 'left' : 'right';
@@ -169,17 +162,15 @@ class PlayerController {
                 this.facing = vy < 0 ? 'up' : 'down';
             }
         }
-
         this.isMoving = (vx !== 0 || vy !== 0);
 
         // Move with collision
         if (this.isMoving) {
-            const newX = this.x + vx * this.moveSpeed * (delta / 1000);
-            const newY = this.y + vy * this.moveSpeed * (delta / 1000);
-
+            const dt = delta / 1000;
+            const newX = this.x + vx * this.moveSpeed * dt;
+            const newY = this.y + vy * this.moveSpeed * dt;
             if (this._canMoveTo(newX, this.y)) this.x = newX;
             if (this._canMoveTo(this.x, newY)) this.y = newY;
-
             this.x = Phaser.Math.Clamp(this.x, 16, this.map.getPixelWidth() - 16);
             this.y = Phaser.Math.Clamp(this.y, 16, this.map.getPixelHeight() - 16);
         }
@@ -198,45 +189,48 @@ class PlayerController {
 
     _handleJoystickInput() {
         if (!this.isTouchDevice) return;
-
         const pointers = this.scene.input.manager.pointers;
         let foundPointer = false;
 
         for (const p of pointers) {
-            if (p.isDown) {
-                // Start joystick on new touch in left half of screen
-                if (!this.joystickActive && p.x < this.scene.cameras.main.width * 0.55) {
-                    this.joystickPointerId = p.id;
-                    this.joystickActive = true;
-                    this.joystickBaseX = p.x;
-                    this.joystickBaseY = p.y;
+            if (!p.isDown) continue;
+
+            // Start joystick on new touch in left 60% of screen
+            if (!this.joystickActive && p.x < this.rl.w * 0.6) {
+                this.joystickPointerId = p.id;
+                this.joystickActive = true;
+                this.joystickBaseX = p.x;
+                this.joystickBaseY = p.y;
+                this.joystickStickX = p.x;
+                this.joystickStickY = p.y;
+                this._drawJoystick(0.5, 0.7);
+            }
+
+            if (p.id === this.joystickPointerId) {
+                foundPointer = true;
+                const dx = p.x - this.joystickBaseX;
+                const dy = p.y - this.joystickBaseY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const r = this._jr;
+
+                if (dist <= r) {
                     this.joystickStickX = p.x;
                     this.joystickStickY = p.y;
-                    this._drawBase();
-                    this._drawStick();
-                    this.joyBaseGfx.setAlpha(0.5);
-                    this.joyStickGfx.setAlpha(0.7);
+                } else {
+                    this.joystickStickX = this.joystickBaseX + (dx / dist) * r;
+                    this.joystickStickY = this.joystickBaseY + (dy / dist) * r;
                 }
 
-                if (p.id === this.joystickPointerId) {
-                    foundPointer = true;
-                    const dx = p.x - this.joystickBaseX;
-                    const dy = p.y - this.joystickBaseY;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
+                this.joystickDX = (this.joystickStickX - this.joystickBaseX) / r;
+                this.joystickDY = (this.joystickStickY - this.joystickBaseY) / r;
 
-                    if (dist <= this.joystickRadius) {
-                        this.joystickStickX = p.x;
-                        this.joystickStickY = p.y;
-                    } else {
-                        this.joystickStickX = this.joystickBaseX + (dx / dist) * this.joystickRadius;
-                        this.joystickStickY = this.joystickBaseY + (dy / dist) * this.joystickRadius;
-                    }
-
-                    this.joystickDX = (this.joystickStickX - this.joystickBaseX) / this.joystickRadius;
-                    this.joystickDY = (this.joystickStickY - this.joystickBaseY) / this.joystickRadius;
-
-                    this._drawStick();
-                }
+                // Redraw stick only (base stays)
+                this.joyStickGfx.clear();
+                this.joyStickGfx.fillStyle(0xffffff, 0.42);
+                this.joyStickGfx.fillCircle(this.joystickStickX, this.joystickStickY, this._sr);
+                this.joyStickGfx.lineStyle(2, 0xffffff, 0.52);
+                this.joyStickGfx.strokeCircle(this.joystickStickX, this.joystickStickY, this._sr);
+                this.joyStickGfx.setAlpha(0.7);
             }
         }
 
@@ -247,14 +241,11 @@ class PlayerController {
             this.joystickDY = 0;
             this.joystickStickX = this.joystickBaseX;
             this.joystickStickY = this.joystickBaseY;
-            this._drawStick();
-
-            if (this.isTouchDevice) {
-                this.joyBaseGfx.setAlpha(0.3);
-                this.joyStickGfx.setAlpha(0.5);
-            }
+            this._drawJoystick(this.isTouchDevice ? 0.3 : 0, this.isTouchDevice ? 0.5 : 0);
         }
     }
+
+    /* ── Draw player sprite (placeholder) ────────── */
 
     draw() {
         const g = this.gfx;
@@ -268,79 +259,40 @@ class PlayerController {
         const boot = 0x3a2a1a;
         const step = this.isMoving ? Math.sin(this.animFrame * Math.PI) * 2 : 0;
 
-        // Shadow
-        g.fillStyle(0x000000, 0.2);
-        g.fillEllipse(x, y + 12, 14, 5);
-
-        // Boots
+        g.fillStyle(0x000000, 0.2); g.fillEllipse(x, y + 12, 14, 5);
         g.fillStyle(boot, 1);
         g.fillRect(x - 3, y + 3 + (this.isMoving && this.facing !== 'up' ? step : 0), 2, 3);
         g.fillRect(x + 1, y + 3 + (this.isMoving && this.facing !== 'up' ? step : 0), 2, 3);
-
-        // Pants
-        g.fillStyle(pants, 1);
-        g.fillRect(x - 3, y + 1, 6, 4);
-
-        // Shirt
-        g.fillStyle(shirt, 1);
-        g.fillRect(x - 3, y - 4, 6, 6);
-
-        // Arms
+        g.fillStyle(pants, 1); g.fillRect(x - 3, y + 1, 6, 4);
+        g.fillStyle(shirt, 1); g.fillRect(x - 3, y - 4, 6, 6);
         const armSwing = this.isMoving ? Math.sin(this.animFrame * Math.PI) * 2 : 0;
         g.fillStyle(skin, 1);
         g.fillRect(x - 5, y - 4 + armSwing, 2, 5);
         g.fillRect(x + 3, y - 4 - armSwing, 2, 5);
-
-        // Head
-        g.fillStyle(skin, 1);
-        g.fillRect(x - 3, y - 12, 6, 7);
-
-        // Hair
-        g.fillStyle(hair, 1);
-        g.fillRect(x - 3, y - 13, 6, 3);
-        if (this.facing === 'down') {
-            g.fillRect(x - 4, y - 12, 1, 4);
-            g.fillRect(x + 3, y - 12, 1, 4);
-        } else if (this.facing === 'up') {
-            g.fillRect(x - 4, y - 13, 8, 4);
-        } else if (this.facing === 'left') {
-            g.fillRect(x - 4, y - 13, 6, 3);
-            g.fillRect(x - 4, y - 11, 1, 4);
-        } else {
-            g.fillRect(x - 2, y - 13, 6, 3);
-            g.fillRect(x + 3, y - 11, 1, 4);
-        }
-
-        // Eyes
+        g.fillStyle(skin, 1); g.fillRect(x - 3, y - 12, 6, 7);
+        g.fillStyle(hair, 1); g.fillRect(x - 3, y - 13, 6, 3);
+        if (this.facing === 'down') { g.fillRect(x - 4, y - 12, 1, 4); g.fillRect(x + 3, y - 12, 1, 4); }
+        else if (this.facing === 'up') { g.fillRect(x - 4, y - 13, 8, 4); }
+        else if (this.facing === 'left') { g.fillRect(x - 4, y - 13, 6, 3); g.fillRect(x - 4, y - 11, 1, 4); }
+        else { g.fillRect(x - 2, y - 13, 6, 3); g.fillRect(x + 3, y - 11, 1, 4); }
         if (this.facing !== 'up') {
             g.fillStyle(0xffffff, 1);
             if (this.facing === 'down') {
-                g.fillRect(x - 2, y - 10, 2, 2);
-                g.fillRect(x + 1, y - 10, 2, 2);
-                g.fillStyle(0x2244aa, 1);
-                g.fillRect(x - 1, y - 9, 1, 1);
-                g.fillRect(x + 1, y - 9, 1, 1);
+                g.fillRect(x - 2, y - 10, 2, 2); g.fillRect(x + 1, y - 10, 2, 2);
+                g.fillStyle(0x2244aa, 1); g.fillRect(x - 1, y - 9, 1, 1); g.fillRect(x + 1, y - 9, 1, 1);
             } else if (this.facing === 'left') {
                 g.fillRect(x - 3, y - 10, 2, 2);
-                g.fillStyle(0x2244aa, 1);
-                g.fillRect(x - 2, y - 9, 1, 1);
+                g.fillStyle(0x2244aa, 1); g.fillRect(x - 2, y - 9, 1, 1);
             } else {
                 g.fillRect(x + 1, y - 10, 2, 2);
-                g.fillStyle(0x2244aa, 1);
-                g.fillRect(x + 1, y - 9, 1, 1);
+                g.fillStyle(0x2244aa, 1); g.fillRect(x + 1, y - 9, 1, 1);
             }
         }
     }
 
     onResize() {
-        this._recalcJoystickSize();
-        if (this.isTouchDevice) {
-            this._recalcJoystickPosition();
-            this._drawBase();
-            this._drawStick();
-            this.joyBaseGfx.setAlpha(this.joystickActive ? 0.5 : 0.3);
-            this.joyStickGfx.setAlpha(this.joystickActive ? 0.7 : 0.5);
-        }
+        this._positionJoystick();
+        if (this.isTouchDevice) this._drawJoystick(0.3, 0.5);
     }
 
     destroy() {

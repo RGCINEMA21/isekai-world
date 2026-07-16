@@ -47,8 +47,9 @@ class BattleResult {
         this.container.add(dim);
 
         // Panel box
-        const panelW = Math.min(320, w * 0.8);
-        const panelH = 180;
+        const rl = new ResponsiveLayout(this.scene);
+        const panelW = Math.min(Math.round(rl.smaller * 0.85), Math.round(w * 0.85));
+        const panelH = Math.max(160, Math.round(rl.smaller * 0.24));
         const panelBg = this.scene.add.graphics().setScrollFactor(0);
         panelBg.fillStyle(0x2c1810, 0.95);
         panelBg.fillRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 12);
@@ -58,13 +59,13 @@ class BattleResult {
 
         // Title
         this.container.add(this.scene.add.text(0, -panelH / 2 + 30, title, {
-            fontSize: '20px', fontFamily: 'Georgia, serif', color: '#ffffff',
+            fontSize: rl.fontSize(18) + 'px', fontFamily: 'Georgia, serif', color: '#ffffff',
             fontStyle: 'bold'
         }).setOrigin(0.5).setScrollFactor(0));
 
         // Message
         this.container.add(this.scene.add.text(0, -panelH / 2 + 60, message, {
-            fontSize: '12px', fontFamily: 'Arial', color: '#cccccc',
+            fontSize: rl.fontSize(12) + 'px', fontFamily: 'Arial', color: '#cccccc',
             wordWrap: { width: panelW - 40 }, align: 'center'
         }).setOrigin(0.5).setScrollFactor(0));
 
@@ -81,7 +82,7 @@ class BattleResult {
             this.container.add(btnBg);
 
             const text = this.scene.add.text(bx, by, btn.label, {
-                fontSize: '10px', fontFamily: 'Arial', color: '#ffffff',
+                fontSize: rl.labelSize(11) + 'px', fontFamily: 'Arial', color: '#ffffff',
                 fontStyle: 'bold'
             }).setOrigin(0.5).setScrollFactor(0);
             this.container.add(text);

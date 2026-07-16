@@ -26,15 +26,16 @@ class MainMenuScene extends Phaser.Scene {
         this.dimOverlay = this.add.rectangle(w/2, h/2, w, h, 0x1a0a00, 0)
             .setDepth(100);
 
-        // Responsive detection - adapt to any screen size
-        const smaller = Math.min(w, h);
-        const isMobile = w < 600;
-        const titleSize = Math.max(28, Math.min(68, smaller * 0.085)) + 'px';
-        const subSize = Math.max(10, Math.min(18, smaller * 0.022)) + 'px';
-        const btnFontSize = Math.max(14, Math.min(22, smaller * 0.028)) + 'px';
-        const btnW = Math.max(170, Math.min(280, w * 0.35));
-        const btnH = Math.max(38, Math.min(52, smaller * 0.065));
-        const btnSpacing = Math.max(42, Math.min(68, smaller * 0.085));
+        // Responsive detection using ResponsiveLayout
+        const rl = new ResponsiveLayout(this);
+        const smaller = rl.smaller;
+        const isMobile = rl.w < 600;
+        const titleSize = rl.titleSize(52) + 'px';
+        const subSize = rl.labelSize(14) + 'px';
+        const btnFontSize = rl.fontSize(16) + 'px';
+        const btnW = Math.max(180, Math.min(300, w * 0.38));
+        const btnH = Math.max(40, Math.min(55, smaller * 0.07));
+        const btnSpacing = Math.max(46, Math.min(68, smaller * 0.09));
 
         // --- TITLE ---
         this.titleText = this.add.text(w/2, h * 0.08, 'ISEKAI WORLD', {
@@ -70,9 +71,12 @@ class MainMenuScene extends Phaser.Scene {
             { label: '✕  Exit',       action: 'exit',      enabled: true }
         ];
 
-        // Position buttons - ensure they fit on screen
+        // Position buttons - center them vertically in available space
         const totalBtnsHeight = buttonData.length * btnSpacing;
-        const btnStartY = Math.max(h * 0.35, h - totalBtnsHeight - 30);
+        const titleArea = h * 0.25; // space for title
+        const copyrightArea = 40;
+        const availableH = h - titleArea - copyrightArea;
+        const btnStartY = titleArea + (availableH - totalBtnsHeight) / 2;
         buttonData.forEach((data, i) => {
             const by = btnStartY + i * btnSpacing;
             this.menuButtons.push(

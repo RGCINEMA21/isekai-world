@@ -28,6 +28,17 @@ class WarehouseScene extends Phaser.Scene {
 
         // Fade in
         this.cameras.main.fadeIn(300, 0, 0, 0);
+
+        // Handle resize
+        this.scale.on('resize', (sz) => this.onResize(sz));
+    }
+
+    onResize(sz) {
+        this.drawBackground();
+        if (this.warehouseUI) {
+            this.warehouseUI.close();
+            this.warehouseUI.open(this.saveData);
+        }
     }
 
     /** Gambar background desa yang sedikit gelap */

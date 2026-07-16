@@ -1,17 +1,15 @@
 /**
- * PortalUI - UI utama Portal Monster.
- * Responsive: Mobile Portrait & Desktop Landscape.
- * Area cards besar dan mudah disentuh.
- * Panel adapts to all screen sizes.
+ * PortalUI — Portal Monster panel.
+ * All sizing via ResponsiveLayout.
  */
 class PortalUI {
     constructor(scene, portalManager) {
         this.scene = scene;
+        this.rl = new ResponsiveLayout(scene);
         this.portalManager = portalManager;
         this.container = null;
         this.areaSelector = null;
         this.selectedArea = null;
-        this.isPortrait = false;
         this.onEnterArea = null;
         this.onBack = null;
     }
@@ -26,10 +24,9 @@ class PortalUI {
 
     build(playerLevel) {
         this.destroy();
-        const w = this.scene.cameras.main.width;
-        const h = this.scene.cameras.main.height;
-        this.isPortrait = h > w;
-        const smaller = Math.min(w, h);
+        this.rl.recalculate();
+        const { w, h, isPortrait } = this.rl;
+        const rl = this.rl;
 
         this.container = this.scene.add.container(0, 0).setDepth(500).setScrollFactor(0);
 
@@ -39,141 +36,83 @@ class PortalUI {
         dim.fillRect(0, 0, w, h);
         this.container.add(dim);
 
-        // Panel size - fills most of the screen
-        const pw = this.isPortrait ? w * 0.92 : Math.min(720, w * 0.65);
-        const ph = this.isPortrait ? h * 0.82 : Math.min(520, h * 0.88);
+        // Panel
+        const pw = rl.panelWidth(isPortrait ? 0.94 : 0.6);
+        const ph = rl.panelHeight(isPortrait ? 0.8 : 0.85);
         const px = w / 2;
         const py = h / 2;
 
-        // Background panel
         const bg = this.scene.add.graphics();
-        bg.fillStyle(0x1a0a00, 0.4);
-        bg.fillRoundedRect(px - pw / 2 + 5, py - ph / 2 + 5, pw, ph, 16);
-        bg.fillStyle(0x2c1810, 0.97);
-        bg.fillRoundedRect(px - pw / 2, py - ph / 2, pw, ph, 14);
-        bg.fillStyle(0x3a2415, 0.3);
-        bg.fillRoundedRect(px - pw / 2 + 8, py - ph / 2 + 8, pw - 16, ph - 16, 12);
-        bg.lineStyle(3, 0xc9a84c, 0.9);
-        bg.strokeRoundedRect(px - pw / 2, py - ph / 2, pw, ph, 14);
+        bg.fillStyle(0x1a0a00, 0.4); bg.fillRoundedRect(px - pw/2 + 5, py - ph/2 + 5, pw, ph, 16);
+        bg.fillStyle(0x2c1810, 0.97); bg.fillRoundedRect(px - pw/2, py - ph/2, pw, ph, 14);
+        bg.fillStyle(0x3a2415, 0.3); bg.fillRoundedRect(px - pw/2 + 8, py - ph/2 + 8, pw - 16, ph - 16, 12);
+        bg.lineStyle(3, 0xc9a84c, 0.9); bg.strokeRoundedRect(px - pw/2, py - ph/2, pw, ph, 14);
         this.container.add(bg);
 
         // Title
-        const titleFs = Math.max(16, Math.min(24, smaller * 0.032)) + 'px';
-        const titleY = py - ph / 2 + 20;
+        const titleFs = rl.fontSize(18);
+        const titleY = py - ph/2 + 22;
         this.container.add(this.scene.add.text(px, titleY, '⚔ PORTAL MONSTER', {
-            fontSize: titleFs,
-            fontFamily: 'Georgia, serif',
-            color: '#ff6644',
-            fontStyle: 'bold',
-            stroke: '#2c1810',
-            strokeThickness: 3
+            fontSize: titleFs + 'px', fontFamily: 'Georgia, serif', color: '#ff6644',
+            fontStyle: 'bold', stroke: '#2c1810', strokeThickness: 3
         }).setOrigin(0.5));
 
         // Level info
-        const infoY = titleY + 30;
-        const infoFs = Math.max(11, Math.min(14, smaller * 0.018)) + 'px';
-        this.container.add(this.scene.add.text(px, infoY,
-            'Level Kamu: ' + playerLevel + '  ·  Pilih area untuk bertarung!', {
-            fontSize: infoFs,
-            fontFamily: 'Arial',
-            color: '#c9a84c'
+        const infoY = titleY + 32;
+        this.container.add(this.scene.add.text(px, infoY, 'Level Kamu: ' + playerLevel + '  ·  Pilih area!', {
+            fontSize: rl.fontSize(12) + 'px', fontFamily: 'Arial', color: '#c9a84c'
         }).setOrigin(0.5));
 
         // Separator
         const sep = this.scene.add.graphics();
         sep.lineStyle(1, 0xc9a84c, 0.3);
-        sep.lineBetween(px - pw / 2 + 20, infoY + 16, px + pw / 2 - 20, infoY + 16);
+        sep.lineBetween(px - pw/2 + 20, infoY + 16, px + pw/2 - 20, infoY + 16);
         this.container.add(sep);
 
-        // Area list
+        // Area grid
         const gridTop = infoY + 24;
-        const gridBottom = py + ph / 2 - 130;
+        const gridBottom = py + ph/2 - 130;
         const gridH = Math.max(120, gridBottom - gridTop);
         const gridW = pw - 24;
 
-        // Use AreaSelector
         this.areaSelector = new AreaSelector(this.scene, this.portalManager, {
             onAreaSelected: (area) => {
                 this.selectedArea = area;
-                this.showAreaDetail(area, px, py, pw, ph, playerLevel);
+                this.showAreaDetail(area, px, py, pw, ph);
             },
             onEnterArea: (area) => this.enterArea(area),
             playerLevel: playerLevel,
-            isPortrait: this.isPortrait
+            isPortrait: isPortrait,
+            rl: rl
         });
-        this.areaSelector.create(this.container, px - gridW / 2, gridTop, gridW, gridH);
+        this.areaSelector.create(this.container, px - gridW/2, gridTop, gridW, gridH);
 
-        // Action buttons
-        this.createButtons(px, py, pw, ph, smaller);
-    }
+        // Buttons
+        const btnY = py + ph/2 - 55;
+        const btnFs = rl.fontSize(14);
+        const btnW = Math.round(pw * 0.38);
+        const btnH = Math.max(40, Math.min(50, rl.smaller * 0.065));
 
-    showAreaDetail(area, px, py, pw, ph, playerLevel) {
-        if (this._detailContainer) {
-            this._detailContainer.destroy();
-            this._detailContainer = null;
-        }
-
-        const isUnlocked = area.status === 'unlocked';
-        const dw = pw - 32;
-        const dh = 90;
-        const dx = px - dw / 2;
-        const dy = py + ph / 2 - 160;
-
-        this._detailContainer = this.scene.add.container(0, 0);
-        this.container.add(this._detailContainer);
-
-        const dBg = this.scene.add.graphics();
-        dBg.fillStyle(0x1a0a00, 0.8);
-        dBg.fillRoundedRect(dx, dy, dw, dh, 8);
-        dBg.lineStyle(2, isUnlocked ? 0x44cc44 : 0x882222, 0.6);
-        dBg.strokeRoundedRect(dx, dy, dw, dh, 8);
-        this._detailContainer.add(dBg);
-
-        const dFs = Math.max(11, Math.min(13, Math.min(pw, ph) * 0.02)) + 'px';
-        const infoText = area.icon + ' ' + area.name +
-            '\nLevel: ' + area.levelRequired + '  ·  ' + (isUnlocked ? 'Terbuka' : 'Tergunci') +
-            '\n' + (area.description || '');
-        this._detailContainer.add(this.scene.add.text(dx + 12, dy + 10, infoText, {
-            fontSize: dFs,
-            fontFamily: 'Arial',
-            color: isUnlocked ? '#d4c4a0' : '#777777',
-            lineSpacing: 4
-        }));
-    }
-
-    createButtons(px, py, pw, ph, smaller) {
-        const btnY = py + ph / 2 - 55;
-        const btnFs = Math.max(13, Math.min(16, smaller * 0.02)) + 'px';
-        const btnW = Math.max(130, Math.min(180, pw * 0.35));
-        const btnH = Math.max(40, Math.min(48, smaller * 0.06));
-
-        // Enter button
-        const enterX = px - btnW / 2 - 8;
+        // Enter
+        const enterX = px - btnW/2 - 8;
         this.enterBtnBg = this.scene.add.graphics();
         this.enterBtnBg.fillStyle(0x555555, 0.9);
         this.enterBtnBg.fillRoundedRect(enterX, btnY, btnW, btnH, 10);
         this.enterBtnBg.lineStyle(2, 0x777777, 0.7);
         this.enterBtnBg.strokeRoundedRect(enterX, btnY, btnW, btnH, 10);
         this.container.add(this.enterBtnBg);
-
-        this.enterBtnText = this.scene.add.text(enterX + btnW / 2, btnY + btnH / 2, '🔒 Tergunci', {
-            fontSize: btnFs,
-            fontFamily: 'Arial',
-            color: '#999999',
-            fontStyle: 'bold'
+        this.enterBtnText = this.scene.add.text(enterX + btnW/2, btnY + btnH/2, '🔒 Tergunci', {
+            fontSize: btnFs + 'px', fontFamily: 'Arial', color: '#999999', fontStyle: 'bold'
         }).setOrigin(0.5);
         this.container.add(this.enterBtnText);
-
-        const enterHit = this.scene.add.rectangle(enterX + btnW / 2, btnY + btnH / 2, btnW + 20, btnH + 20, 0x000000, 0)
+        const enterHit = this.scene.add.rectangle(enterX + btnW/2, btnY + btnH/2, btnW + 20, btnH + 20, 0, 0)
             .setInteractive({ useHandCursor: true }).setDepth(501).setScrollFactor(0);
-        enterHit.on('pointerdown', (ptr) => {
-            if (this.selectedArea && this.selectedArea.status === 'unlocked') {
-                this.enterArea(this.selectedArea);
-            }
+        enterHit.on('pointerdown', () => {
+            if (this.selectedArea?.status === 'unlocked') this.enterArea(this.selectedArea);
         });
         this.container.add(enterHit);
 
-        // Back button
+        // Back
         const backX = px + 8;
         const backBg = this.scene.add.graphics();
         backBg.fillStyle(0x8b3a0a, 0.9);
@@ -181,34 +120,31 @@ class PortalUI {
         backBg.lineStyle(2, 0xc9a84c, 0.7);
         backBg.strokeRoundedRect(backX, btnY, btnW, btnH, 10);
         this.container.add(backBg);
-
-        this.container.add(this.scene.add.text(backX + btnW / 2, btnY + btnH / 2, '⬅ Kembali', {
-            fontSize: btnFs,
-            fontFamily: 'Arial',
-            color: '#ffd700',
-            fontStyle: 'bold'
+        this.container.add(this.scene.add.text(backX + btnW/2, btnY + btnH/2, '⬅ Kembali', {
+            fontSize: btnFs + 'px', fontFamily: 'Arial', color: '#ffd700', fontStyle: 'bold'
         }).setOrigin(0.5));
-
-        const backHit = this.scene.add.rectangle(backX + btnW / 2, btnY + btnH / 2, btnW + 20, btnH + 20, 0x000000, 0)
+        const backHit = this.scene.add.rectangle(backX + btnW/2, btnY + btnH/2, btnW + 20, btnH + 20, 0, 0)
             .setInteractive({ useHandCursor: true }).setDepth(501).setScrollFactor(0);
         backHit.on('pointerdown', () => this.close());
         this.container.add(backHit);
     }
 
-    updateEnterButton(isUnlocked) {
-        if (this.enterBtnBg) {
-            this.enterBtnBg.clear();
-            this.enterBtnBg.fillStyle(isUnlocked ? 0x228833 : 0x555555, 0.9);
-            const w = Math.max(130, Math.min(180, 600 * 0.35));
-            const h = 44;
-            this.enterBtnBg.fillRoundedRect(0, 0, w, h, 10);
-            this.enterBtnBg.lineStyle(2, isUnlocked ? 0x44cc44 : 0x777777, 0.7);
-            this.enterBtnBg.strokeRoundedRect(0, 0, w, h, 10);
-        }
-        if (this.enterBtnText) {
-            this.enterBtnText.setText(isUnlocked ? '⚔ Masuk Area' : '🔒 Tergunci');
-            this.enterBtnText.setColor(isUnlocked ? '#ffffff' : '#999999');
-        }
+    showAreaDetail(area, px, py, pw, ph) {
+        if (this._detailContainer) { this._detailContainer.destroy(); this._detailContainer = null; }
+        const isUnlocked = area.status === 'unlocked';
+        const dw = pw - 32;
+        const dh = 85;
+        this._detailContainer = this.scene.add.container(0, 0);
+        this.container.add(this._detailContainer);
+        const dBg = this.scene.add.graphics();
+        dBg.fillStyle(0x1a0a00, 0.8); dBg.fillRoundedRect(px - dw/2, py + ph/2 - 160, dw, dh, 8);
+        dBg.lineStyle(2, isUnlocked ? 0x44cc44 : 0x882222, 0.6);
+        dBg.strokeRoundedRect(px - dw/2, py + ph/2 - 160, dw, dh, 8);
+        this._detailContainer.add(dBg);
+        this._detailContainer.add(this.scene.add.text(px - dw/2 + 12, py + ph/2 - 150,
+            area.icon + ' ' + area.name + '\nLevel: ' + area.levelRequired + ' · ' + (isUnlocked ? 'Terbuka' : 'Tergunci') + '\n' + (area.description || ''), {
+            fontSize: this.rl.fontSize(11) + 'px', fontFamily: 'Arial', color: isUnlocked ? '#d4c4a0' : '#777', lineSpacing: 4
+        }));
     }
 
     enterArea(area) {
@@ -218,14 +154,8 @@ class PortalUI {
 
     close() {
         if (this.container) {
-            this.scene.tweens.add({
-                targets: this.container,
-                alpha: 0,
-                duration: 200,
-                onComplete: () => {
-                    this.destroy();
-                    this.onBack();
-                }
+            this.scene.tweens.add({ targets: this.container, alpha: 0, duration: 200,
+                onComplete: () => { this.destroy(); this.onBack(); }
             });
         }
     }

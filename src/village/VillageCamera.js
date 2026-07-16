@@ -1,14 +1,14 @@
 /**
- * VillageCamera - Camera system for Village Mode.
+ * VillageCamera — camera for Village Mode.
  * Drag to pan, scroll/pinch to zoom.
- * Camera has bounds and cannot leave the map.
- * Responsive: zoom adapts to screen size.
+ * Zoom adapts to screen size via ResponsiveLayout.
  */
 class VillageCamera {
     constructor(scene, villageMap) {
         this.scene = scene;
         this.map = villageMap;
         this.camera = scene.cameras.main;
+        this.rl = new ResponsiveLayout(scene);
 
         this.PX_W = this.map.MAP_W * this.map.TILE;
         this.PX_H = this.map.MAP_H * this.map.TILE;
@@ -18,35 +18,26 @@ class VillageCamera {
         this.dragStartY = 0;
         this.camStartX = 0;
         this.camStartY = 0;
-
         this.lastPinchDist = 0;
         this.isPinching = false;
     }
 
     init() {
-        const w = this.camera.width;
-        const h = this.camera.height;
-        this.isPortrait = h > w;
+        this.rl.recalculate();
+        const { w, h, isPortrait } = this.rl;
+        const S = this.map.TILE;
 
         this.camera.setBounds(0, 0, this.PX_W, this.PX_H);
 
-        // Center on village center (building area)
-        const villageCenterX = 48 * this.map.TILE;
-        const villageCenterY = 48 * this.map.TILE;
-        this.camera.scrollX = villageCenterX - w / 2;
-        this.camera.scrollY = villageCenterY - h / 2;
+        // Center on village center
+        const cx = 48 * S;
+        const cy = 48 * S;
+        this.camera.scrollX = cx - w / 2;
+        this.camera.scrollY = cy - h / 2;
 
-        // Initial zoom: show the village nicely
-        // For portrait: show about 30 tiles wide
-        // For landscape: show about 40 tiles wide
-        const tileW = this.map.TILE;
-        if (this.isPortrait) {
-            const tilesVisible = Math.max(25, Math.min(40, w / 16));
-            this.camera.setZoom(w / (tilesVisible * tileW));
-        } else {
-            const tilesVisible = Math.max(30, Math.min(55, w / 16));
-            this.camera.setZoom(w / (tilesVisible * tileW));
-        }
+        // Zoom: show enough tiles to see the village layout
+        const targetTiles = isPortrait ? Math.max(20, Math.min(35, w / 20)) : Math.max(25, Math.min(50, w / 20));
+        this.camera.setZoom(w / (targetTiles * S));
 
         this.clampScroll();
         this.setupInput();
@@ -56,36 +47,24 @@ class VillageCamera {
         this.scene.input.on('pointerdown', (p) => this.onDragStart(p));
         this.scene.input.on('pointermove', (p) => this.onDragMove(p));
         this.scene.input.on('pointerup', () => this.onDragEnd());
-
-        // Zoom (scroll)
         this.scene.input.on('wheel', (pointer, gameObjects, dx, dy) => {
             const newZoom = Phaser.Math.Clamp(this.camera.zoom - dy * 0.001, 0.4, 3);
             this.camera.zoom = newZoom;
         });
-
-        // Pinch zoom (mobile)
         this.scene.input.on('pointermove', (p) => {
             if (this.scene.input.pointer1.isDown && this.scene.input.pointer2.isDown) {
                 const d = Phaser.Math.Distance.Between(
                     this.scene.input.pointer1.x, this.scene.input.pointer1.y,
-                    this.scene.input.pointer2.x, this.scene.input.pointer2.y
-                );
-                if (d > 30) {
-                    this.isPinching = true;
-                    this.isDragging = false;
-                }
+                    this.scene.input.pointer2.x, this.scene.input.pointer2.y);
+                if (d > 30) { this.isPinching = true; this.isDragging = false; }
                 if (this.isPinching && this.lastPinchDist > 0) {
                     const diff = d - this.lastPinchDist;
-                    const newZoom = Phaser.Math.Clamp(this.camera.zoom + diff * 0.005, 0.4, 3);
-                    this.camera.zoom = newZoom;
+                    this.camera.zoom = Phaser.Math.Clamp(this.camera.zoom + diff * 0.005, 0.4, 3);
                 }
                 this.lastPinchDist = d;
             }
         });
-        this.scene.input.on('pointerup', () => {
-            this.lastPinchDist = 0;
-            this.isPinching = false;
-        });
+        this.scene.input.on('pointerup', () => { this.lastPinchDist = 0; this.isPinching = false; });
     }
 
     onDragStart(ptr) {
@@ -100,15 +79,11 @@ class VillageCamera {
     onDragMove(ptr) {
         if (!this.isDragging || this.isPinching) return;
         const zoom = this.camera.zoom;
-        const dx = (this.dragStartX - ptr.x) / zoom;
-        const dy = (this.dragStartY - ptr.y) / zoom;
-        this.camera.scrollX = Phaser.Math.Clamp(this.camStartX + dx, 0, this.PX_W - this.camera.width / zoom);
-        this.camera.scrollY = Phaser.Math.Clamp(this.camStartY + dy, 0, this.PX_H - this.camera.height / zoom);
+        this.camera.scrollX = Phaser.Math.Clamp(this.camStartX + (this.dragStartX - ptr.x) / zoom, 0, this.PX_W - this.camera.width / zoom);
+        this.camera.scrollY = Phaser.Math.Clamp(this.camStartY + (this.dragStartY - ptr.y) / zoom, 0, this.PX_H - this.camera.height / zoom);
     }
 
-    onDragEnd() {
-        this.isDragging = false;
-    }
+    onDragEnd() { this.isDragging = false; }
 
     clampScroll() {
         const zoom = this.camera.zoom || 1;
@@ -119,15 +94,11 @@ class VillageCamera {
     }
 
     onResize(w, h) {
-        this.isPortrait = h > w;
-        const tileW = this.map.TILE;
-        if (this.isPortrait) {
-            const tilesVisible = Math.max(25, Math.min(40, w / 16));
-            this.camera.setZoom(w / (tilesVisible * tileW));
-        } else {
-            const tilesVisible = Math.max(30, Math.min(55, w / 16));
-            this.camera.setZoom(w / (tilesVisible * tileW));
-        }
+        this.rl.recalculate();
+        const S = this.map.TILE;
+        const isPortrait = h > w;
+        const targetTiles = isPortrait ? Math.max(20, Math.min(35, w / 20)) : Math.max(25, Math.min(50, w / 20));
+        this.camera.setZoom(w / (targetTiles * S));
         this.clampScroll();
     }
 }

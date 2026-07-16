@@ -176,7 +176,7 @@ class RewardPopup {
 
         // Text
         const text = this.scene.add.text(0, -10, '✨ LEVEL UP! ✨', {
-            fontSize: '24px',
+            fontSize: (typeof rl !== 'undefined' ? rl.fontSize(22) : 22) + 'px',
             fontFamily: 'Georgia, serif',
             color: '#ffdd00',
             fontStyle: 'bold',

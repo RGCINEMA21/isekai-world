@@ -56,10 +56,11 @@ class NPCInteraction {
     _showNotification(msg) {
         const w = this.scene.cameras.main.width;
         const h = this.scene.cameras.main.height;
+        const rl = new ResponsiveLayout(this.scene);
 
         const notif = this.scene.add.container(w / 2, h * 0.85).setDepth(500).setScrollFactor(0).setAlpha(0);
 
-        const fs = Math.max(11, Math.min(14, w * 0.014)) + 'px';
+        const fs = rl.fontSize(13) + 'px';
         const tw = this.scene.add.text(0, 0, msg, {
             fontSize: fs, fontFamily: 'Arial, sans-serif',
             color: '#ffffff', fontStyle: 'bold',

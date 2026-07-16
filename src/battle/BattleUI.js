@@ -29,10 +29,12 @@ class BattleUI {
     _createPlayerHpBar() {
         const w = this.scene.cameras.main.width;
         const isPortrait = this.scene.cameras.main.height > w;
-        const barW = isPortrait ? w * 0.5 : 200;
-        const barH = 14;
+        const rl = new ResponsiveLayout(this.scene);
+        const barW = isPortrait ? Math.round(w * 0.55) : Math.min(220, Math.round(w * 0.2));
+        const barH = Math.max(12, Math.min(18, Math.round(rl.smaller * 0.022)));
         const barX = 12;
-        const barY = isPortrait ? 110 : 145;
+        const h = this.scene.cameras.main.height;
+        const barY = isPortrait ? Math.round(h * 0.12) : Math.round(h * 0.2);
 
         // Label
         this.container.add(this.scene.add.text(barX, barY - 14, '❤️ HP', {
@@ -79,11 +81,13 @@ class BattleUI {
         this.hideMonsterInfo();
 
         const w = this.scene.cameras.main.width;
-        const isPortrait = this.scene.cameras.main.height > w;
-        const barW = isPortrait ? w * 0.5 : 200;
-        const barH = 14;
+        const h = this.scene.cameras.main.height;
+        const isPortrait = h > w;
+        const rl = new ResponsiveLayout(this.scene);
+        const barW = isPortrait ? Math.round(w * 0.55) : Math.min(220, Math.round(w * 0.2));
+        const barH = Math.max(12, Math.min(18, Math.round(rl.smaller * 0.022)));
         const barX = w - barW - 12;
-        const barY = isPortrait ? 110 : 145;
+        const barY = isPortrait ? Math.round(h * 0.12) : Math.round(h * 0.2);
 
         this.monsterContainer = this.scene.add.container(0, 0).setDepth(100).setScrollFactor(0);
 

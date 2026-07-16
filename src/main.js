@@ -1,16 +1,22 @@
 /**
  * ISEKAI WORLD - Main Configuration
- * Responsive: auto-detect portrait/landscape, adjusts viewport & UI.
+ * Uses Phaser.Scale.RESIZE for automatic screen adaptation.
+ * All scenes must listen to this.scale.on('resize') to rebuild their UI.
  */
 
 const config = {
     type: Phaser.AUTO,
-    width: window.innerWidth,
-    height: window.innerHeight,
     parent: 'game-container',
     scale: {
         mode: Phaser.Scale.RESIZE,
-        autoCenter: Phaser.Scale.CENTER_BOTH
+        width: '100%',
+        height: '100%',
+        autoCenter: Phaser.Scale.CENTER_BOTH,
+        min: { width: 300, height: 400 },
+        max: { width: 2560, height: 1440 }
+    },
+    input: {
+        activePointers: 3
     },
     physics: {
         default: 'arcade',
@@ -26,9 +32,7 @@ const config = {
 
 const game = new Phaser.Game(config);
 
-// Resize handler
-window.addEventListener('resize', () => {
-    game.scale.resize(window.innerWidth, window.innerHeight);
-});
+// No manual resize handler needed — Phaser.Scale.RESIZE handles it automatically.
+// Scenes should listen: this.scale.on('resize', (sz) => this.onResize(sz));
 
-console.log('[Isekai World] Game initialized. Responsive enabled.');
+console.log('[Isekai World] Game initialized. Scale mode: RESIZE.');

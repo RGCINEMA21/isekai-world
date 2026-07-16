@@ -294,12 +294,15 @@ class MonsterAreaScene extends Phaser.Scene {
     onResize(sz) {
         if (this.areaCamera) this.areaCamera.onResize(sz.width, sz.height);
         if (this.player) this.player.onResize();
-        if (this.areaUI) {
-            this.areaUI.create(
-                () => this._exitArea(),
-                () => this._showNotif('Inventory tersedia setelah sistem selesai.')
-            );
-        }
+        // Delay UI rebuild slightly to let camera settle
+        this.time.delayedCall(50, () => {
+            if (this.areaUI) {
+                this.areaUI.create(
+                    () => this._exitArea(),
+                    () => this._showNotif('Inventory tersedia setelah sistem selesai.')
+                );
+            }
+        });
     }
 
     shutdown() {

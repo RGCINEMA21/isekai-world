@@ -21,6 +21,14 @@ class HomeScene extends Phaser.Scene {
         this.createUI(w, h);
 
         this.cameras.main.fadeIn(500, 0, 0, 0);
+
+        // Handle resize
+        this.scale.on('resize', (sz) => this.onResize(sz));
+    }
+
+    onResize(sz) {
+        // Redraw everything for new dimensions
+        this.scene.restart();
     }
 
     /* =============================================

@@ -30,7 +30,7 @@ class VillageNPC {
         this.bobOffset = 0;
 
         // Interactive
-        this.hitArea = scene.add.rectangle(this.worldX, this.worldY, tileSize * 2.5, tileSize * 3, 0x000000, 0)
+        this.hitArea = scene.add.rectangle(this.worldX, this.worldY, tileSize * 4, tileSize * 5, 0x000000, 0)
             .setInteractive({ useHandCursor: true }).setDepth(16);
 
         this.hitArea.on('pointerdown', (pointer, localX, localY, event) => {
@@ -52,10 +52,12 @@ class VillageNPC {
 
     showNameTag() {
         if (this.nameTag) this.nameTag.destroy();
-        this.nameTag = this.scene.add.text(this.worldX, this.worldY - 28, this.name, {
-            fontSize: '9px', fontFamily: 'Arial', color: '#ffffff',
-            stroke: '#000000', strokeThickness: 2,
-            backgroundColor: '#00000088', padding: { x: 4, y: 2 }
+        const smaller = Math.min(this.scene.cameras.main.width, this.scene.cameras.main.height);
+        const fs = Math.max(10, Math.round(smaller * 0.016));
+        this.nameTag = this.scene.add.text(this.worldX, this.worldY - 32, this.name, {
+            fontSize: fs + 'px', fontFamily: 'Arial', color: '#ffffff',
+            stroke: '#000000', strokeThickness: 3,
+            backgroundColor: '#000000cc', padding: { x: 6, y: 3 }
         }).setOrigin(0.5).setDepth(20);
     }
 

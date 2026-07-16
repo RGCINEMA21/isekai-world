@@ -125,5 +125,6 @@ class PortalScene extends Phaser.Scene {
 
     shutdown() {
         this.saveGame();
+        if (this.portalUI) { this.portalUI.destroy(); this.portalUI = null; }
     }
 }

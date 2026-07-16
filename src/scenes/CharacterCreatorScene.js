@@ -19,8 +19,9 @@ class CharacterCreatorScene extends Phaser.Scene {
      *  HELPER - Responsive sizing
      * ============================================= */
     sz(base) {
-        const smaller = Math.min(this.cameras.main.width, this.cameras.main.height);
-        return Math.max(10, Math.round(base * (smaller / 800)));
+        if (!this._rl) this._rl = new ResponsiveLayout(this);
+        this._rl.recalculate();
+        return this._rl.fontSize(base);
     }
 
     /* =============================================
