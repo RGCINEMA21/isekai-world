@@ -1,3 +1,0 @@
-# ISEKAI WORLD
-
-Starting fresh.

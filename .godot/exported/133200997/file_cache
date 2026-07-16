@@ -1,0 +1,8 @@
+res://scenes/boot/boot.tscn::1402aaaab76cdbf6524c6936fcf55605::1784212218::res://.godot/exported/133200997/export-b9a7aa257e6e7f4363cf6ab9707171b0-boot.scn
+res://scenes/character_creation/character_creation.tscn::44ebca573b180b80b37b55f69d373384::1784212218::res://.godot/exported/133200997/export-bb8be2ee7575e93896d5677a4f82f503-character_creation.scn
+res://scenes/loading/loading.tscn::b957ce0f9c3433ff7e00e3300a82fd72::1784212218::res://.godot/exported/133200997/export-ab332e742164a3dd78d985f72f45e6a3-loading.scn
+res://scenes/main_menu/main_menu.tscn::59294035264fbd69f31d8f14623d6b8c::1784212218::res://.godot/exported/133200997/export-c06f25764a06ba9f0130370d778d1eac-main_menu.scn
+res://scenes/main_village/main_village.tscn::aad785cf0c6b3893b95dccef55405414::1784212218::res://.godot/exported/133200997/export-2b79e49de125b81ef9ae98dbca0b43a6-main_village.scn
+res://scenes/monster_area/monster_area.tscn::2b211249c6c69d3eb996c940a6879122::1784212218::res://.godot/exported/133200997/export-3c4c1442bac675846c6ecb10960aefb0-monster_area.scn
+res://scenes/npc_quest_area/npc_quest_area.tscn::985fc7abdcba2ab2b8d0c6f6329ea7e8::1784212218::res://.godot/exported/133200997/export-f91869f4d7e86498066b4e0cfb32e358-npc_quest_area.scn
+res://scenes/settings/settings.tscn::5cd8c7caa68c4f1951488efae2bf95cb::1784212218::res://.godot/exported/133200997/export-e0fb1a9c00c7028e9562082854a4cb30-settings.scn
