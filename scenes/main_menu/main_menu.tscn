@@ -1,4 +1,4 @@
-[gd_scene load_steps=3 format=3 uid="uid://menu001"]
+[gd_scene load_steps=2 format=3]
 
 [ext_resource type="Script" path="res://scripts/main_menu/main_menu.gd" id="1"]
 
@@ -18,7 +18,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.08, 0.06, 0.18, 1)
+color = Color(0.08, 0.06, 0.15, 1)
 
 [node name="VBox" type="VBoxContainer" parent="."]
 layout_mode = 1
@@ -27,10 +27,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -150.0
-offset_top = -180.0
-offset_right = 150.0
-offset_bottom = 180.0
+offset_left = -160.0
+offset_top = -200.0
+offset_right = 160.0
+offset_bottom = 200.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 16
@@ -39,60 +39,49 @@ theme_override_constants/separation = 16
 layout_mode = 2
 text = "ISEKAI WORLD"
 horizontal_alignment = 1
-theme_override_font_sizes/font_size = 40
+theme_override_font_sizes/font_size = 42
+
+[node name="Subtitle" type="Label" parent="VBox"]
+layout_mode = 2
+text = "Pixel RPG Adventure"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.6, 0.6, 0.7, 1)
 
 [node name="Spacer" type="Control" parent="VBox"]
+custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
-custom_minimum_size = Vector2(0, 20)
 
 [node name="NewGameButton" type="Button" parent="VBox"]
+custom_minimum_size = Vector2(280, 50)
 layout_mode = 2
-custom_minimum_size = Vector2(250, 50)
 text = "New Game"
 theme_override_font_sizes/font_size = 20
 
 [node name="ContinueButton" type="Button" parent="VBox"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(280, 50)
 layout_mode = 2
-custom_minimum_size = Vector2(250, 50)
 text = "Continue"
 theme_override_font_sizes/font_size = 20
 
 [node name="SettingsButton" type="Button" parent="VBox"]
+custom_minimum_size = Vector2(280, 50)
 layout_mode = 2
-custom_minimum_size = Vector2(250, 50)
 text = "Settings"
 theme_override_font_sizes/font_size = 20
 
 [node name="CreditsButton" type="Button" parent="VBox"]
+custom_minimum_size = Vector2(280, 50)
 layout_mode = 2
-custom_minimum_size = Vector2(250, 50)
 text = "Credits"
 theme_override_font_sizes/font_size = 20
 
 [node name="ExitButton" type="Button" parent="VBox"]
+custom_minimum_size = Vector2(280, 50)
 layout_mode = 2
-custom_minimum_size = Vector2(250, 50)
 text = "Exit"
 theme_override_font_sizes/font_size = 20
-
-[node name="Version" type="Label" parent="."]
-layout_mode = 1
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -120.0
-offset_top = -30.0
-offset_right = -10.0
-offset_bottom = -10.0
-grow_horizontal = 0
-grow_vertical = 0
-text = "v0.0.1"
-horizontal_alignment = 2
-theme_override_font_sizes/font_size = 14
-theme_override_colors/font_color = Color(0.5, 0.5, 0.5, 1)
 
 [connection signal="pressed" from="VBox/NewGameButton" to="." method="_on_new_game_pressed"]
 [connection signal="pressed" from="VBox/ContinueButton" to="." method="_on_continue_pressed"]

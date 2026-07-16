@@ -1,12 +1,12 @@
 ## SaveManager - Manajer penyimpanan data game
-## Mengelola save/load menggunakan LocalStorage via file JSON di Godot.
+## Mengelola save/load menggunakan file JSON di direktori user Godot.
 extends Node
 
 ## Path file save
-const SAVE_PATH := "user://save_game.json"
+const SAVE_PATH: String = "user://save_game.json"
 
-## Path default save (untuk reset)
-const DEFAULT_SAVE := {
+## Data save default
+var DEFAULT_SAVE: Dictionary = {
 	"player": {
 		"name": "",
 		"gender": "male",
@@ -41,24 +41,23 @@ const DEFAULT_SAVE := {
 		"volume_music": 0.7,
 		"volume_sfx": 0.8,
 		"language": "id",
-	}
+	},
 }
 
 ## Data save aktif
 var current_data: Dictionary = {}
 
 
-## Dipanggil saat node masuk tree
 func _ready() -> void:
 	print("[SaveManager] Initialized")
 
 
-## Cek apakah save file ada
+## Cek apakah file save ada
 func has_save() -> bool:
 	return FileAccess.file_exists(SAVE_PATH)
 
 
-## Load data dari file
+## Load data dari file JSON
 func load_save() -> Dictionary:
 	if not has_save():
 		current_data = DEFAULT_SAVE.duplicate(true)
@@ -66,30 +65,33 @@ func load_save() -> Dictionary:
 	
 	var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
 	if file == null:
-		push_error("[SaveManager] Failed to open save file")
+		push_warning("[SaveManager] Failed to open save file")
 		current_data = DEFAULT_SAVE.duplicate(true)
 		return current_data
 	
-	var json_string := file.get_as_text()
+	var json_text := file.get_as_text()
 	file.close()
 	
 	var json := JSON.new()
-	var error := json.parse(json_string)
+	var error := json.parse(json_text)
 	if error != OK:
-		push_error("[SaveManager] Failed to parse save file")
+		push_warning("[SaveManager] Failed to parse save JSON")
 		current_data = DEFAULT_SAVE.duplicate(true)
 		return current_data
 	
-	current_data = json.data
-	print("[SaveManager] Save loaded successfully")
+	current_data = json.data as Dictionary
+	if current_data.is_empty():
+		current_data = DEFAULT_SAVE.duplicate(true)
+	
+	print("[SaveManager] Save loaded")
 	return current_data
 
 
-## Simpan data ke file
+## Simpan data ke file JSON
 func save_game() -> void:
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if file == null:
-		push_error("[SaveManager] Failed to open save file for writing")
+		push_warning("[SaveManager] Failed to open save file for writing")
 		return
 	
 	file.store_string(JSON.stringify(current_data, "\t"))
@@ -97,28 +99,23 @@ func save_game() -> void:
 	print("[SaveManager] Game saved")
 
 
-## Simpan data spesifik
-func save_data(key: String, value: Variant) -> void:
-	current_data[key] = value
+## Simpan data spesifik berdasarkan key
+func save_data(key: String, data: Dictionary) -> void:
+	current_data[key] = data
 	save_game()
 
 
-## Ambil data spesifik dengan default
-func get_data(key: String, default: Variant = null) -> Variant:
-	return current_data.get(key, default)
+## Ambil data spesifik berdasarkan key
+func get_data(key: String, default_value: Variant = null) -> Variant:
+	if current_data.has(key):
+		return current_data[key]
+	return default_value
 
 
 ## Reset save ke default
 func reset_save() -> void:
 	current_data = DEFAULT_SAVE.duplicate(true)
-	current_data["progress"]["created_at"] = Time.get_datetime_string_from_system()
-	save_game()
-	print("[SaveManager] Save reset to defaults")
-
-
-## Hapus file save
-func delete_save() -> void:
 	if has_save():
 		DirAccess.remove_absolute(SAVE_PATH)
 		print("[SaveManager] Save file deleted")
-	current_data = {}
+	print("[SaveManager] Save reset to default")

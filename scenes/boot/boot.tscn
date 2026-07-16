@@ -1,9 +1,6 @@
-[gd_scene load_steps=3 format=3 uid="uid://boot001"]
+[gd_scene load_steps=2 format=3]
 
 [ext_resource type="Script" path="res://scripts/boot/boot.gd" id="1"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bg"]
-bg_color = Color(0.1, 0.08, 0.15, 1)
 
 [node name="Boot" type="Control"]
 layout_mode = 3

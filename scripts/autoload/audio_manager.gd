@@ -11,7 +11,6 @@ var is_muted: bool = false
 var bgm_player: AudioStreamPlayer
 
 
-## Dipanggil saat node masuk tree
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_setup_bgm_player()
@@ -29,8 +28,8 @@ func _setup_bgm_player() -> void:
 ## Load settingan audio dari save
 func _load_settings() -> void:
 	var settings: Dictionary = SaveManager.get_data("settings", {})
-	volume_music = settings.get("volume_music", 0.7)
-	volume_sfx = settings.get("volume_sfx", 0.8)
+	volume_music = float(settings.get("volume_music", 0.7))
+	volume_sfx = float(settings.get("volume_sfx", 0.8))
 	_apply_volumes()
 
 

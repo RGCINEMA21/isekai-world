@@ -14,8 +14,10 @@ var is_new_game: bool = false
 ## Data sesi game saat ini
 var session_data: Dictionary = {}
 
+## Signal saat state berubah
+signal state_changed(old_state: GameState, new_state: GameState)
 
-## Dipanggil saat node masuk tree
+
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	print("[GameManager] Initialized")
@@ -57,7 +59,3 @@ func return_to_menu() -> void:
 func quit_game() -> void:
 	SaveManager.save_game()
 	get_tree().quit()
-
-
-## Signal yang dipancarkan saat state berubah
-signal state_changed(old_state: GameState, new_state: GameState)

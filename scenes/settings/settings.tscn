@@ -1,4 +1,4 @@
-[gd_scene load_steps=3 format=3 uid="uid://set001"]
+[gd_scene load_steps=2 format=3]
 
 [ext_resource type="Script" path="res://scripts/settings/settings.gd" id="1"]
 
@@ -83,14 +83,14 @@ popup/item_0 = "Indonesia"
 popup/item_1 = "English"
 
 [node name="ResetButton" type="Button" parent="VBox"]
-layout_mode = 2
 custom_minimum_size = Vector2(250, 50)
+layout_mode = 2
 text = "Reset Save"
 theme_override_font_sizes/font_size = 18
 
 [node name="BackButton" type="Button" parent="VBox"]
-layout_mode = 2
 custom_minimum_size = Vector2(250, 50)
+layout_mode = 2
 text = "Kembali"
 theme_override_font_sizes/font_size = 18
 

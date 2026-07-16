@@ -1,5 +1,5 @@
 ## SceneManager - Manajer transisi scene
-## Mengelola perpindahan antar scene dengan transisi.
+## Mengelola perpindahan antar scene dengan transisi fade.
 extends Node
 
 ## Daftar path scene
@@ -25,7 +25,6 @@ var color_rect: ColorRect
 var is_transitioning: bool = false
 
 
-## Dipanggil saat node masuk tree
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_setup_transition_layer()

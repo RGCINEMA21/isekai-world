@@ -17,7 +17,8 @@ func _load_current_settings() -> void:
 	sfx_slider.value = AudioManager.volume_sfx
 	
 	# Set bahasa
-	match SaveManager.get_data("settings", {}).get("language", "id"):
+	var lang: String = SaveManager.get_data("settings", {}).get("language", "id")
+	match lang:
 		"id":
 			language_option.selected = 0
 		"en":
@@ -36,7 +37,8 @@ func _on_sfx_slider_value_changed(value: float) -> void:
 
 ## Bahasa berubah
 func _on_language_option_item_selected(index: int) -> void:
-	var lang := ["id", "en"][index]
+	var langs := ["id", "en"]
+	var lang: String = langs[index]
 	var settings: Dictionary = SaveManager.get_data("settings", {})
 	settings["language"] = lang
 	SaveManager.save_data("settings", settings)

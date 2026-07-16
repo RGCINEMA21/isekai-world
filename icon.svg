@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128">
+  <rect width="128" height="128" rx="16" fill="#2a1f4e"/>
+  <text x="64" y="50" font-family="Arial" font-size="14" fill="#c0a0ff" text-anchor="middle" font-weight="bold">ISEKAI</text>
+  <text x="64" y="72" font-family="Arial" font-size="14" fill="#c0a0ff" text-anchor="middle" font-weight="bold">WORLD</text>
+  <text x="64" y="100" font-family="Arial" font-size="10" fill="#8060c0" text-anchor="middle">⚔ RPG ⚔</text>
+</svg>

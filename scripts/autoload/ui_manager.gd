@@ -2,11 +2,7 @@
 ## Mengelola popup, notifikasi, dan elemen UI yang selalu tampil.
 extends Node
 
-## Layer UI global
-var ui_layer: CanvasLayer
 
-
-## Dipanggil saat node masuk tree
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	print("[UIManager] Initialized")
@@ -30,9 +26,10 @@ func show_notification(message: String, duration: float = 2.0) -> void:
 	label.add_theme_constant_override("shadow_offset_y", 2)
 	layer.add_child(label)
 	
-	# Auto hide
+	# Auto hide setelah durasi
 	await get_tree().create_timer(duration).timeout
-	layer.queue_free()
+	if is_instance_valid(layer):
+		layer.queue_free()
 
 
 ## Tampilkan popup konfirmasi

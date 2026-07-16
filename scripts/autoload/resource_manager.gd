@@ -3,7 +3,6 @@
 extends Node
 
 
-## Dipanggil saat node masuk tree
 func _ready() -> void:
 	print("[ResourceManager] Initialized")
 
