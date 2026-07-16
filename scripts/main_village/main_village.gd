@@ -1,14 +1,12 @@
 ## MainVillage - Desa utama (placeholder)
-## Menampilkan info pemain dan DebugPanel untuk testing.
 extends Control
 
-var debug_panel: Control
+var debug_panel: Node
 
 
 func _ready() -> void:
 	print("[MainVillage] Opened")
 	
-	# Inisialisasi PlayerManager jika belum
 	if not PlayerManager.is_initialized:
 		PlayerManager.initialize()
 	
@@ -16,10 +14,9 @@ func _ready() -> void:
 	_setup_debug_panel()
 
 
-## Update info label
 func _update_info_label() -> void:
 	%InfoLabel.text = "Nama: %s | Lv.%d | HP: %d/%d | Gold: %d" % [
-		PlayerManager.get_name(),
+		PlayerManager.get_player_name(),
 		PlayerManager.get_level(),
 		PlayerManager.get_hp(),
 		PlayerManager.get_max_hp(),
@@ -27,17 +24,21 @@ func _update_info_label() -> void:
 	]
 
 
-## Setup debug panel
 func _setup_debug_panel() -> void:
-	debug_panel = preload("res://scripts/ui/debug_panel.gd").new()
+	var panel_script := load("res://scripts/ui/debug_panel.gd")
+	debug_panel = panel_script.new()
 	debug_panel.name = "DebugPanel"
 	add_child(debug_panel)
 	
-	# Hubungkan signal agar debug panel update otomatis
-	PlayerManager.hp_changed.connect(func(_c, _m): debug_panel._update_all())
-	PlayerManager.gold_changed.connect(func(_g): debug_panel._update_all())
-	PlayerManager.level_changed.connect(func(_l): debug_panel._update_all())
-	PlayerManager.energy_changed.connect(func(_e, _m): debug_panel._update_all())
+	PlayerManager.hp_changed.connect(func(_c, _m): _refresh_debug())
+	PlayerManager.gold_changed.connect(func(_g): _refresh_debug())
+	PlayerManager.level_changed.connect(func(_l): _refresh_debug())
+	PlayerManager.energy_changed.connect(func(_e, _m): _refresh_debug())
+
+
+func _refresh_debug() -> void:
+	if debug_panel and debug_panel.has_method("update_all"):
+		debug_panel.update_all()
 
 
 func _on_portal_monster_pressed() -> void:

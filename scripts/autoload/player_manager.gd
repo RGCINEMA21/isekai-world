@@ -38,7 +38,7 @@ func initialize() -> void:
 	_ensure_keys()
 	is_initialized = true
 	print("[PlayerManager] Data loaded - Lv.%d %s" % [
-		get_level(), get_name()
+		get_level(), get_player_name()
 	])
 
 
@@ -63,7 +63,7 @@ func save() -> void:
 ## ==================== IDENTITY ====================
 
 
-func get_name() -> String:
+func get_player_name() -> String:
 	return data.get("identity", {}).get("name", "???")
 
 

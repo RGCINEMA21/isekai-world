@@ -1,6 +1,6 @@
 ## DebugPanel - Panel debug untuk menampilkan data pemain
-## Toggle dengan tombol Tab atau tombol di layar.
-extends CanvasLayer
+## Toggle dengan tombol Tab.
+extends Control
 
 var panel: PanelContainer
 var labels: Dictionary = {}
@@ -8,34 +8,29 @@ var is_visible: bool = false
 
 
 func _ready() -> void:
-	layer = 50
 	_build_panel()
-	_update_all()
 	visible = false
 
 
 func _input(event: InputEvent) -> void:
-	# Toggle dengan tombol Tab
 	if event is InputEventKey and event.pressed:
 		if event.keycode == KEY_TAB:
 			toggle_panel()
 
 
-## Bangun panel debug
 func _build_panel() -> void:
 	panel = PanelContainer.new()
-	panel.name = "DebugPanel"
+	panel.name = "DebugPanelBox"
 	panel.offset_left = 10
 	panel.offset_top = 10
-	panel.offset_right = 260
-	panel.offset_bottom = 310
+	panel.offset_right = 280
+	panel.offset_bottom = 320
 	add_child(panel)
 	
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 4)
 	panel.add_child(vbox)
 	
-	# Title
 	var title := Label.new()
 	title.text = "== DEBUG PANEL =="
 	title.add_theme_font_size_override("font_size", 14)
@@ -44,7 +39,6 @@ func _build_panel() -> void:
 	
 	vbox.add_child(HSeparator.new())
 	
-	# Buat label untuk setiap data
 	_add_label(vbox, "name", "Name: -")
 	_add_label(vbox, "level", "Level: -")
 	_add_label(vbox, "hp", "HP: -")
@@ -58,7 +52,6 @@ func _build_panel() -> void:
 	_add_label(vbox, "location", "Location: -")
 
 
-## Helper: tambah label ke panel
 func _add_label(parent: Control, key: String, initial_text: String) -> void:
 	var label := Label.new()
 	label.name = key
@@ -68,20 +61,18 @@ func _add_label(parent: Control, key: String, initial_text: String) -> void:
 	labels[key] = label
 
 
-## Toggle visibility panel
 func toggle_panel() -> void:
 	is_visible = not is_visible
 	visible = is_visible
 	if is_visible:
-		_update_all()
+		update_all()
 
 
-## Update semua data
-func _update_all() -> void:
-	if not is_initialized():
+func update_all() -> void:
+	if not PlayerManager.is_initialized:
 		return
 	
-	_set_text("name", "Name: %s" % PlayerManager.get_name())
+	_set_text("name", "Name: %s" % PlayerManager.get_player_name())
 	_set_text("level", "Level: %d (EXP: %d/%d)" % [
 		PlayerManager.get_level(),
 		PlayerManager.get_exp(),
@@ -108,7 +99,3 @@ func _update_all() -> void:
 func _set_text(key: String, text: String) -> void:
 	if labels.has(key):
 		labels[key].text = text
-
-
-func is_initialized() -> bool:
-	return PlayerManager.is_initialized
