@@ -1,6 +1,5 @@
 /**
- * MainMenuScene — simple, clear main menu.
- * Title centered, buttons below. All sizes from ResponsiveLayout.
+ * MainMenuScene — main menu with clearly visible buttons.
  */
 class MainMenuScene extends Phaser.Scene {
     constructor() { super({ key: 'MainMenuScene' }); }
@@ -8,33 +7,24 @@ class MainMenuScene extends Phaser.Scene {
     create() {
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
+        console.log('[MainMenu] create() w=' + w + ' h=' + h);
 
-        // Background gradient
+        // Dark gradient background
         const bg = this.add.graphics();
-        for (let i = 0; i < h; i++) {
-            const t = i / h;
-            const r = Math.floor(10 + Math.sin(t * 3) * 30);
-            const g = Math.floor(10 + Math.sin(t * 2) * 15);
-            const b = Math.floor(35 + Math.sin(t * 4) * 25);
-            bg.fillStyle(Phaser.Display.Color.GetColor(r, g, b), 1);
-            bg.fillRect(0, i, w, 1);
-        }
-
+        bg.fillStyle(0x0d0d2a, 1);
+        bg.fillRect(0, 0, w, h);
         // Stars
-        for (let i = 0; i < 60; i++) {
-            bg.fillStyle(0xffffff, Phaser.Math.FloatBetween(0.3, 1));
-            bg.fillRect(Phaser.Math.Between(0, w), Phaser.Math.Between(0, h * 0.7), 2, 2);
+        for (let i = 0; i < 50; i++) {
+            bg.fillStyle(0xffffff, Phaser.Math.FloatBetween(0.3, 0.9));
+            bg.fillRect(Phaser.Math.Between(0, w), Phaser.Math.Between(0, h * 0.6), 2, 2);
         }
-
-        // Portal glow center
-        bg.fillStyle(0x6633aa, 0.08);
-        bg.fillCircle(w / 2, h * 0.35, Math.min(w, h) * 0.25);
-        bg.fillStyle(0xaa44ff, 0.05);
-        bg.fillCircle(w / 2, h * 0.35, Math.min(w, h) * 0.15);
+        // Portal glow
+        bg.fillStyle(0x5533aa, 0.06);
+        bg.fillCircle(w / 2, h * 0.3, Math.min(w, h) * 0.2);
 
         // === TITLE ===
-        const titleFs = Math.max(28, Math.round(Math.min(w, h) * 0.075));
-        this.add.text(w / 2, h * 0.15, 'ISEKAI WORLD', {
+        const titleFs = Math.max(32, Math.min(72, Math.round(Math.min(w, h) * 0.08)));
+        this.add.text(w / 2, h * 0.12, 'ISEKAI WORLD', {
             fontSize: titleFs + 'px',
             fontFamily: 'Arial, sans-serif',
             color: '#ffffff',
@@ -43,128 +33,121 @@ class MainMenuScene extends Phaser.Scene {
             strokeThickness: 6
         }).setOrigin(0.5);
 
-        // Subtitle
-        this.add.text(w / 2, h * 0.15 + titleFs * 0.8, 'v0.0.1', {
-            fontSize: Math.max(12, Math.round(titleFs * 0.3)) + 'px',
-            fontFamily: 'Arial, sans-serif',
+        this.add.text(w / 2, h * 0.12 + titleFs * 0.85, 'v0.0.1', {
+            fontSize: Math.max(14, Math.round(titleFs * 0.28)) + 'px',
+            fontFamily: 'Arial',
             color: '#bbaadd'
         }).setOrigin(0.5);
 
         // === BUTTONS ===
         const buttons = [
-            { label: '▶  New Game',   action: 'newGame',  enabled: true },
-            { label: '▶  Continue',   action: 'continue', enabled: !!localStorage.getItem('isekai_world_save') },
-            { label: '⚙  Settings',   action: 'settings', enabled: true },
-            { label: '✕  Exit',       action: 'exit',     enabled: true }
+            { label: 'NEW GAME',   icon: '▶', action: 'newGame',  enabled: true },
+            { label: 'CONTINUE',   icon: '▶', action: 'continue', enabled: !!localStorage.getItem('isekai_world_save') },
+            { label: 'SETTINGS',   icon: '⚙', action: 'settings', enabled: true },
+            { label: 'EXIT',       icon: '✕', action: 'exit',     enabled: true }
         ];
 
-        const btnW = Math.max(220, Math.min(340, Math.round(w * 0.32)));
-        const btnH = Math.max(48, Math.min(60, Math.round(Math.min(w, h) * 0.065)));
-        const btnGap = Math.max(14, Math.round(btnH * 0.32));
-        const btnFontSize = Math.max(16, Math.round(btnH * 0.38));
-        const totalH = buttons.length * btnH + (buttons.length - 1) * btnGap;
-        const startY = h * 0.5;
+        const smaller = Math.min(w, h);
+        const btnW = Math.min(w * 0.65, 360);
+        const btnH = Math.max(50, Math.min(64, Math.round(smaller * 0.075)));
+        const btnGap = Math.max(12, Math.round(btnH * 0.28));
+        const btnFontSize = Math.max(18, Math.round(btnH * 0.38));
+        const totalBtnH = buttons.length * btnH + (buttons.length - 1) * btnGap;
+        const firstBtnY = h * 0.42;
 
         buttons.forEach((data, i) => {
             const bx = w / 2;
-            const by = startY + i * (btnH + btnGap);
+            const by = firstBtnY + i * (btnH + btnGap);
+            const enabled = data.enabled;
 
-            // Button background — bright purple, always visible
+            // Graphics for button
             const g = this.add.graphics();
-            // Glow
-            g.fillStyle(0x7744cc, 0.15);
-            g.fillRoundedRect(bx - btnW / 2 - 4, by - btnH / 2 - 4, btnW + 8, btnH + 8, 14);
-            // Border
-            g.fillStyle(data.enabled ? 0xaa88ee : 0x555555, 0.9);
-            g.fillRoundedRect(bx - btnW / 2 - 2, by - btnH / 2 - 2, btnW + 4, btnH + 4, 12);
-            // Background
-            g.fillStyle(data.enabled ? 0x4a2d8a : 0x2a2a3a, 0.95);
-            g.fillRoundedRect(bx - btnW / 2, by - btnH / 2, btnW, btnH, 10);
-            // Shine
-            g.fillStyle(0xffffff, 0.08);
-            g.fillRoundedRect(bx - btnW / 2 + 4, by - btnH / 2 + 2, btnW - 8, btnH / 2, { tl: 8, tr: 8, bl: 0, br: 0 });
+            this._drawBtn(g, bx, by, btnW, btnH, enabled, false);
 
-            // Button text
-            const txt = this.add.text(bx, by, data.label, {
+            // Label
+            const label = this.add.text(bx, by, data.icon + '  ' + data.label, {
                 fontSize: btnFontSize + 'px',
                 fontFamily: 'Arial, sans-serif',
-                color: data.enabled ? '#ffffff' : '#777777',
+                color: enabled ? '#ffffff' : '#666666',
                 fontStyle: 'bold',
-                stroke: data.enabled ? '#220044' : '#000000',
+                stroke: enabled ? '#1a0044' : '#000000',
                 strokeThickness: 2
             }).setOrigin(0.5);
 
-            // "Belum ada Save" note for disabled Continue
-            if (!data.enabled) {
-                this.add.text(bx, by + btnH / 2 + 10, 'Belum ada Save Game', {
-                    fontSize: Math.max(10, Math.round(btnFontSize * 0.6)) + 'px',
-                    fontFamily: 'Arial, sans-serif',
-                    color: '#888888',
-                    fontStyle: 'italic'
+            // Disabled note
+            if (!enabled) {
+                this.add.text(bx, by + btnH / 2 + 12, '(no save data)', {
+                    fontSize: Math.max(11, Math.round(btnFontSize * 0.6)) + 'px',
+                    fontFamily: 'Arial', color: '#666666', fontStyle: 'italic'
                 }).setOrigin(0.5);
             }
 
-            // Hit area
-            if (data.enabled) {
-                const hit = this.add.rectangle(bx, by, btnW, btnH, 0, 0)
+            // Interactive
+            if (enabled) {
+                const hit = this.add.rectangle(bx, by, btnW + 10, btnH + 10, 0, 0)
                     .setInteractive({ useHandCursor: true });
-
                 hit.on('pointerover', () => {
-                    g.clear();
-                    g.fillStyle(0x7744cc, 0.2);
-                    g.fillRoundedRect(bx - btnW / 2 - 6, by - btnH / 2 - 6, btnW + 12, btnH + 12, 16);
-                    g.fillStyle(0xbb99ff, 1);
-                    g.fillRoundedRect(bx - btnW / 2 - 2, by - btnH / 2 - 2, btnW + 4, btnH + 4, 12);
-                    g.fillStyle(0x6b4dcc, 0.95);
-                    g.fillRoundedRect(bx - btnW / 2, by - btnH / 2, btnW, btnH, 10);
-                    g.fillStyle(0xffffff, 0.12);
-                    g.fillRoundedRect(bx - btnW / 2 + 4, by - btnH / 2 + 2, btnW - 8, btnH / 2, { tl: 8, tr: 8, bl: 0, br: 0 });
-                    txt.setColor('#ffeecc');
+                    this._drawBtn(g, bx, by, btnW, btnH, true, true);
+                    label.setColor('#ffeecc');
                 });
-
                 hit.on('pointerout', () => {
-                    g.clear();
-                    g.fillStyle(0x7744cc, 0.15);
-                    g.fillRoundedRect(bx - btnW / 2 - 4, by - btnH / 2 - 4, btnW + 8, btnH + 8, 14);
-                    g.fillStyle(0xaa88ee, 0.9);
-                    g.fillRoundedRect(bx - btnW / 2 - 2, by - btnH / 2 - 2, btnW + 4, btnH + 4, 12);
-                    g.fillStyle(0x4a2d8a, 0.95);
-                    g.fillRoundedRect(bx - btnW / 2, by - btnH / 2, btnW, btnH, 10);
-                    g.fillStyle(0xffffff, 0.08);
-                    g.fillRoundedRect(bx - btnW / 2 + 4, by - btnH / 2 + 2, btnW - 8, btnH / 2, { tl: 8, tr: 8, bl: 0, br: 0 });
-                    txt.setColor('#ffffff');
+                    this._drawBtn(g, bx, by, btnW, btnH, true, false);
+                    label.setColor('#ffffff');
                 });
-
                 hit.on('pointerdown', () => {
-                    try {
-                        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                        const o = ctx.createOscillator();
-                        const gn = ctx.createGain();
-                        o.connect(gn); gn.connect(ctx.destination);
-                        o.type = 'sine';
-                        o.frequency.setValueAtTime(500, ctx.currentTime);
-                        o.frequency.exponentialRampToValueAtTime(250, ctx.currentTime + 0.05);
-                        gn.gain.setValueAtTime(0.08, ctx.currentTime);
-                        gn.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06);
-                        o.start(ctx.currentTime); o.stop(ctx.currentTime + 0.06);
-                    } catch (e) {}
+                    this._playClick();
                     this.handleClick(data.action);
                 });
             }
         });
 
         // Copyright
-        this.add.text(w / 2, h - 14, '© ISEKAI WORLD PROJECT', {
-            fontSize: Math.max(10, Math.round(Math.min(w, h) * 0.015)) + 'px',
-            fontFamily: 'Arial, sans-serif',
-            color: '#555555'
+        this.add.text(w / 2, h - 16, '© ISEKAI WORLD', {
+            fontSize: Math.max(11, Math.round(smaller * 0.016)) + 'px',
+            fontFamily: 'Arial', color: '#555555'
         }).setOrigin(0.5);
 
-        // Fade in
-        this.cameras.main.fadeIn(300, 0, 0, 0);
-
-        // BGM
+        this.cameras.main.fadeIn(200, 0, 0, 0);
         try { audioManager.playBGM(this); } catch (e) {}
+    }
+
+    _drawBtn(g, x, y, w, h, enabled, hovered) {
+        g.clear();
+        const hw = w / 2, hh = h / 2;
+        if (!enabled) {
+            g.fillStyle(0x333344, 0.6);
+            g.fillRoundedRect(x - hw, y - hh, w, h, 10);
+            g.lineStyle(2, 0x555566, 0.5);
+            g.strokeRoundedRect(x - hw, y - hh, w, h, 10);
+            return;
+        }
+        // Glow
+        g.fillStyle(hovered ? 0x8855dd : 0x6633aa, hovered ? 0.25 : 0.12);
+        g.fillRoundedRect(x - hw - 5, y - hh - 5, w + 10, h + 10, 15);
+        // Border
+        g.fillStyle(hovered ? 0xccaaee : 0x9977dd, 0.95);
+        g.fillRoundedRect(x - hw - 2, y - hh - 2, w + 4, h + 4, 12);
+        // Body
+        g.fillStyle(hovered ? 0x6b4dcc : 0x4a2d8a, 0.98);
+        g.fillRoundedRect(x - hw, y - hh, w, h, 10);
+        // Shine
+        g.fillStyle(0xffffff, hovered ? 0.14 : 0.08);
+        g.fillRoundedRect(x - hw + 4, y - hh + 2, w - 8, h * 0.45, { tl: 8, tr: 8, bl: 0, br: 0 });
+    }
+
+    _playClick() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const o = ctx.createOscillator();
+            const gn = ctx.createGain();
+            o.connect(gn); gn.connect(ctx.destination);
+            o.type = 'sine';
+            o.frequency.setValueAtTime(500, ctx.currentTime);
+            o.frequency.exponentialRampToValueAtTime(250, ctx.currentTime + 0.05);
+            gn.gain.setValueAtTime(0.08, ctx.currentTime);
+            gn.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06);
+            o.start(ctx.currentTime); o.stop(ctx.currentTime + 0.06);
+        } catch (e) {}
     }
 
     handleClick(action) {
@@ -177,115 +160,49 @@ class MainMenuScene extends Phaser.Scene {
                 this.cameras.main.fadeOut(300, 0, 0, 0);
                 this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('VillageScene'));
                 break;
-            case 'settings':
-                this.showSettings();
-                break;
-            case 'exit':
-                this.showExit();
-                break;
+            case 'settings': this.showSettings(); break;
+            case 'exit': this.showExit(); break;
         }
     }
 
     showSettings() {
-        const w = this.cameras.main.width;
-        const h = this.cameras.main.height;
+        const w = this.cameras.main.width, h = this.cameras.main.height;
         const pw = Math.min(400, w * 0.85);
-
-        const dim = this.add.rectangle(w / 2, h / 2, w, h, 0x000000, 0).setDepth(200).setAlpha(0);
+        const dim = this.add.rectangle(w/2, h/2, w, h, 0, 0).setDepth(200).setAlpha(0).setInteractive();
         this.tweens.add({ targets: dim, alpha: 0.6, duration: 200 });
-        dim.setInteractive();
-
-        const popup = this.add.container(w / 2, h / 2).setDepth(210).setAlpha(0);
-        const bg = this.add.graphics();
-        bg.fillStyle(0x2c1810, 0.97);
-        bg.fillRoundedRect(-pw / 2, -120, pw, 240, 14);
-        bg.lineStyle(3, 0xc9a84c, 0.9);
-        bg.strokeRoundedRect(-pw / 2, -120, pw, 240, 14);
-        popup.add(bg);
-
-        popup.add(this.add.text(0, -95, '⚙ Settings', {
-            fontSize: '22px', fontFamily: 'Georgia, serif', color: '#ffd700', fontStyle: 'bold'
-        }).setOrigin(0.5));
-
-        // Volume
-        popup.add(this.add.text(0, -50, '🔊 Volume: ' + Math.round(audioManager.getVolume() * 100) + '%', {
-            fontSize: '16px', fontFamily: 'Arial', color: '#ffffff'
-        }).setOrigin(0.5));
-
-        // Mute toggle
-        const muteLabel = audioManager.isMuted() ? '🔇 Unmute' : '🔊 Mute';
-        const muteBg = this.add.graphics();
-        muteBg.fillStyle(0x4a2d8a, 0.9);
-        muteBg.fillRoundedRect(-60, -20, 120, 36, 8);
-        popup.add(muteBg);
-        const muteTxt = this.add.text(0, -2, muteLabel, {
-            fontSize: '14px', fontFamily: 'Arial', color: '#ffffff', fontStyle: 'bold'
-        }).setOrigin(0.5);
-        popup.add(muteTxt);
-        const muteHit = this.add.rectangle(0, -2, 120, 36, 0, 0).setInteractive({ useHandCursor: true });
-        popup.add(muteHit);
-        muteHit.on('pointerdown', () => {
-            const muted = audioManager.toggleMute();
-            muteTxt.setText(muted ? '🔇 Unmute' : '🔊 Mute');
-        });
-
-        // Close
-        const clBg = this.add.graphics();
-        clBg.fillStyle(0x8b3a0a, 0.9);
-        clBg.fillRoundedRect(-50, 55, 100, 34, 8);
-        popup.add(clBg);
-        popup.add(this.add.text(0, 72, '✕ Close', {
-            fontSize: '15px', fontFamily: 'Arial', color: '#ffffff', fontStyle: 'bold'
-        }).setOrigin(0.5));
-        const clHit = this.add.rectangle(0, 72, 100, 34, 0, 0).setInteractive({ useHandCursor: true });
-        popup.add(clHit);
-        clHit.on('pointerdown', () => {
-            this.tweens.add({ targets: [popup, dim], alpha: 0, duration: 200, onComplete: () => {
-                popup.destroy(); dim.destroy();
-            }});
-        });
-
-        this.tweens.add({ targets: popup, alpha: 1, duration: 200 });
+        const p = this.add.container(w/2, h/2).setDepth(210).setAlpha(0);
+        const g = this.add.graphics();
+        g.fillStyle(0x2c1810, 0.97); g.fillRoundedRect(-pw/2, -110, pw, 220, 14);
+        g.lineStyle(3, 0xc9a84c); g.strokeRoundedRect(-pw/2, -110, pw, 220, 14);
+        p.add(g);
+        p.add(this.add.text(0, -85, '⚙ Settings', { fontSize: '22px', fontFamily: 'Georgia', color: '#ffd700', fontStyle: 'bold' }).setOrigin(0.5));
+        p.add(this.add.text(0, -40, 'Volume: ' + Math.round(audioManager.getVolume() * 100) + '%', { fontSize: '16px', fontFamily: 'Arial', color: '#fff' }).setOrigin(0.5));
+        const mb = this.add.graphics(); mb.fillStyle(0x4a2d8a, 0.9); mb.fillRoundedRect(-55, -15, 110, 32, 8); p.add(mb);
+        const mt = this.add.text(0, 1, audioManager.isMuted() ? '🔇 Unmute' : '🔊 Mute', { fontSize: '14px', fontFamily: 'Arial', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5); p.add(mt);
+        const mh = this.add.rectangle(0, 1, 110, 32, 0, 0).setInteractive({ useHandCursor: true }); p.add(mh);
+        mh.on('pointerdown', () => { const m = audioManager.toggleMute(); mt.setText(m ? '🔇 Unmute' : '🔊 Mute'); });
+        const cb = this.add.graphics(); cb.fillStyle(0x8b3a0a, 0.9); cb.fillRoundedRect(-45, 50, 90, 32, 8); p.add(cb);
+        p.add(this.add.text(0, 66, '✕ Close', { fontSize: '14px', fontFamily: 'Arial', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5));
+        const ch = this.add.rectangle(0, 66, 90, 32, 0, 0).setInteractive({ useHandCursor: true }); p.add(ch);
+        ch.on('pointerdown', () => { this.tweens.add({ targets: [p, dim], alpha: 0, duration: 200, onComplete: () => { p.destroy(); dim.destroy(); } }); });
+        this.tweens.add({ targets: p, alpha: 1, duration: 200 });
     }
 
     showExit() {
-        const w = this.cameras.main.width;
-        const h = this.cameras.main.height;
+        const w = this.cameras.main.width, h = this.cameras.main.height;
         const pw = Math.min(400, w * 0.85);
-
-        const dim = this.add.rectangle(w / 2, h / 2, w, h, 0x000000, 0).setDepth(200).setAlpha(0);
+        const dim = this.add.rectangle(w/2, h/2, w, h, 0, 0).setDepth(200).setAlpha(0).setInteractive();
         this.tweens.add({ targets: dim, alpha: 0.6, duration: 200 });
-        dim.setInteractive();
-
-        const popup = this.add.container(w / 2, h / 2).setDepth(210).setAlpha(0);
-        const bg = this.add.graphics();
-        bg.fillStyle(0x2c1810, 0.97);
-        bg.fillRoundedRect(-pw / 2, -80, pw, 160, 14);
-        bg.lineStyle(3, 0xc9a84c, 0.9);
-        bg.strokeRoundedRect(-pw / 2, -80, pw, 160, 14);
-        popup.add(bg);
-
-        popup.add(this.add.text(0, -50, '🙏 Terima kasih telah mencoba\nISEKAI WORLD.', {
-            fontSize: '16px', fontFamily: 'Arial', color: '#ffffff', align: 'center'
-        }).setOrigin(0.5));
-
-        const okBg = this.add.graphics();
-        okBg.fillStyle(0x8b3a0a, 0.9);
-        okBg.fillRoundedRect(-40, 30, 80, 30, 8);
-        popup.add(okBg);
-        popup.add(this.add.text(0, 45, 'OK', {
-            fontSize: '15px', fontFamily: 'Arial', color: '#ffffff', fontStyle: 'bold'
-        }).setOrigin(0.5));
-        const okHit = this.add.rectangle(0, 45, 80, 30, 0, 0).setInteractive({ useHandCursor: true });
-        popup.add(okHit);
-        okHit.on('pointerdown', () => {
-            this.tweens.add({ targets: [popup, dim], alpha: 0, duration: 200, onComplete: () => {
-                popup.destroy(); dim.destroy();
-            }});
-        });
-
-        this.tweens.add({ targets: popup, alpha: 1, duration: 200 });
+        const p = this.add.container(w/2, h/2).setDepth(210).setAlpha(0);
+        const g = this.add.graphics();
+        g.fillStyle(0x2c1810, 0.97); g.fillRoundedRect(-pw/2, -70, pw, 140, 14);
+        g.lineStyle(3, 0xc9a84c); g.strokeRoundedRect(-pw/2, -70, pw, 140, 14);
+        p.add(g);
+        p.add(this.add.text(0, -30, '🙏 Terima kasih\nISEKAI WORLD.', { fontSize: '16px', fontFamily: 'Arial', color: '#fff', align: 'center' }).setOrigin(0.5));
+        const ob = this.add.graphics(); ob.fillStyle(0x8b3a0a, 0.9); ob.fillRoundedRect(-40, 30, 80, 30, 8); p.add(ob);
+        p.add(this.add.text(0, 45, 'OK', { fontSize: '15px', fontFamily: 'Arial', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5));
+        const oh = this.add.rectangle(0, 45, 80, 30, 0, 0).setInteractive({ useHandCursor: true }); p.add(oh);
+        oh.on('pointerdown', () => { this.tweens.add({ targets: [p, dim], alpha: 0, duration: 200, onComplete: () => { p.destroy(); dim.destroy(); } }); });
+        this.tweens.add({ targets: p, alpha: 1, duration: 200 });
     }
-
-    shutdown() {}
 }
