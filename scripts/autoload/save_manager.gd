@@ -5,45 +5,6 @@ extends Node
 ## Path file save
 const SAVE_PATH: String = "user://save_game.json"
 
-## Data save default
-var DEFAULT_SAVE: Dictionary = {
-	"player": {
-		"name": "",
-		"gender": "male",
-	},
-	"stats": {
-		"level": 1,
-		"exp": 0,
-		"exp_to_next": 100,
-		"hp": 100,
-		"max_hp": 100,
-		"energy": 100,
-		"max_energy": 100,
-		"attack": 10,
-		"defense": 5,
-	},
-	"currency": {
-		"gold": 1000,
-		"diamond": 0,
-	},
-	"equipment": {
-		"weapon": "",
-		"armor": "",
-		"accessory": "",
-	},
-	"progress": {
-		"map_level": 0,
-		"location": "Main Village",
-		"play_time": 0.0,
-		"created_at": "",
-	},
-	"settings": {
-		"volume_music": 0.7,
-		"volume_sfx": 0.8,
-		"language": "id",
-	},
-}
-
 ## Data save aktif
 var current_data: Dictionary = {}
 
@@ -60,13 +21,13 @@ func has_save() -> bool:
 ## Load data dari file JSON
 func load_save() -> Dictionary:
 	if not has_save():
-		current_data = DEFAULT_SAVE.duplicate(true)
+		current_data = CharacterData.DEFAULT_PLAYER_DATA.duplicate(true)
 		return current_data
 	
 	var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
 	if file == null:
 		push_warning("[SaveManager] Failed to open save file")
-		current_data = DEFAULT_SAVE.duplicate(true)
+		current_data = CharacterData.DEFAULT_PLAYER_DATA.duplicate(true)
 		return current_data
 	
 	var json_text := file.get_as_text()
@@ -76,12 +37,12 @@ func load_save() -> Dictionary:
 	var error := json.parse(json_text)
 	if error != OK:
 		push_warning("[SaveManager] Failed to parse save JSON")
-		current_data = DEFAULT_SAVE.duplicate(true)
+		current_data = CharacterData.DEFAULT_PLAYER_DATA.duplicate(true)
 		return current_data
 	
 	current_data = json.data as Dictionary
 	if current_data.is_empty():
-		current_data = DEFAULT_SAVE.duplicate(true)
+		current_data = CharacterData.DEFAULT_PLAYER_DATA.duplicate(true)
 	
 	print("[SaveManager] Save loaded")
 	return current_data
@@ -100,7 +61,7 @@ func save_game() -> void:
 
 
 ## Simpan data spesifik berdasarkan key
-func save_data(key: String, data: Dictionary) -> void:
+func save_data(key: String, data: Variant) -> void:
 	current_data[key] = data
 	save_game()
 
@@ -114,7 +75,7 @@ func get_data(key: String, default_value: Variant = null) -> Variant:
 
 ## Reset save ke default
 func reset_save() -> void:
-	current_data = DEFAULT_SAVE.duplicate(true)
+	current_data = CharacterData.DEFAULT_PLAYER_DATA.duplicate(true)
 	if has_save():
 		DirAccess.remove_absolute(SAVE_PATH)
 		print("[SaveManager] Save file deleted")
