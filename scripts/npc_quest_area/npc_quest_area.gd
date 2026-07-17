@@ -3,7 +3,6 @@ extends Control
 
 
 func _ready() -> void:
-	print("[NPCQuestArea] Opened")
 
 
 ## Kembali ke desa

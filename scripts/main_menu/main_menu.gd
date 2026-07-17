@@ -5,7 +5,6 @@ extends Control
 
 
 func _ready() -> void:
-	print("[MainMenu] Opened")
 	# Disable Continue jika tidak ada save
 	continue_btn.disabled = not SaveManager.has_save()
 

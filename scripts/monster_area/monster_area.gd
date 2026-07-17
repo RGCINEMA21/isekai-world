@@ -71,4 +71,3 @@ func _ready() -> void:
 	lighting.add_child(overlay)
 	add_child(lighting)
 
-	print("[MonsterArea] Loaded - %s (Combat Active)" % MonsterAreaData.AREA_NAME)

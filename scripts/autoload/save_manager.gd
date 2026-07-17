@@ -10,7 +10,6 @@ var current_data: Dictionary = {}
 
 
 func _ready() -> void:
-	print("[SaveManager] Initialized")
 
 
 ## Cek apakah file save ada
@@ -44,7 +43,6 @@ func load_save() -> Dictionary:
 	if current_data.is_empty():
 		current_data = PlayerData.DEFAULT_DATA.duplicate(true)
 	
-	print("[SaveManager] Save loaded")
 	return current_data
 
 
@@ -57,7 +55,6 @@ func save_game() -> void:
 	
 	file.store_string(JSON.stringify(current_data, "\t"))
 	file.close()
-	print("[SaveManager] Game saved")
 
 
 ## Simpan data spesifik berdasarkan key
@@ -78,5 +75,3 @@ func reset_save() -> void:
 	current_data = PlayerData.DEFAULT_DATA.duplicate(true)
 	if has_save():
 		DirAccess.remove_absolute(SAVE_PATH)
-		print("[SaveManager] Save file deleted")
-	print("[SaveManager] Save reset to default")

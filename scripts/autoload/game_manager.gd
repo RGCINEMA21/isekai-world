@@ -20,13 +20,11 @@ signal state_changed(old_state: GameState, new_state: GameState)
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	print("[GameManager] Initialized")
 
 
 func change_state(new_state: GameState) -> void:
 	var old_state := current_state
 	current_state = new_state
-	print("[GameManager] State: %s -> %s" % [GameState.keys()[old_state], GameState.keys()[new_state]])
 	state_changed.emit(old_state, new_state)
 
 

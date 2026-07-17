@@ -7,7 +7,6 @@ extends Control
 
 
 func _ready() -> void:
-	print("[Settings] Opened")
 	_load_current_settings()
 
 

@@ -4,7 +4,6 @@ extends Node
 
 
 func _ready() -> void:
-	print("[ResourceManager] Initialized")
 
 
 ## Preload resource dengan path

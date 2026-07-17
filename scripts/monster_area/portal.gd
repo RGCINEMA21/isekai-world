@@ -52,5 +52,4 @@ func _process(delta: float) -> void:
 
 func _on_input(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
 	if (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT) or (event is InputEventScreenTouch and event.pressed):
-		print("[Portal] Kembali ke Main Village")
 		SceneManager.change_scene("main_village")

@@ -6,7 +6,6 @@ const DURATION: float = 1.5
 
 
 func _ready() -> void:
-	print("[Boot] Starting...")
 
 
 func _process(delta: float) -> void:

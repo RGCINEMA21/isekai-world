@@ -35,7 +35,6 @@ var clothes_count: int = CharacterData.CLOTHES_STYLES.size()
 
 
 func _ready() -> void:
-	print("[CharacterCreation] Opened")
 	_build_ui()
 	_update_all_labels()
 	_update_preview()
@@ -396,7 +395,6 @@ func _confirm_character() -> void:
 	# Inisialisasi PlayerManager
 	PlayerManager.initialize()
 	
-	print("[CharacterCreation] Character created: %s (ID: %s)" % [player_name, save_data["identity"]["id"]])
 	SceneManager.change_scene("main_village")
 
 

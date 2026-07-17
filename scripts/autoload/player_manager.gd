@@ -26,7 +26,6 @@ var is_initialized: bool = false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	print("[PlayerManager] Initialized")
 
 
 ## Inisialisasi data dari SaveManager
@@ -37,7 +36,6 @@ func initialize() -> void:
 	# Pastikan semua key ada (backward compatibility)
 	_ensure_keys()
 	is_initialized = true
-	print("[PlayerManager] Data loaded - Lv.%d %s" % [
 		get_level(), get_player_name()
 	])
 
@@ -272,7 +270,6 @@ func _level_up() -> void:
 	data["stats"]["attack"] = get_attack() + 2
 	data["stats"]["defense"] = get_defense() + 1
 	
-	print("[PlayerManager] LEVEL UP! Level %d" % get_level())
 	level_changed.emit(get_level())
 	exp_changed.emit(get_exp(), get_exp_to_next())
 	hp_changed.emit(get_hp(), get_max_hp())
@@ -425,4 +422,3 @@ func get_warehouse_size() -> int:
 func reset_all() -> void:
 	data = PlayerData.DEFAULT_DATA.duplicate(true)
 	save()
-	print("[PlayerManager] All data reset")

@@ -15,7 +15,6 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_setup_bgm_player()
 	_load_settings()
-	print("[AudioManager] Initialized")
 
 
 ## Setup audio player BGM

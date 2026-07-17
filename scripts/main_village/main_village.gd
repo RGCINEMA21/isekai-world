@@ -89,7 +89,6 @@ func _ready() -> void:
 	if PlayerManager.energy_changed and not PlayerManager.energy_changed.is_connected(_on_energy_changed):
 		PlayerManager.energy_changed.connect(_on_energy_changed)
 	
-	print("[MainVillage] Loaded - %dx%d tiles" % [VillageData.MAP_WIDTH, VillageData.MAP_HEIGHT])
 
 
 func _on_hp_changed(_current: int, _maximum: int) -> void:
