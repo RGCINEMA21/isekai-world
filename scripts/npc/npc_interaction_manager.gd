@@ -45,10 +45,15 @@ func interact() -> void:
 	deselect_npc()
 
 func _execute_action(action: String, npc_name: String) -> void:
-	var desc: String = NPCDatabase.ACTION_DESCRIPTIONS.get(action, "")
-	var msg: String = "%s - %s" % [npc_name, desc if desc else "Fitur akan segera tersedia."]
-	print("[NPC] %s" % msg)
-	UIManager.show_notification(msg)
+	match action:
+		"portal_monster":
+			print("[NPC] Portal Monster dipilih - masuk Monster Area")
+			SceneManager.change_scene("monster_area")
+		_:
+			var desc: String = NPCDatabase.ACTION_DESCRIPTIONS.get(action, "")
+			var msg: String = "%s - %s" % [npc_name, desc if desc else "Fitur akan segera tersedia."]
+			print("[NPC] %s" % msg)
+			UIManager.show_notification(msg)
 
 func _show_panel(npc_id: String, npc_name: String) -> void:
 	_remove_panel()
