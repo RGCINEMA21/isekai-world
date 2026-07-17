@@ -1,49 +1,34 @@
-## SpawnManager - Placeholder spawn points untuk monster
+## SpawnManager - Spawn monster asli berdasarkan data
 extends Node2D
 
 var ts: int
-var spawn_indicators: Array[Dictionary] = []
+var slime_script = null
 
 func _ready() -> void:
 	ts = MonsterAreaData.TILE_SIZE
-	_create_spawn_points()
+	slime_script = preload("res://scripts/combat/slime_monster.gd")
+	_spawn_slimes()
 
-func _create_spawn_points() -> void:
+
+func _spawn_slimes() -> void:
 	for sp: Dictionary in MonsterAreaData.SPAWN_POINTS:
-		var x: float = sp["x"] * ts + ts * 0.5
-		var y: float = sp["y"] * ts + ts * 0.5
+		if sp["area"] != "slime":
+			continue
+		var count: int = sp.get("max", 2)
+		for i in range(count):
+			var spawn_x: float = sp["x"] * ts + ts * 0.5 + randf_range(-20, 20)
+			var spawn_y: float = sp["y"] * ts + ts * 0.5 + randf_range(-20, 20)
+			var slime = slime_script.new()
+			slime.name = "Slime_%s_%d" % [sp["id"], i]
+			slime.position = Vector2(spawn_x, spawn_y)
+			slime.spawn_position = slime.position
+			slime.add_to_group("monsters")
+			slime.died.connect(_on_slime_died)
+			add_child(slime)
 
-		## Spawn indicator (lingkaran transparan)
-		var indicator := ColorRect.new()
-		indicator.size = Vector2(24, 24)
-		indicator.position = Vector2(x-12, y-12)
-		indicator.z_index = 2
-		match sp["area"]:
-			"slime":  indicator.color = Color(0.3, 0.8, 0.3, 0.3)
-			"wolf":   indicator.color = Color(0.6, 0.4, 0.3, 0.3)
-			"goblin": indicator.color = Color(0.6, 0.3, 0.6, 0.3)
-		add_child(indicator)
 
-		## Monster placeholder icon
-		var icon := ColorRect.new()
-		icon.size = Vector2(10, 10)
-		icon.position = Vector2(x-5, y-5)
-		icon.z_index = 3
-		match sp["area"]:
-			"slime":  icon.color = Color(0.3, 0.7, 0.3)
-			"wolf":   icon.color = Color(0.5, 0.35, 0.25)
-			"goblin": icon.color = Color(0.5, 0.3, 0.5)
-		add_child(icon)
-
-		## Label
-		var lbl := Label.new()
-		lbl.text = sp["area"].capitalize()
-		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		lbl.position = Vector2(x - 20, y + 14)
-		lbl.size = Vector2(40, 12)
-		lbl.add_theme_font_size_override("font_size", 8)
-		lbl.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8, 0.6))
-		lbl.z_index = 3
-		add_child(lbl)
-
-		spawn_indicators.append({"data": sp, "indicator": indicator, "icon": icon})
+func _on_slime_died(monster_ref: Node2D) -> void:
+	## Cari CombatManager di parent
+	var combat_mgr := get_node_or_null("../CombatManager")
+	if combat_mgr and combat_mgr.has_method("on_monster_died"):
+		combat_mgr.on_monster_died(monster_ref)
