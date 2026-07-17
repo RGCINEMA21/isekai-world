@@ -31,24 +31,18 @@ html,body{width:100%;height:100%;overflow:hidden;background:#1a1a2e;color:#fff;f
 <div id="msg"></div>
 <button id="retry" onclick="location.reload()">Retry</button>
 </div>
-<script src="index.js?v=3"></script>
+<script src="index.js?v=4"></script>
 <script>
 var bar=document.getElementById('bar'),pct=document.getElementById('pct'),msg=document.getElementById('msg'),retry=document.getElementById('retry'),ov=document.getElementById('overlay');
-var loadStart=Date.now();
-function setProgress(c,t){
-if(c>0&&t>0){var p=Math.round(c/t*100);bar.style.width=p+'%';pct.textContent=p+'% ('+Math.round(c/1048576)+'MB / '+Math.round(t/1048576)+'MB)';}
-}
+function setProgress(c,t){if(c>0&&t>0){var p=Math.round(c/t*100);bar.style.width=p+'%';pct.textContent=p+'% ('+Math.round(c/1048576)+'MB / '+Math.round(t/1048576)+'MB)';}}
 function showError(e){msg.style.display='block';msg.textContent=e;retry.style.display='inline-block';pct.textContent='Failed';}
-// Timeout after 90s
-setTimeout(function(){if(ov&&!ov.classList.contains('hidden')){showError('Loading took too long. Your connection may be slow or the game may not support this device.');}},90000);
+setTimeout(function(){if(ov&&!ov.classList.contains('hidden')){showError('Loading took too long. Try refreshing or use Chrome.');}},90000);
 try{
 var cfg={"args":[],"canvasResizePolicy":2,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":116400,"index.wasm":35376909},"focusCanvas":true,"gdextensionLibs":[],"serviceWorker":""};
 var eng=new Engine(cfg);
 var missing=Engine.getMissingFeatures({threads:false});
 if(missing.length>0){showError('Missing: '+missing.join(', '));}
-else{
-eng.startGame({onProgress:setProgress}).then(function(){ov.classList.add('hidden');},function(e){console.error(e);showError('Engine error: '+(e.message||e));});
-}
+else{eng.startGame({onProgress:setProgress}).then(function(){ov.classList.add('hidden');},function(e){console.error(e);showError('Engine error: '+(e.message||e));});}
 }catch(e){console.error(e);showError('Error: '+(e.message||e));}
 </script>
 </body>
