@@ -9,12 +9,12 @@ func _ready() -> void:
 
 func _build_hud() -> void:
 	## Top bar
-	var top := PanelContainer.new()
+	var top = PanelContainer.new()
 	top.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	top.offset_bottom = 44
 	add_child(top)
 
-	var hbox := HBoxContainer.new()
+	var hbox = HBoxContainer.new()
 	hbox.add_theme_constant_override("separation", 16)
 	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	top.add_child(hbox)
@@ -25,7 +25,7 @@ func _build_hud() -> void:
 	_update_info()
 
 	## Back button
-	var back_btn := Button.new()
+	var back_btn = Button.new()
 	back_btn.text = "← Back to Village"
 	back_btn.custom_minimum_size = Vector2(140, 32)
 	back_btn.add_theme_font_size_override("font_size", 12)

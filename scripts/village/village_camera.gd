@@ -5,6 +5,7 @@ var drag_start: Vector2 = Vector2.ZERO
 var is_dragging: bool = false
 var map_limit_min: Vector2 = Vector2.ZERO
 var map_limit_max: Vector2 = Vector2.ZERO
+var _touch_index: int = -1
 
 func _ready() -> void:
 	var ts: int = VillageData.TILE_SIZE
@@ -23,7 +24,9 @@ func _ready() -> void:
 	## Zoom default
 	zoom = Vector2(2.0, 2.0)
 
+
 func _unhandled_input(event: InputEvent) -> void:
+	## Mouse drag
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			if event.pressed:
@@ -43,16 +46,21 @@ func _unhandled_input(event: InputEvent) -> void:
 		drag_start = get_viewport().get_mouse_position()
 		_clamp_position()
 
-	elif event is InputEventScreenDrag:
-		position -= event.relative / zoom
-		_clamp_position()
-
+	## Touch drag (mobile)
 	elif event is InputEventScreenTouch:
 		if event.pressed:
 			drag_start = event.position
 			is_dragging = true
+			_touch_index = event.index
 		else:
-			is_dragging = false
+			if event.index == _touch_index:
+				is_dragging = false
+				_touch_index = -1
+
+	elif event is InputEventScreenDrag and is_dragging and event.index == _touch_index:
+		position -= event.relative / zoom
+		_clamp_position()
+
 
 func _clamp_position() -> void:
 	var half_view: Vector2 = get_viewport_rect().size / zoom * 0.5

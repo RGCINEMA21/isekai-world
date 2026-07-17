@@ -17,6 +17,7 @@ var analog_current: Vector2 = Vector2.ZERO
 var analog_layer: CanvasLayer
 var analog_bg: ColorRect
 var analog_knob: ColorRect
+var _touch_index: int = -1
 
 func _ready() -> void:
 	## Visual player
@@ -35,14 +36,14 @@ func _ready() -> void:
 	add_child(head_rect)
 
 	## Collision
-	var col := CollisionShape2D.new()
-	var shape := RectangleShape2D.new()
+	var col = CollisionShape2D.new()
+	var shape = RectangleShape2D.new()
 	shape.size = Vector2(14, 20)
 	col.shape = shape
 	add_child(col)
 
 	## Camera
-	var cam := Camera2D.new()
+	var cam = Camera2D.new()
 	cam.name = "PlayerCamera"
 	cam.position_smoothing_enabled = true
 	cam.position_smoothing_speed = 10.0
@@ -56,6 +57,7 @@ func _ready() -> void:
 
 	## Setup virtual analog untuk mobile
 	_setup_virtual_analog()
+
 
 func _physics_process(delta: float) -> void:
 	var input_dir := Vector2.ZERO
@@ -82,6 +84,7 @@ func _physics_process(delta: float) -> void:
 
 	move_and_slide()
 
+
 ## ==================== VIRTUAL ANALOG ====================
 
 func _setup_virtual_analog() -> void:
@@ -104,7 +107,9 @@ func _setup_virtual_analog() -> void:
 	analog_knob.z_index = 51
 	analog_layer.add_child(analog_knob)
 
+
 func _input(event: InputEvent) -> void:
+	## Touch input untuk mobile
 	if event is InputEventScreenTouch:
 		if event.pressed:
 			## Analog muncul di posisi sentuh kiri layar
@@ -112,15 +117,18 @@ func _input(event: InputEvent) -> void:
 				analog_active = true
 				analog_center = event.position
 				analog_current = Vector2.ZERO
+				_touch_index = event.index
 				analog_layer.visible = true
 				analog_bg.position = analog_center - Vector2(analog_radius, analog_radius)
 				analog_knob.position = analog_center - Vector2(15, 15)
 		else:
-			analog_active = false
-			analog_current = Vector2.ZERO
-			analog_layer.visible = false
+			if event.index == _touch_index:
+				analog_active = false
+				analog_current = Vector2.ZERO
+				analog_layer.visible = false
+				_touch_index = -1
 
-	elif event is InputEventScreenDrag and analog_active:
+	elif event is InputEventScreenDrag and analog_active and event.index == _touch_index:
 		var diff: Vector2 = event.position - analog_center
 		if diff.length() > analog_radius:
 			diff = diff.normalized() * analog_radius

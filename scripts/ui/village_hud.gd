@@ -15,7 +15,7 @@ func _ready() -> void:
 
 func _build_hud() -> void:
 	# === TOP BAR ===
-	var top_bar := PanelContainer.new()
+	var top_bar = PanelContainer.new()
 	top_bar.name = "TopBar"
 	top_bar.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	top_bar.offset_right = 0
@@ -24,7 +24,7 @@ func _build_hud() -> void:
 	add_child(top_bar)
 	
 	# HBox untuk info player
-	var hbox := HBoxContainer.new()
+	var hbox = HBoxContainer.new()
 	hbox.add_theme_constant_override("separation", 16)
 	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	top_bar.add_child(hbox)
@@ -37,7 +37,7 @@ func _build_hud() -> void:
 	_update_info()
 	
 	# === BOTTOM RIGHT BUTTONS ===
-	var btn_container := VBoxContainer.new()
+	var btn_container = VBoxContainer.new()
 	btn_container.name = "BottomButtons"
 	btn_container.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
 	btn_container.offset_left = -140
@@ -65,7 +65,7 @@ func _build_hud() -> void:
 
 
 func _make_button(text: String) -> Button:
-	var btn := Button.new()
+	var btn = Button.new()
 	btn.text = text
 	btn.custom_minimum_size = Vector2(120, 36)
 	btn.add_theme_font_size_override("font_size", 13)

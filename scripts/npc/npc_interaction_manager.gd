@@ -2,11 +2,12 @@
 extends Node
 
 var selected_npc: Node = null
-var panel: CanvasLayer
+var panel: CanvasLayer = null
 signal npc_selected(npc_id: String, npc_name: String)
 signal npc_deselected()
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	print("[NPCInteractionManager] Initialized")
 
 func select_npc(npc_node: Node) -> void:
@@ -21,8 +22,8 @@ func select_npc(npc_node: Node) -> void:
 	var npc_id: String = ""
 	var npc_name: String = ""
 	if selected_npc:
-		npc_id = selected_npc.get("npc_id") if selected_npc.has_method("get") else ""
-		npc_name = selected_npc.get("npc_name") if selected_npc.has_method("get") else ""
+		npc_id = str(selected_npc.get("npc_id")) if selected_npc.has_method("get") else ""
+		npc_name = str(selected_npc.get("npc_name")) if selected_npc.has_method("get") else ""
 	_show_panel(npc_id, npc_name)
 	if npc_id:
 		npc_selected.emit(npc_id, npc_name)
@@ -37,8 +38,8 @@ func deselect_npc() -> void:
 func interact() -> void:
 	if not selected_npc:
 		return
-	var npc_id: String = selected_npc.get("npc_id") if selected_npc.has_method("get") else ""
-	var npc_name: String = selected_npc.get("npc_name") if selected_npc.has_method("get") else ""
+	var npc_id: String = str(selected_npc.get("npc_id")) if selected_npc.has_method("get") else ""
+	var npc_name: String = str(selected_npc.get("npc_name")) if selected_npc.has_method("get") else ""
 	var npc_data: Dictionary = NPCDatabase.get_npc(npc_id)
 	var action: String = npc_data.get("action", "")
 	_execute_action(action, npc_name)
@@ -121,9 +122,8 @@ func _show_panel(npc_id: String, npc_name: String) -> void:
 	cancel_btn.custom_minimum_size = Vector2(120, 40)
 	cancel_btn.pressed.connect(func(): deselect_npc())
 	btn_hbox.add_child(cancel_btn)
-	var root := get_tree().current_scene
-	if root:
-		root.add_child(panel)
+	# Add panel to autoload (not scene, so it survives scene changes)
+	add_child(panel)
 
 func _hide_panel() -> void:
 	_remove_panel()

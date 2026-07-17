@@ -53,6 +53,13 @@ func change_scene(scene_name: String, data: Dictionary = {}) -> void:
 		push_error("[SceneManager] Scene not found: %s" % scene_name)
 		return
 	
+	var scene_path: String = scene_paths[scene_name]
+	
+	# Verifikasi file scene ada
+	if not ResourceLoader.exists(scene_path):
+		push_error("[SceneManager] Scene file not found: %s" % scene_path)
+		return
+	
 	is_transitioning = true
 	current_scene = scene_name
 	
@@ -62,7 +69,11 @@ func change_scene(scene_name: String, data: Dictionary = {}) -> void:
 	await tween.finished
 	
 	# Ganti scene
-	get_tree().change_scene_to_file(scene_paths[scene_name])
+	var error := get_tree().change_scene_to_file(scene_path)
+	if error != OK:
+		push_error("[SceneManager] Failed to change scene to: %s (error: %d)" % [scene_name, error])
+		is_transitioning = false
+		return
 	
 	# Fade in
 	tween = create_tween()

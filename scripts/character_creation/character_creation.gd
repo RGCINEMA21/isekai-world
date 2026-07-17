@@ -158,27 +158,28 @@ func _build_preview_panel(parent: Control) -> void:
 	panel.add_child(summary_label)
 
 
-## Membangun section nama
+## ==================== SECTIONS ====================
+
+
 func _build_name_section(parent: Control) -> void:
 	var label := Label.new()
-	label.text = "Nama Karakter:"
-	label.add_theme_font_size_override("font_size", 18)
+	label.text = "Nama Karakter"
+	label.add_theme_font_size_override("font_size", 16)
 	parent.add_child(label)
 	
 	name_input = LineEdit.new()
 	name_input.name = "NameInput"
-	name_input.placeholder_text = "Masukkan nama (3-16 karakter)..."
+	name_input.placeholder_text = "Masukkan nama (3-16 karakter)"
 	name_input.max_length = 16
-	name_input.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_input.text_changed.connect(_on_name_changed)
+	name_input.custom_minimum_size = Vector2(0, 40)
+	name_input.text_changed.connect(func(_t): _update_summary())
 	parent.add_child(name_input)
 
 
-## Membangun section gender
 func _build_gender_section(parent: Control) -> void:
 	var label := Label.new()
-	label.text = "Gender:"
-	label.add_theme_font_size_override("font_size", 18)
+	label.text = "Gender"
+	label.add_theme_font_size_override("font_size", 16)
 	parent.add_child(label)
 	
 	var hbox := HBoxContainer.new()
@@ -186,51 +187,70 @@ func _build_gender_section(parent: Control) -> void:
 	parent.add_child(hbox)
 	
 	gender_male_btn = Button.new()
-	gender_male_btn.text = "Male"
+	gender_male_btn.text = "♂ Male"
 	gender_male_btn.custom_minimum_size = Vector2(120, 40)
-	gender_male_btn.toggle_mode = true
-	gender_male_btn.button_pressed = true
-	gender_male_btn.pressed.connect(func(): _set_gender("male"))
+	gender_male_btn.pressed.connect(func():
+		char_state["gender"] = "male"
+		_update_gender_buttons()
+		_update_preview()
+		_update_summary()
+	)
 	hbox.add_child(gender_male_btn)
 	
 	gender_female_btn = Button.new()
-	gender_female_btn.text = "Female"
+	gender_female_btn.text = "♀ Female"
 	gender_female_btn.custom_minimum_size = Vector2(120, 40)
-	gender_female_btn.toggle_mode = true
-	gender_female_btn.pressed.connect(func(): _set_gender("female"))
+	gender_female_btn.pressed.connect(func():
+		char_state["gender"] = "female"
+		_update_gender_buttons()
+		_update_preview()
+		_update_summary()
+	)
 	hbox.add_child(gender_female_btn)
+	
+	_update_gender_buttons()
 
 
-## Membangun section opsi dengan navigasi < >
-func _build_option_section(parent: Control, section_title: String, key: String, count: int, label_func: Callable) -> void:
+func _build_option_section(parent: Control, section_name: String, key: String, count: int, name_func: Callable) -> void:
 	var label := Label.new()
-	label.text = section_title + ":"
-	label.add_theme_font_size_override("font_size", 18)
+	label.text = section_name
+	label.add_theme_font_size_override("font_size", 16)
 	parent.add_child(label)
 	
 	var hbox := HBoxContainer.new()
-	hbox.add_theme_constant_override("separation", 8)
+	hbox.add_theme_constant_override("separation", 10)
 	parent.add_child(hbox)
 	
 	var prev_btn := Button.new()
 	prev_btn.text = "<"
 	prev_btn.custom_minimum_size = Vector2(40, 36)
-	prev_btn.pressed.connect(func(): _navigate_option(key, -1, count))
+	prev_btn.pressed.connect(func():
+		char_state[key] = (char_state[key] - 1 + count) % count
+		_update_all_labels()
+		_update_preview()
+		_update_summary()
+	)
 	hbox.add_child(prev_btn)
 	
 	var value_label := Label.new()
-	value_label.name = key + "_label"
-	value_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	value_label.text = name_func.call(char_state[key])
 	value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	value_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	value_label.add_theme_font_size_override("font_size", 16)
 	hbox.add_child(value_label)
 	
 	var next_btn := Button.new()
 	next_btn.text = ">"
 	next_btn.custom_minimum_size = Vector2(40, 36)
-	next_btn.pressed.connect(func(): _navigate_option(key, 1, count))
+	next_btn.pressed.connect(func():
+		char_state[key] = (char_state[key] + 1) % count
+		_update_all_labels()
+		_update_preview()
+		_update_summary()
+	)
 	hbox.add_child(next_btn)
 	
+	# Store reference for updating
 	match key:
 		"skin_color": skin_label = value_label
 		"hair_style": hair_style_label = value_label
@@ -239,66 +259,50 @@ func _build_option_section(parent: Control, section_title: String, key: String, 
 		"clothes": clothes_label = value_label
 
 
-## Membangun tombol aksi
 func _build_buttons(parent: Control) -> void:
 	var hbox := HBoxContainer.new()
 	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	hbox.add_theme_constant_override("separation", 12)
+	hbox.add_theme_constant_override("separation", 16)
 	parent.add_child(hbox)
 	
 	var random_btn := Button.new()
 	random_btn.text = "Random"
-	random_btn.custom_minimum_size = Vector2(100, 44)
+	random_btn.custom_minimum_size = Vector2(100, 40)
 	random_btn.pressed.connect(_random_character)
 	hbox.add_child(random_btn)
 	
 	var reset_btn := Button.new()
 	reset_btn.text = "Reset"
-	reset_btn.custom_minimum_size = Vector2(100, 44)
+	reset_btn.custom_minimum_size = Vector2(100, 40)
 	reset_btn.pressed.connect(_reset_character)
 	hbox.add_child(reset_btn)
 	
 	var confirm_btn := Button.new()
 	confirm_btn.text = "Confirm"
-	confirm_btn.custom_minimum_size = Vector2(120, 44)
+	confirm_btn.custom_minimum_size = Vector2(120, 40)
 	confirm_btn.pressed.connect(_confirm_character)
 	hbox.add_child(confirm_btn)
 	
 	var back_btn := Button.new()
 	back_btn.text = "Back"
-	back_btn.custom_minimum_size = Vector2(100, 44)
+	back_btn.custom_minimum_size = Vector2(100, 40)
 	back_btn.pressed.connect(_on_back)
 	hbox.add_child(back_btn)
 
 
+## ==================== HELPERS ====================
+
+
 func _make_separator() -> HSeparator:
 	var sep := HSeparator.new()
-	sep.custom_minimum_size.y = 4
+	sep.custom_minimum_size = Vector2(0, 10)
 	return sep
 
 
-## ==================== LOGIC ====================
-
-
-func _set_gender(gender: String) -> void:
-	char_state["gender"] = gender
-	gender_male_btn.button_pressed = (gender == "male")
-	gender_female_btn.button_pressed = (gender == "female")
-	_update_preview()
-	_update_summary()
-
-
-func _navigate_option(key: String, direction: int, count: int) -> void:
-	var current: int = char_state[key]
-	current += direction
-	if current < 0:
-		current = count - 1
-	elif current >= count:
-		current = 0
-	char_state[key] = current
-	_update_all_labels()
-	_update_preview()
-	_update_summary()
+func _update_gender_buttons() -> void:
+	if gender_male_btn and gender_female_btn:
+		gender_male_btn.disabled = char_state["gender"] == "male"
+		gender_female_btn.disabled = char_state["gender"] == "female"
 
 
 func _update_all_labels() -> void:
@@ -315,52 +319,32 @@ func _update_all_labels() -> void:
 
 
 func _update_summary() -> void:
-	if not summary_label:
-		return
-	var gender_text: String = "Laki-laki" if char_state["gender"] == "male" else "Perempuan"
-	summary_label.text = (
-		"Nama: %s\nGender: %s\nKulit: %s\nRambut: %s (%s)\nMata: %s\nPakaian: %s"
-		% [
-			char_state["name"] if char_state["name"] != "" else "???",
-			gender_text,
+	if summary_label:
+		summary_label.text = "Nama: %s\nGender: %s\nKulit: %s\nRambut: %s (%s)\nMata: %s\nPakaian: %s" % [
+			name_input.text if name_input else "",
+			char_state["gender"].capitalize(),
 			CharacterData.SKIN_COLORS[char_state["skin_color"]]["name"],
 			CharacterData.HAIR_STYLES[char_state["hair_style"]]["name"],
 			CharacterData.HAIR_COLORS[char_state["hair_color"]]["name"],
 			CharacterData.EYE_STYLES[char_state["eyes"]]["name"],
 			CharacterData.CLOTHES_STYLES[char_state["clothes"]]["name"],
 		]
-	)
 
 
-func _on_name_changed(new_text: String) -> void:
-	var clean := ""
-	for c in new_text:
-		if c.is_valid_identifier() or c == " ":
-			clean += c
-	char_state["name"] = clean
-	_update_summary()
+## ==================== ACTIONS ====================
 
 
 func _random_character() -> void:
-	char_state["gender"] = ["male", "female"].pick_random()
+	char_state["gender"] = ["male", "female"][randi() % 2]
 	char_state["skin_color"] = randi() % skin_count
 	char_state["hair_style"] = randi() % hair_style_count
 	char_state["hair_color"] = randi() % hair_color_count
 	char_state["eyes"] = randi() % eyes_count
 	char_state["clothes"] = randi() % clothes_count
-	
-	var names := ["Arlen", "Kael", "Rin", "Lyra", "Eren", "Aira", "Leon",
-		"Nova", "Zara", "Finn", "Mira", "Orin", "Sera", "Dex"]
-	char_state["name"] = names.pick_random()
-	name_input.text = char_state["name"]
-	
-	gender_male_btn.button_pressed = (char_state["gender"] == "male")
-	gender_female_btn.button_pressed = (char_state["gender"] == "female")
-	
+	_update_gender_buttons()
 	_update_all_labels()
 	_update_preview()
 	_update_summary()
-	error_label.visible = false
 
 
 func _reset_character() -> void:
@@ -373,31 +357,25 @@ func _reset_character() -> void:
 		"eyes": 0,
 		"clothes": 0,
 	}
-	name_input.text = ""
-	gender_male_btn.button_pressed = true
-	gender_female_btn.button_pressed = false
+	if name_input:
+		name_input.text = ""
+	_update_gender_buttons()
 	_update_all_labels()
 	_update_preview()
 	_update_summary()
-	error_label.visible = false
 
 
-## Konfirmasi - simpan semua data via PlayerManager
 func _confirm_character() -> void:
-	var player_name: String = char_state["name"].strip_edges()
-	
-	# Validasi
-	if player_name.is_empty():
-		_show_error("Nama tidak boleh kosong!")
-		return
+	# Validasi nama
+	var player_name: String = name_input.text.strip_edges() if name_input else ""
 	if player_name.length() < 3:
-		_show_error("Nama minimal 3 karakter!")
+		_show_error("Nama harus minimal 3 karakter!")
 		return
 	if player_name.length() > 16:
 		_show_error("Nama maksimal 16 karakter!")
 		return
 	
-	# Buat data lengkap
+	# Buat data save
 	var save_data: Dictionary = PlayerData.DEFAULT_DATA.duplicate(true)
 	save_data["identity"]["id"] = PlayerData.generate_id()
 	save_data["identity"]["name"] = player_name

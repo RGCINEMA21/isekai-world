@@ -2,9 +2,12 @@
 extends Node2D
 
 var ts: int
+var _village_npc_script = null
 
 func _ready() -> void:
 	ts = VillageData.TILE_SIZE
+	_village_npc_script = preload("res://scripts/npc/village_npc.gd")
+	
 	var lookup: Dictionary = {}
 	for b: Dictionary in VillageData.BUILDINGS:
 		lookup[b["id"]] = b
@@ -15,8 +18,9 @@ func _ready() -> void:
 		var bdata: Dictionary = lookup[bid]
 		var npc_x: float = bdata["tile_x"] * ts + ts * 0.5
 		var npc_y: float = (bdata["tile_y"] + 2) * ts + ts * 0.5
-		var npc := Area2D.new()
-		npc.set_script(load("res://scripts/npc/village_npc.gd"))
+		var npc = Area2D.new()
+		if _village_npc_script:
+			npc.set_script(_village_npc_script)
 		npc.position = Vector2(npc_x, npc_y)
 		npc.set("npc_id", n["npc_id"])
 		npc.set("npc_name", n["npc_name"])
